@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Member Detail Popup - Basic Info</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for modal content */
+        .modal-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .modal-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .modal-scroll::-webkit-scrollbar-thumb {
+            background-color: #334155;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#111418] dark:text-white min-h-screen flex flex-col overflow-hidden">
+<!-- Backdrop / Overlay -->
+<div class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity flex items-center justify-center p-4 sm:p-6">
+<!-- Modal Container -->
+<div class="relative w-full max-w-[960px] max-h-[90vh] flex flex-col bg-white dark:bg-[#1A2633] rounded-xl shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+<!-- Header Section -->
+<div class="flex flex-col border-b border-[#dbe0e6] dark:border-gray-700 bg-white dark:bg-[#1A2633] z-10 shrink-0">
+<!-- Top Row: Title & Actions -->
+<div class="flex items-start justify-between px-6 pt-6 pb-2">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<h2 class="text-[#111418] dark:text-white text-2xl font-bold leading-tight tracking-[-0.015em]">홍길동</h2>
+<span class="inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 text-primary text-xs font-bold">
+                                조합장 추천
+                            </span>
+</div>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-normal">회원번호: 2023-A-0045</p>
+</div>
+<button class="group p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[#617589] group-hover:text-[#111418] dark:text-gray-400 dark:group-hover:text-white">close</span>
+</button>
+</div>
+<!-- Chips Row: Unit & Tier -->
+<div class="px-6 pb-5">
+<div class="flex gap-3 flex-wrap">
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#f0f2f4] dark:bg-gray-700 pl-3 pr-3 border border-transparent dark:border-gray-600">
+<span class="material-symbols-outlined text-lg text-[#617589] dark:text-gray-300">apartment</span>
+<p class="text-[#111418] dark:text-gray-200 text-sm font-medium leading-normal">101동 1004호</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#f0f2f4] dark:bg-gray-700 pl-3 pr-3 border border-transparent dark:border-gray-600">
+<span class="material-symbols-outlined text-lg text-[#617589] dark:text-gray-300">verified</span>
+<p class="text-[#111418] dark:text-gray-200 text-sm font-medium leading-normal">1차 조합원</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#f0f2f4] dark:bg-gray-700 pl-3 pr-3 border border-transparent dark:border-gray-600">
+<span class="material-symbols-outlined text-lg text-[#617589] dark:text-gray-300">how_to_reg</span>
+<p class="text-[#111418] dark:text-gray-200 text-sm font-medium leading-normal">지주</p>
+</div>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="px-6">
+<div class="flex gap-8 overflow-x-auto hide-scrollbar">
+<button class="group flex flex-col items-center justify-center border-b-[3px] border-primary pb-3 pt-2 outline-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary fill-1">id_card</span>
+<p class="text-primary text-sm font-bold leading-normal tracking-[0.015em]">기본 정보</p>
+</div>
+</button>
+<button class="group flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-gray-300 dark:hover:border-gray-600 pb-3 pt-2 transition-colors outline-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#617589] dark:text-gray-400 group-hover:text-[#111418] dark:group-hover:text-gray-200">history</span>
+<p class="text-[#617589] dark:text-gray-400 group-hover:text-[#111418] dark:group-hover:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em]">관리 이력</p>
+</div>
+</button>
+<button class="group flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-gray-300 dark:hover:border-gray-600 pb-3 pt-2 transition-colors outline-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#617589] dark:text-gray-400 group-hover:text-[#111418] dark:group-hover:text-gray-200">payments</span>
+<p class="text-[#617589] dark:text-gray-400 group-hover:text-[#111418] dark:group-hover:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em]">납부 현황</p>
+</div>
+</button>
+<button class="group flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-gray-300 dark:hover:border-gray-600 pb-3 pt-2 transition-colors outline-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#617589] dark:text-gray-400 group-hover:text-[#111418] dark:group-hover:text-gray-200">folder_open</span>
+<p class="text-[#617589] dark:text-gray-400 group-hover:text-[#111418] dark:group-hover:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em]">증빙 서류</p>
+</div>
+</button>
+</div>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="modal-scroll flex-1 overflow-y-auto bg-white dark:bg-[#1A2633] p-6 pb-10">
+<!-- AI Tags Section -->
+<div class="mb-8 rounded-xl bg-[#f8fafd] dark:bg-gray-800/50 p-5 border border-[#e5e7eb] dark:border-gray-700">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
+<h3 class="text-[#111418] dark:text-white text-base font-bold leading-tight">AI 분석 인사이트</h3>
+</div>
+<div class="flex flex-wrap gap-2">
+<!-- High Risk Tag -->
+<div class="flex items-center gap-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 px-3 py-1.5">
+<span class="material-symbols-outlined text-red-600 dark:text-red-400 text-sm">warning</span>
+<span class="text-red-700 dark:text-red-300 text-sm font-bold">#강성민원</span>
+</div>
+<!-- Positive Tag -->
+<div class="flex items-center gap-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-3 py-1.5">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-sm">thumb_up</span>
+<span class="text-blue-700 dark:text-blue-300 text-sm font-bold">#납부동의완료</span>
+</div>
+<!-- Neutral Tag -->
+<div class="flex items-center gap-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5">
+<span class="material-symbols-outlined text-gray-600 dark:text-gray-400 text-sm">schedule</span>
+<span class="text-gray-700 dark:text-gray-300 text-sm font-medium">#평일오전연락선호</span>
+</div>
+</div>
+</div>
+<!-- Info Grid -->
+<div>
+<h3 class="text-[#111418] dark:text-white text-lg font-bold mb-4">상세 정보</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+<!-- Row 1 -->
+<div class="flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">smartphone</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">휴대전화</p>
+</div>
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal pl-[26px]">010-1234-5678</p>
+</div>
+<div class="flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">contact_phone</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">비상연락망</p>
+</div>
+<div class="flex items-center gap-2 pl-[26px]">
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal">010-9876-5432</p>
+<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">배우자</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">cake</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">생년월일</p>
+</div>
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal pl-[26px]">1980.05.15 (만 43세)</p>
+</div>
+<div class="flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">mail</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">이메일</p>
+</div>
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal pl-[26px]">hong.gd@example.com</p>
+</div>
+<!-- Row 3 Full Width Address -->
+<div class="col-span-1 md:col-span-2 flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">home</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">현주소</p>
+</div>
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal pl-[26px]">서울시 강남구 테헤란로 123, 래미안 101동 502호</p>
+</div>
+<!-- Row 4 -->
+<div class="flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">family_restroom</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">가족 관계</p>
+</div>
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal pl-[26px]">배우자 1명, 자녀 2명 (함께 거주)</p>
+</div>
+<div class="flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">account_balance_wallet</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">계좌 정보</p>
+</div>
+<p class="text-[#111418] dark:text-gray-200 text-base font-normal pl-[26px]">신한 110-333-444455 (예금주: 홍길동)</p>
+</div>
+<!-- Row 5 Memo -->
+<div class="col-span-1 md:col-span-2 flex flex-col gap-1 border-t border-dotted border-[#dbe0e6] dark:border-gray-700 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#9aa6b2] text-[18px]">sticky_note_2</span>
+<p class="text-[#617589] dark:text-gray-400 text-sm font-medium">관리자 메모</p>
+</div>
+<div class="pl-[26px] mt-1">
+<div class="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 p-3 rounded-lg">
+<p class="text-[#111418] dark:text-gray-200 text-sm leading-relaxed">
+                                        주말 연락 요망. 2024년 5월까지 납부 유예 신청함. 상담 시 자녀 교육 문제로 이사 고려중이라고 언급하심.
+                                    </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Actions -->
+<div class="shrink-0 flex items-center justify-end gap-3 p-4 border-t border-[#dbe0e6] dark:border-gray-700 bg-gray-50 dark:bg-[#151f2a]">
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-[#dbe0e6] dark:border-gray-600 bg-white dark:bg-transparent text-[#111418] dark:text-white text-sm font-bold leading-normal tracking-[0.015em] px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+<span class="truncate">닫기</span>
+</button>
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] px-4 py-2.5 shadow-sm transition-colors hover:bg-blue-600">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+<span class="truncate">정보 수정</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>조합원 상세 정보 - 납부 현황</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=Noto+Sans+KR:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2563eb", 
+                        "primary-hover": "#1d4ed8",
+                        "background-base": "#f8fafc",
+                        "surface-base": "#ffffff",
+                        "surface-alt": "#f1f5f9",
+                        "border-base": "#e2e8f0",
+                        "text-main": "#0f172a",
+                        "text-muted": "#64748b",
+                        "success-text": "#15803d", // Deep forest green
+                        "success-bg": "#dcfce7",
+                        "danger-text": "#dc2626", // Professional red
+                        "danger-bg": "#fee2e2",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "Noto Sans KR", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'card': '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }.tab-folder-active {
+            position: relative;
+            background-color: #ffffff;
+            color: #2563eb;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            z-index: 10;
+            font-weight: 700;
+        }.tab-folder-active::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -12px;
+            width: 12px;
+            height: 12px;background: radial-gradient(circle at 0 0, transparent 12px, #ffffff 13px);
+            z-index: 10;
+        }.tab-folder-active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -12px;
+            width: 12px;
+            height: 12px;background: radial-gradient(circle at 100% 0, transparent 12px, #ffffff 13px);
+            z-index: 10;
+        }
+        .tab-folder-inactive {
+            position: relative;
+            color: #64748b;
+            background-color: transparent;
+            transition: color 0.2s, background-color 0.2s;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .tab-folder-inactive:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+            color: #334155;
+        }
+    </style>
+</head>
+<body class="bg-slate-200 font-display min-h-screen flex items-center justify-center p-4">
+<div class="relative flex w-full md:w-1/2 min-w-[600px] max-h-[90vh] flex-col bg-surface-base rounded-2xl shadow-soft overflow-hidden border border-white/50 ring-1 ring-slate-200">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-border-base px-6 py-4 bg-surface-base shrink-0 z-20">
+<div class="flex items-center gap-3">
+<div class="size-8 flex items-center justify-center rounded-lg bg-blue-50 text-primary border border-blue-100">
+<span class="material-symbols-outlined text-xl">grid_view</span>
+</div>
+<h2 class="text-text-main text-lg font-bold leading-tight tracking-tight">조합원 상세 정보</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center rounded-lg size-8 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-text-muted hover:text-text-main transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col bg-surface-alt">
+<div class="px-6 py-6 bg-surface-base border-b border-border-base">
+<div class="flex w-full items-center gap-5">
+<div class="relative">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-16 shrink-0 bg-slate-200 border-2 border-white shadow-md ring-1 ring-slate-100" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDpqeACn_9HmUlWVMRWWrFwYaQNHx2Hv3PqPNXDJud8a85PMRAeT-1LOHlY4WGH4wW6Qc-K10UyiBqeGz0S7jfmm8T1vqyRFctcugaI8GgodKt-H1AshPvjQn3g_VE3Po8uSIKt-_Bbpf1zZPxJ0WAZwgsJCNtyicwGW-448MdUFuMn6u-1dSDWZEf87AXppbHwINhQCoDr47Fj9DDnLr6mSXV9DpfpKJof6JmC4YTkMy9kG3p18Oqx9vLHUGrMMPt_ow39ssx7IXPs");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-green-500 border-2 border-white w-4 h-4 rounded-full shadow-sm"></div>
+</div>
+<div class="flex flex-col justify-center min-w-0 flex-1">
+<div class="flex items-center gap-3 mb-1">
+<h3 class="text-text-main text-xl font-bold leading-tight truncate">김철수 (조합원)</h3>
+<span class="bg-blue-50 text-blue-600 text-[11px] font-bold px-2 py-0.5 rounded-full border border-blue-100 whitespace-nowrap">계약완료</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<p class="text-text-muted text-sm font-normal truncate">관리번호: <span class="text-slate-700 font-medium">2023-A-042</span>  <span class="text-slate-300">|</span>  101동 1004호</p>
+<p class="text-text-muted text-sm font-normal truncate">연락처: <span class="text-slate-700 font-medium">010-1234-5678</span></p>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 pt-4 bg-surface-alt sticky top-0 z-10 border-b border-border-base/50">
+<div class="flex items-end gap-1 w-full pl-2">
+<a class="tab-folder-inactive flex items-center justify-center px-5 py-2.5 h-10 mb-[-1px]" href="#">
+<span class="text-sm font-medium whitespace-nowrap">기본 정보</span>
+</a>
+<a class="tab-folder-active flex items-center justify-center px-6 py-3 h-11 mb-[-1px] shadow-[0_-2px_10px_rgba(0,0,0,0.03)]" href="#">
+<span class="text-sm whitespace-nowrap">납부 현황</span>
+</a>
+<a class="tab-folder-inactive flex items-center justify-center px-5 py-2.5 h-10 mb-[-1px]" href="#">
+<span class="text-sm font-medium whitespace-nowrap">계약 정보</span>
+</a>
+<a class="tab-folder-inactive flex items-center justify-center px-5 py-2.5 h-10 mb-[-1px]" href="#">
+<span class="text-sm font-medium whitespace-nowrap">문서함</span>
+</a>
+<a class="tab-folder-inactive flex items-center justify-center px-5 py-2.5 h-10 mb-[-1px]" href="#">
+<span class="text-sm font-medium whitespace-nowrap">상담 이력</span>
+</a>
+</div>
+</div>
+<div class="p-6 bg-surface-base flex flex-col gap-6 min-h-[500px]">
+<div class="bg-gradient-to-br from-white to-slate-50 rounded-xl border border-border-base p-5 shadow-sm">
+<div class="flex flex-col gap-5">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1.5">총 납부 진행률</p>
+<div class="flex items-baseline gap-3">
+<span class="text-text-main text-3xl font-extrabold tracking-tight">30%</span>
+<span class="text-emerald-700 text-xs font-bold flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        정상 납부중
+                                    </span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-text-muted text-xs font-normal mb-1">납부 총액 / 총 분양가</p>
+<div class="flex items-center gap-1 justify-end">
+<span class="text-text-main text-lg font-bold">1.5억</span>
+<span class="text-text-muted text-sm">/ 5억 원</span>
+</div>
+</div>
+</div>
+<div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden relative shadow-inner">
+<div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full relative" style="width: 30%;">
+<div class="absolute inset-0 bg-white/20"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-text-main text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-2xl">receipt_long</span>
+                            납부 상세 내역
+                        </h3>
+<div class="flex gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-primary transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm">filter_list</span> 필터
+                            </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-primary transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm">download</span> 엑셀
+                            </button>
+</div>
+</div>
+<div class="overflow-hidden rounded-xl border border-border-base shadow-sm bg-white">
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-sm text-left">
+<thead class="text-xs text-blue-900 uppercase bg-blue-50/70 border-b border-blue-100">
+<tr>
+<th class="px-4 py-3.5 font-bold whitespace-nowrap pl-5" scope="col">구분</th>
+<th class="px-4 py-3.5 font-bold whitespace-nowrap text-center" scope="col">납부기한</th>
+<th class="px-4 py-3.5 font-bold text-right whitespace-nowrap" scope="col">청구금액</th>
+<th class="px-4 py-3.5 font-bold text-right whitespace-nowrap" scope="col">입금금액</th>
+<th class="px-4 py-3.5 font-bold text-right whitespace-nowrap" scope="col">미납금액</th>
+<th class="px-4 py-3.5 font-bold text-center whitespace-nowrap pr-5" scope="col">상태</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 text-slate-600">
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-4 py-4 font-semibold whitespace-nowrap pl-5 text-slate-900">계약금</td>
+<td class="px-4 py-4 text-center text-slate-500 text-xs">23.01.15</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-700">50,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-success-text font-bold">50,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-400">0</td>
+<td class="px-4 py-4 text-center pr-5">
+<span class="inline-flex items-center justify-center w-14 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full">
+                                                완료
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-4 py-4 font-semibold whitespace-nowrap pl-5 text-slate-900">1차 중도금</td>
+<td class="px-4 py-4 text-center text-slate-500 text-xs">23.04.15</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-700">100,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-success-text font-bold">100,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-400">0</td>
+<td class="px-4 py-4 text-center pr-5">
+<span class="inline-flex items-center justify-center w-14 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full">
+                                                완료
+                                            </span>
+</td>
+</tr>
+<tr class="bg-red-50/40 hover:bg-red-50/60 transition-colors border-l-2 border-l-red-500">
+<td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap pl-[18px]">
+                                            2차 중도금 
+                                            <span class="ml-2 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold border border-red-200">D+12</span>
+</td>
+<td class="px-4 py-4 text-center text-red-500 font-medium text-xs">23.07.15</td>
+<td class="px-4 py-4 text-right tabular-nums font-medium text-slate-700">100,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-400">0</td>
+<td class="px-4 py-4 text-right tabular-nums text-danger-text font-bold">100,000,000</td>
+<td class="px-4 py-4 text-center pr-5">
+<span class="inline-flex items-center justify-center w-14 py-1 text-[10px] font-bold text-red-600 bg-white border border-red-200 rounded-full shadow-sm">
+                                                미납
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors text-slate-400 group">
+<td class="px-4 py-4 font-medium whitespace-nowrap pl-5 group-hover:text-slate-600">3차 중도금</td>
+<td class="px-4 py-4 text-center text-xs text-slate-400">23.10.15</td>
+<td class="px-4 py-4 text-right tabular-nums group-hover:text-slate-600">100,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-300">-</td>
+<td class="px-4 py-4 text-right tabular-nums group-hover:text-slate-600">100,000,000</td>
+<td class="px-4 py-4 text-center pr-5">
+<span class="inline-flex items-center justify-center w-14 py-1 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded-full">
+                                                예정
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors text-slate-400 group">
+<td class="px-4 py-4 font-medium whitespace-nowrap pl-5 group-hover:text-slate-600">잔금</td>
+<td class="px-4 py-4 text-center text-xs text-slate-400">24.01.15</td>
+<td class="px-4 py-4 text-right tabular-nums group-hover:text-slate-600">150,000,000</td>
+<td class="px-4 py-4 text-right tabular-nums text-slate-300">-</td>
+<td class="px-4 py-4 text-right tabular-nums group-hover:text-slate-600">150,000,000</td>
+<td class="px-4 py-4 text-center pr-5">
+<span class="inline-flex items-center justify-center w-14 py-1 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded-full">
+                                                예정
+                                            </span>
+</td>
+</tr>
+</tbody>
+<tfoot class="bg-slate-50 border-t border-slate-200 font-bold text-slate-800">
+<tr>
+<td class="px-4 py-4 text-center text-xs text-slate-500" colspan="2">합계</td>
+<td class="px-4 py-4 text-right tabular-nums text-sm">5.0억</td>
+<td class="px-4 py-4 text-right tabular-nums text-success-text text-sm">1.5억</td>
+<td class="px-4 py-4 text-right tabular-nums text-danger-text text-sm">1.0억</td>
+<td class="px-4 py-4"></td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="p-5 border-t border-border-base bg-surface-base flex flex-col gap-4 justify-between items-center sticky bottom-0 z-20 shadow-[0_-4px_10px_-4px_rgba(0,0,0,0.1)]">
+<div class="text-xs text-slate-400 flex items-center gap-1.5 w-full justify-start pl-1">
+<span class="material-symbols-outlined text-sm">info</span>
+<span>데이터 기준: 23-07-27 14:30</span>
+</div>
+<div class="flex gap-3 w-full">
+<button class="flex-1 cursor-pointer items-center justify-center rounded-xl h-10 px-4 bg-white text-slate-700 border border-slate-300 gap-2 text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-lg">print</span>
+<span>출력</span>
+</button>
+<button class="flex-1 cursor-pointer items-center justify-center rounded-xl h-10 px-4 bg-primary text-white gap-2 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-lg shadow-blue-200">
+<span class="material-symbols-outlined text-lg">sms</span>
+<span>SMS 전송</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

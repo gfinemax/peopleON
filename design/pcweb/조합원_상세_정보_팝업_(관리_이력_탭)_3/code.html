@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>조합원 상세 정보 팝업 (관리 이력 탭)</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&amp;family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "Noto Sans KR", "sans-serif"],
+                        "body": ["Noto Sans KR", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', 'Noto Sans KR', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light min-h-screen flex items-center justify-center p-4">
+<!-- Modal Overlay Backdrop -->
+<div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-0"></div>
+<!-- Modal Container -->
+<div class="relative w-full max-w-[1000px] bg-white rounded-2xl shadow-2xl z-10 flex flex-col max-h-[90vh] overflow-hidden">
+<!-- Header Section -->
+<div class="flex items-start justify-between p-6 pb-2 border-b border-gray-100">
+<div class="flex gap-5 items-center">
+<!-- Profile Image -->
+<div class="relative h-20 w-20 shrink-0 rounded-full bg-gray-200 overflow-hidden border border-gray-100 shadow-sm">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Portrait of a middle-aged asian man smiling" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZWYqkTj5G8gUGgVhyCpYJRBxv5SCjTAhccWaa3-Ekvaq6bVagzAdDGAKUeijyz0YRp0DgK4-ay078BhDMvxXfJQN0o4NbOy5AiAjyY2UZEaqvYy4O_Wz4s2ynRulVZAD0IstvsWwytcnBOQToGF8U2b0glnXFeqCRgUVX8rbNlD_Bcmjn5EzaOIrCTfGd6g3dJD1xgrHxTttF8pwX4zlurz4d9UqtznzXWLG3tXfUnq4sO2Hy7zV7k5DW8B1IYCKkY8hoorXJiUKF");'></div>
+</div>
+<!-- Profile Info -->
+<div class="flex flex-col gap-1">
+<h2 class="text-[#111418] text-2xl font-bold leading-tight tracking-tight">홍길동 <span class="text-gray-400 font-normal text-lg ml-1">(101-1204)</span></h2>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">정회원</span>
+<span class="text-sm text-gray-500">가입일: 2023-05-12</span>
+</div>
+</div>
+</div>
+<!-- Close Button -->
+<button class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+</div>
+<!-- Navigation Tabs -->
+<div class="px-6 border-b border-[#dbe0e6] bg-white sticky top-0 z-20">
+<div class="flex gap-8">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#617589] hover:text-[#111418] pb-3 pt-4 transition-colors group" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">기본 정보</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#617589] hover:text-[#111418] pb-3 pt-4 transition-colors group" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">납부 내역</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-primary text-[#111418] pb-3 pt-4" href="#">
+<p class="text-primary text-sm font-bold leading-normal tracking-[0.015em]">관리 이력</p>
+</a>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="flex flex-col flex-1 overflow-y-auto bg-white">
+<!-- Toolbar -->
+<div class="sticky top-0 bg-white/95 backdrop-blur-sm z-10 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-gray-50">
+<div class="flex items-center gap-2">
+<!-- Filter Button -->
+<button class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>필터</span>
+</button>
+<!-- Search Input -->
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full py-2 pl-10 pr-4 text-sm text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary placeholder-gray-400 transition-all" placeholder="검색어 입력..." type="text"/>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>상담 일지 등록</span>
+</button>
+</div>
+<!-- Timeline Content -->
+<div class="p-6 pb-12">
+<div class="max-w-3xl mx-auto">
+<!-- Timeline Item 1: Phone Call -->
+<div class="group grid grid-cols-[48px_1fr] gap-x-4">
+<!-- Icon Column -->
+<div class="flex flex-col items-center pt-1">
+<div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-primary border border-blue-100 z-10">
+<span class="material-symbols-outlined">call</span>
+</div>
+<div class="w-[2px] bg-gray-200 h-full mt-2 group-last:hidden min-h-[40px]"></div>
+</div>
+<!-- Content Column -->
+<div class="pb-8">
+<div class="flex flex-col bg-white rounded-xl border border-gray-200 p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div class="flex flex-col">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">Call</span>
+<h3 class="text-[#111418] text-base font-bold">전화 상담 (발신)</h3>
+</div>
+<p class="text-gray-600 text-sm leading-relaxed">관리비 인상폭에 대한 불만 제기 및 상세 내역 요청. 차주 중으로 상세 내역서 우편 발송 안내함.</p>
+</div>
+<button class="text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">account_circle</span>
+<span>담당자: <span class="text-gray-700 font-medium">김민수</span></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>2024-01-15 10:00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2: SMS -->
+<div class="group grid grid-cols-[48px_1fr] gap-x-4">
+<div class="flex flex-col items-center pt-1">
+<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 text-gray-600 border border-gray-200 z-10">
+<span class="material-symbols-outlined">mail</span>
+</div>
+<div class="w-[2px] bg-gray-200 h-full mt-2 group-last:hidden min-h-[40px]"></div>
+</div>
+<div class="pb-8">
+<div class="flex flex-col bg-white rounded-xl border border-gray-200 p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div class="flex flex-col">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-gray-100 text-gray-700 uppercase tracking-wide">SMS</span>
+<h3 class="text-[#111418] text-base font-bold">안내 문자 발송</h3>
+</div>
+<p class="text-gray-600 text-sm leading-relaxed">1월 정기총회 일시 및 장소 안내 문자 발송 완료 (수신확인).</p>
+</div>
+<button class="text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+<span>발송자: <span class="text-gray-700 font-medium">시스템</span></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>2024-01-10 09:30</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3: Meeting -->
+<div class="group grid grid-cols-[48px_1fr] gap-x-4">
+<div class="flex flex-col items-center pt-1">
+<div class="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 z-10">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div class="w-[2px] bg-gray-200 h-full mt-2 group-last:hidden min-h-[40px]"></div>
+</div>
+<div class="pb-8">
+<div class="flex flex-col bg-white rounded-xl border border-gray-200 p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div class="flex flex-col">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide">Meeting</span>
+<h3 class="text-[#111418] text-base font-bold">대면 상담</h3>
+</div>
+<p class="text-gray-600 text-sm leading-relaxed">입주 관련 필수 서류 제출 및 주차 등록 신청서 작성. 가족 구성원 변경 사항 업데이트.</p>
+</div>
+<button class="text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">account_circle</span>
+<span>담당자: <span class="text-gray-700 font-medium">이영희</span></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>2024-01-05 15:45</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- End of timeline indicator -->
+<div class="group grid grid-cols-[48px_1fr] gap-x-4 opacity-50">
+<div class="flex flex-col items-center pt-1">
+<div class="w-3 h-3 rounded-full bg-gray-300 mt-2"></div>
+</div>
+<div class="pt-1">
+<span class="text-xs text-gray-400">이전 내역 없음</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Optional Footer Actions -->
+<div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+<button class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                닫기
+            </button>
+</div>
+</div>
+</body></html>

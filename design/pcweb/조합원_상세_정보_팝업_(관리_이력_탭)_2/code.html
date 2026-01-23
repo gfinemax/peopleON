@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>조합원 상세 정보 (다크모드 &amp; 곡선형 폴더탭 - 관리이력)</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&amp;family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#38bdf8","dark-base": "#111418","dark-surface": "#1e2329","dark-card": "#252b36","dark-border": "#30363d",
+                        "neon-blue": "#60a5fa",
+                        "neon-cyan": "#22d3ee",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "Noto Sans KR", "sans-serif"],
+                        "body": ["Noto Sans KR", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "t-xl": "0.75rem 0.75rem 0 0",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', 'Noto Sans KR', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 20px;
+        }.browser-tab {
+            position: relative;
+            z-index: 1;
+            transition: color 0.2s;
+        }
+        .browser-tab.active {
+            z-index: 10;
+            background-color: #1e2329;border-radius: 12px 12px 0 0;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+            color: #f3f4f6;}
+        .browser-tab:not(.active) {
+            background-color: transparent;
+            color: #9ca3af;}
+        .browser-tab:not(.active):hover {
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 12px 12px 0 0;
+            color: #d1d5db;
+        }.browser-tab.active::before,
+        .browser-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 20px;
+            height: 20px;
+            z-index: 1;
+        }
+        .browser-tab.active::before {
+            left: -20px;
+            background: radial-gradient(circle at 0 0, transparent 20px, #1e2329 21px);
+        }
+        .browser-tab.active::after {
+            right: -20px;
+            background: radial-gradient(circle at 100% 0, transparent 20px, #1e2329 21px);
+        }
+    </style>
+</head>
+<body class="bg-[#0b0d10] min-h-screen flex items-center justify-center p-4">
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-0"></div>
+<div class="relative w-full lg:w-1/2 max-w-[800px] h-[85vh] flex flex-col z-10 shadow-2xl rounded-xl overflow-hidden ring-1 ring-white/10">
+<div class="bg-dark-base pt-3 px-3 flex flex-col shrink-0 border-b border-white/5">
+<div class="flex items-center justify-between px-2 mb-3">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-[#FF5F57] hover:bg-[#ff5f57cc] transition-colors"></div>
+<div class="w-3 h-3 rounded-full bg-[#FFBD2E] hover:bg-[#ffbd2ecc] transition-colors"></div>
+<div class="w-3 h-3 rounded-full bg-[#28C940] hover:bg-[#28c940cc] transition-colors"></div>
+</div>
+<button class="text-gray-500 hover:text-white transition-colors rounded-full p-1 hover:bg-white/10">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="flex items-end pl-2 pr-8 h-10 gap-1 overflow-x-auto no-scrollbar">
+<a class="browser-tab flex items-center gap-2 px-4 py-2 min-w-[100px] max-w-[160px] h-10 text-xs font-medium transition-all truncate" href="#">
+<span class="material-symbols-outlined text-[16px]">id_card</span>
+<span class="truncate">기본 정보</span>
+</a>
+<a class="browser-tab flex items-center gap-2 px-4 py-2 min-w-[100px] max-w-[160px] h-10 text-xs font-medium transition-all truncate" href="#">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+<span class="truncate">납부 내역</span>
+</a>
+<a class="browser-tab active flex items-center gap-2 px-5 py-2 min-w-[120px] max-w-[180px] h-10 text-sm font-bold relative" href="#">
+<span class="material-symbols-outlined text-[18px] text-neon-cyan drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">history_edu</span>
+<span class="truncate tracking-tight">관리 이력</span>
+</a>
+</div>
+</div>
+<div class="flex flex-col flex-1 bg-dark-surface overflow-hidden relative">
+<div class="px-6 pt-6 pb-4 flex items-start gap-5">
+<div class="relative h-16 w-16 shrink-0 rounded-full bg-dark-card border-2 border-dark-border shadow-lg overflow-hidden group">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZWYqkTj5G8gUGgVhyCpYJRBxv5SCjTAhccWaa3-Ekvaq6bVagzAdDGAKUeijyz0YRp0DgK4-ay078BhDMvxXfJQN0o4NbOy5AiAjyY2UZEaqvYy4O_Wz4s2ynRulVZAD0IstvsWwytcnBOQToGF8U2b0glnXFeqCRgUVX8rbNlD_Bcmjn5EzaOIrCTfGd6g3dJD1xgrHxTttF8pwX4zlurz4d9UqtznzXWLG3tXfUnq4sO2Hy7zV7k5DW8B1IYCKkY8hoorXJiUKF");'></div>
+</div>
+<div class="flex flex-col pt-1">
+<h2 class="text-white text-xl font-bold leading-tight flex items-center gap-3">
+                    홍길동 
+                    <span class="text-gray-400 font-normal text-sm bg-white/5 px-2 py-0.5 rounded-md border border-white/5 tracking-wider font-mono">101-1204</span>
+</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">정회원</span>
+<span class="inline-flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[11px] font-medium text-blue-400">입주민</span>
+</div>
+</div>
+</div>
+<div class="mx-6 mb-4 bg-dark-base rounded-full shadow-inner border border-white/5 px-4 py-2.5 flex items-center gap-3 shrink-0">
+<span class="material-symbols-outlined text-gray-500 text-[18px]">lock</span>
+<div class="text-xs text-gray-400 flex-1 truncate font-mono tracking-tight opacity-70">peopleon.crm/members/101-1204/history</div>
+<div class="h-4 w-[1px] bg-white/10"></div>
+<button class="text-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+</div>
+<div class="flex-1 bg-dark-card rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden mx-2 border border-white/5 border-b-0">
+<div class="sticky top-0 bg-dark-card/95 backdrop-blur-sm z-20 px-5 py-4 flex items-center justify-between border-b border-white/5">
+<div class="flex items-center gap-2">
+<div class="relative group">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</span>
+<input class="w-48 py-2 pl-9 pr-3 text-sm bg-dark-base border border-white/10 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary/50 text-gray-200 placeholder-gray-600 transition-all shadow-sm" placeholder="검색" type="text"/>
+</div>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 hover:shadow-[0_0_12px_rgba(56,189,248,0.2)] text-primary text-xs font-bold rounded-lg transition-all border border-primary/20">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>상담 등록</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-5">
+<div class="max-w-2xl mx-auto space-y-8 pr-2">
+<div class="relative pl-8 border-l border-white/10 last:border-0 pb-2">
+<div class="absolute -left-[10px] top-0 w-[20px] h-[20px] rounded-full bg-dark-card border-2 border-blue-500/50 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.3)] z-10">
+<div class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+</div>
+<div class="group relative bg-dark-base rounded-xl border border-white/5 hover:border-blue-500/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all p-4 -mt-2">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 ring-1 ring-blue-500/20">
+<span class="material-symbols-outlined text-[16px]">call</span>
+</span>
+<div>
+<h3 class="text-gray-100 text-sm font-bold">전화 상담 (발신)</h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[10px] text-gray-500 font-mono">2024.01.15</span>
+</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-white/5 text-gray-400 border border-white/5">완료</span>
+</div>
+<p class="text-gray-400 text-sm leading-relaxed mt-3 pl-0">
+                                관리비 인상폭에 대한 불만 제기 및 상세 내역 요청. 상세 내역서 우편 발송 안내함.
+                            </p>
+<div class="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">
+<span class="text-[11px] text-gray-500 flex items-center gap-1.5 hover:text-gray-300 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">person</span> 김민수
+                                </span>
+<span class="text-[11px] text-gray-500 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 10:00
+                                </span>
+</div>
+</div>
+</div>
+<div class="relative pl-8 border-l border-white/10 last:border-0 pb-2">
+<div class="absolute -left-[10px] top-0 w-[20px] h-[20px] rounded-full bg-dark-card border-2 border-cyan-500/50 flex items-center justify-center shadow-[0_0_10px_rgba(34,211,238,0.3)] z-10">
+<div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+</div>
+<div class="group relative bg-dark-base rounded-xl border border-white/5 hover:border-cyan-500/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all p-4 -mt-2">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 ring-1 ring-cyan-500/20">
+<span class="material-symbols-outlined text-[16px]">mail</span>
+</span>
+<div>
+<h3 class="text-gray-100 text-sm font-bold">안내 문자 발송</h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[10px] text-gray-500 font-mono">2024.01.10</span>
+</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">수신확인</span>
+</div>
+<p class="text-gray-400 text-sm leading-relaxed mt-3 pl-0">
+                                1월 정기총회 일시 및 장소 안내 문자 발송 완료.
+                            </p>
+<div class="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">
+<span class="text-[11px] text-gray-500 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">smart_toy</span> 시스템
+                                </span>
+<span class="text-[11px] text-gray-500 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 09:30
+                                </span>
+</div>
+</div>
+</div>
+<div class="relative pl-8 border-l border-white/10 last:border-0 pb-2">
+<div class="absolute -left-[10px] top-0 w-[20px] h-[20px] rounded-full bg-dark-card border-2 border-indigo-500/50 flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.3)] z-10">
+<div class="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
+</div>
+<div class="group relative bg-dark-base rounded-xl border border-white/5 hover:border-indigo-500/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all p-4 -mt-2">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 ring-1 ring-indigo-500/20">
+<span class="material-symbols-outlined text-[16px]">groups</span>
+</span>
+<div>
+<h3 class="text-gray-100 text-sm font-bold">대면 상담</h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[10px] text-gray-500 font-mono">2024.01.05</span>
+</div>
+</div>
+</div>
+</div>
+<p class="text-gray-400 text-sm leading-relaxed mt-3 pl-0">
+                                입주 관련 필수 서류 제출 및 주차 등록 신청서 작성. 가족 구성원 변경 사항 업데이트.
+                            </p>
+<div class="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">
+<span class="text-[11px] text-gray-500 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">person</span> 이영희
+                                </span>
+<span class="text-[11px] text-gray-500 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 15:45
+                                </span>
+</div>
+</div>
+</div>
+<div class="relative pl-8">
+<div class="absolute -left-[6px] top-0 w-3 h-3 rounded-full bg-gray-700"></div>
+<span class="text-xs text-gray-600 -mt-1 block ml-1">이전 내역 없음</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

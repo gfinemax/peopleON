@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>자금 관리 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+KR:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-dark": "#0f4bc4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622", // Deep charcoal/black
+                        "surface-dark": "#1c1f27", // Slightly lighter for cards
+                        "success": "#0bda5e",
+                        "danger": "#ef4444",
+                        "warning": "#f59e0b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "Noto Sans KR", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-white">
+<header class="sticky top-0 z-50 bg-background-light dark:bg-background-dark/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
+<div class="flex items-center p-4 justify-between h-16">
+<button class="flex items-center justify-center text-slate-900 dark:text-white hover:text-primary transition-colors size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center">자금 관리 현황</h2>
+<button class="flex items-center justify-center text-slate-900 dark:text-white hover:text-primary transition-colors size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-2xl">filter_list</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col gap-6 p-4 w-full max-w-md mx-auto">
+<section class="flex flex-col gap-4">
+<div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-6 text-white shadow-lg shadow-primary/20">
+<div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl"></div>
+<div class="relative z-10 flex flex-col gap-1">
+<div class="flex items-center gap-2 opacity-90">
+<span class="material-symbols-outlined text-sm">account_balance_wallet</span>
+<p class="text-sm font-medium">총 계약 금액</p>
+</div>
+<h1 class="text-3xl font-bold tracking-tight mb-2">120,000,000원</h1>
+<div class="mt-4 flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium opacity-90">
+<span>진행률 (37%)</span>
+<span>잔금 75,000,000원</span>
+</div>
+<div class="h-2 w-full overflow-hidden rounded-full bg-black/20">
+<div class="h-full bg-white rounded-full" style="width: 37%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-2 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-slate-200 dark:border-slate-800/50">
+<div class="flex items-center gap-2">
+<div class="flex size-8 items-center justify-center rounded-full bg-success/10 text-success">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">완납</p>
+</div>
+<p class="text-xl font-bold text-slate-900 dark:text-white">45,000,000원</p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-slate-200 dark:border-slate-800/50">
+<div class="flex items-center gap-2">
+<div class="flex size-8 items-center justify-center rounded-full bg-danger/10 text-danger">
+<span class="material-symbols-outlined text-lg">warning</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">연체</p>
+</div>
+<p class="text-xl font-bold text-slate-900 dark:text-white">5,000,000원</p>
+<p class="text-xs text-danger font-medium">지난달 대비 +12%</p>
+</div>
+</div>
+</section>
+<section>
+<div class="flex w-full rounded-xl bg-slate-200 dark:bg-surface-dark p-1 gap-1">
+<label class="flex-1 cursor-pointer">
+<input checked="" class="peer sr-only" name="filter" type="radio" value="all"/>
+<div class="flex h-9 w-full items-center justify-center rounded-lg text-sm font-medium text-slate-500 transition-all peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm dark:text-slate-400 dark:peer-checked:bg-slate-700 dark:peer-checked:text-white">
+                        전체
+                    </div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="filter" type="radio" value="pending"/>
+<div class="flex h-9 w-full items-center justify-center rounded-lg text-sm font-medium text-slate-500 transition-all peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm dark:text-slate-400 dark:peer-checked:bg-slate-700 dark:peer-checked:text-white">
+                        미납
+                    </div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="filter" type="radio" value="completed"/>
+<div class="flex h-9 w-full items-center justify-center rounded-lg text-sm font-medium text-slate-500 transition-all peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm dark:text-slate-400 dark:peer-checked:bg-slate-700 dark:peer-checked:text-white">
+                        완납
+                    </div>
+</label>
+</div>
+</section>
+<section class="flex flex-col gap-3 pb-8">
+<h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">납부 내역</h3>
+<button class="group flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-primary/50 dark:hover:border-primary/50 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-lg">
+                        01
+                    </div>
+<div class="flex flex-col items-start">
+<p class="text-base font-bold text-slate-900 dark:text-white">1회차</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">납부기한 2024.01.15</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-base font-bold text-slate-900 dark:text-white">5,000,000원</span>
+<div class="flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5">
+<span class="material-symbols-outlined text-[14px] text-success">check_circle</span>
+<span class="text-xs font-semibold text-success">완납</span>
+</div>
+</div>
+</button>
+<button class="group flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-danger/50 dark:hover:border-danger/50 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger font-bold text-lg">
+                        02
+                    </div>
+<div class="flex flex-col items-start">
+<p class="text-base font-bold text-slate-900 dark:text-white">2회차</p>
+<p class="text-sm text-danger font-medium">납부기한 2024.02.15</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-base font-bold text-slate-900 dark:text-white">5,000,000원</span>
+<div class="flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5">
+<span class="material-symbols-outlined text-[14px] text-danger">error</span>
+<span class="text-xs font-semibold text-danger">연체</span>
+</div>
+</div>
+</button>
+<button class="group flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-primary/50 dark:hover:border-primary/50 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-lg">
+                        03
+                    </div>
+<div class="flex flex-col items-start">
+<p class="text-base font-bold text-slate-900 dark:text-white">3회차</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">납부기한 2024.03.15</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-base font-bold text-slate-900 dark:text-white">5,000,000원</span>
+<div class="flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5">
+<span class="material-symbols-outlined text-[14px] text-slate-500 dark:text-slate-300">schedule</span>
+<span class="text-xs font-semibold text-slate-600 dark:text-slate-300">미납</span>
+</div>
+</div>
+</button>
+<button class="group flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-primary/50 dark:hover:border-primary/50 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-lg">
+                        04
+                    </div>
+<div class="flex flex-col items-start">
+<p class="text-base font-bold text-slate-900 dark:text-white">4회차</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">납부기한 2024.04.15</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-base font-bold text-slate-900 dark:text-white">5,000,000원</span>
+<div class="flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5">
+<span class="material-symbols-outlined text-[14px] text-slate-500 dark:text-slate-300">schedule</span>
+<span class="text-xs font-semibold text-slate-600 dark:text-slate-300">미납</span>
+</div>
+</div>
+</button>
+</section>
+</main>
+<div class="fixed bottom-0 left-0 right-0 h-1 bg-transparent"></div>
+
+</body></html>

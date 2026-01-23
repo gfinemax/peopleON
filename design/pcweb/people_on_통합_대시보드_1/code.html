@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>People On Dashboard</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&amp;family=Public+Sans:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-dark": "#0b63be",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1f2937",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#374151",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "Noto Sans KR", "sans-serif"],
+                        "body": ["Public Sans", "Noto Sans KR", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for better look in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-white font-display overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden w-64 flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-[#111418] md:flex">
+<div class="flex h-full flex-col justify-between p-4">
+<div class="flex flex-col gap-6">
+<!-- Brand -->
+<div class="flex items-center gap-3 px-2">
+<div class="flex items-center justify-center rounded-lg bg-primary p-2">
+<span class="material-symbols-outlined text-white">apartment</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-lg font-bold leading-none tracking-tight">People On</h1>
+<p class="text-xs text-gray-500 dark:text-gray-400">통합 관리 시스템</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="group flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary dark:text-blue-400" href="#">
+<span class="material-symbols-outlined icon-filled">dashboard</span>
+<span class="text-sm font-medium">대시보드</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">회원 관리</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">자금/수납</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-sm font-medium">활동 타임라인</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined">send</span>
+<span class="text-sm font-medium">대량 문자 발송</span>
+</a>
+</nav>
+</div>
+<div class="flex flex-col gap-2">
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">설정</span>
+</a>
+<div class="mt-4 flex items-center gap-3 rounded-xl border border-border-light bg-gray-50 p-3 dark:border-border-dark dark:bg-white/5">
+<div class="h-10 w-10 overflow-hidden rounded-full bg-gray-200" data-alt="Admin user profile avatar with gradient background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDFInbEpqUq4QbihKFbh-zDFCU2Zp1aNF_N7qzrRrOw2JoaxKvvoqE7Apm9cmKzuSBQb4lY5N_n7VAC1IzUEdHTcLosR2NRGr7nU3ZpNr9GQNFNc4J6iOLJ0AAw_qItDR1SWPShUC7ttuhZVCqMieUleiELVL9XkChkLCK_xIbv2u7T3TAU90tT4P1hbut49zla3930rUu20F-_ahFJG7E78xr2vOgrV3lzgajkvg0_rHTP_uB5OQZ7-FFoOn-A6t9xcXlbM4sreNil'); background-size: cover; background-position: center;"></div>
+<div class="flex flex-col overflow-hidden">
+<p class="truncate text-sm font-bold text-gray-900 dark:text-white">김관리</p>
+<p class="truncate text-xs text-gray-500 dark:text-gray-400">admin@peopleon.co.kr</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex flex-1 flex-col overflow-y-auto bg-background-light dark:bg-background-dark">
+<!-- Top Navbar -->
+<header class="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-border-light bg-surface-light px-6 dark:border-border-dark dark:bg-background-dark/80 dark:backdrop-blur-md">
+<div class="flex items-center gap-4 md:hidden">
+<button class="text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-lg font-bold">People On</span>
+</div>
+<div class="hidden md:flex flex-1">
+<h2 class="text-lg font-semibold text-gray-800 dark:text-white">통합 대시보드</h2>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search -->
+<div class="relative hidden w-64 md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
+<input class="h-10 w-full rounded-lg border-none bg-gray-100 pl-10 pr-4 text-sm text-gray-900 focus:ring-2 focus:ring-primary dark:bg-surface-dark dark:text-white dark:placeholder-gray-500" placeholder="회원 이름 검색..." type="text"/>
+</div>
+<!-- Actions -->
+<button class="relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#111418]"></span>
+</button>
+<button class="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+<span class="material-symbols-outlined">calendar_month</span>
+</button>
+</div>
+</header>
+<!-- Content Container -->
+<div class="flex flex-col gap-8 p-6 lg:p-10">
+<!-- Page Heading -->
+<div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+<div>
+<h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">안녕하세요, 관리자님</h2>
+<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">오늘의 주요 현황 및 조치 필요 항목을 확인하세요.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 rounded-lg border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-border-dark dark:bg-surface-dark dark:text-white dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+                            보고서 다운로드
+                        </button>
+<button class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                            신규 회원 등록
+                        </button>
+</div>
+</div>
+<!-- KPI Stats Grid -->
+<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+<!-- Stat 1 -->
+<div class="flex flex-col rounded-xl border border-border-light bg-surface-light p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+<div class="mb-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">총 조합원</h3>
+</div>
+<span class="flex items-center text-xs font-medium text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined mr-1 text-[16px]">trending_up</span> +2.5%
+                            </span>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-3xl font-bold text-gray-900 dark:text-white">1,240</p>
+<span class="text-sm text-gray-500">명</span>
+</div>
+<p class="mt-2 text-xs text-gray-400">지난달 대비 32명 증가</p>
+</div>
+<!-- Stat 2 -->
+<div class="flex flex-col rounded-xl border border-border-light bg-surface-light p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+<div class="mb-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
+<span class="material-symbols-outlined">pie_chart</span>
+</div>
+<h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">조합원 현황</h3>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between text-xs">
+<span class="text-gray-600 dark:text-gray-300">1차 <span class="text-gray-400 ml-1">(45%)</span></span>
+<span class="font-bold text-gray-900 dark:text-white">558명</span>
+</div>
+<div class="flex h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+<div class="bg-primary h-full rounded-full" style="width: 45%"></div>
+</div>
+<div class="flex items-center justify-between text-xs mt-1">
+<span class="text-gray-600 dark:text-gray-300">지주 <span class="text-gray-400 ml-1">(30%)</span></span>
+<span class="font-bold text-gray-900 dark:text-white">372명</span>
+</div>
+<div class="flex h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+<div class="bg-purple-500 h-full rounded-full" style="width: 30%"></div>
+</div>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="flex flex-col rounded-xl border border-border-light bg-surface-light p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+<div class="mb-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">총 수납액</h3>
+</div>
+<span class="flex items-center text-xs font-medium text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined mr-1 text-[16px]">trending_up</span> +15.0%
+                            </span>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-3xl font-bold text-gray-900 dark:text-white">145.0</p>
+<span class="text-sm text-gray-500">억원</span>
+</div>
+<div class="mt-4 flex w-full gap-2">
+<div class="flex flex-col gap-1 w-1/2">
+<span class="text-[10px] uppercase text-gray-400">수납완료</span>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">92%</span>
+<div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
+<div class="h-full rounded-full bg-green-500" style="width: 92%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1 w-1/2">
+<span class="text-[10px] uppercase text-gray-400">미수납</span>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">8%</span>
+<div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
+<div class="h-full rounded-full bg-red-500" style="width: 8%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Section: Action Required & Activity -->
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+<!-- Action Required Table (2/3 width) -->
+<div class="flex flex-col rounded-xl border border-border-light bg-surface-light shadow-sm dark:border-border-dark dark:bg-surface-dark lg:col-span-2">
+<div class="flex items-center justify-between border-b border-border-light p-5 dark:border-border-dark">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500">warning</span>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">조치 필요 조합원</h3>
+<span class="ml-2 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500">High Risk</span>
+</div>
+<button class="text-sm font-medium text-primary hover:underline">전체 보기</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead class="bg-gray-50 text-gray-500 dark:bg-white/5 dark:text-gray-400">
+<tr>
+<th class="px-6 py-3 font-medium">이름 / 조합원 번호</th>
+<th class="px-6 py-3 font-medium">구분</th>
+<th class="px-6 py-3 font-medium">상태</th>
+<th class="px-6 py-3 font-medium text-right">미납액</th>
+<th class="px-6 py-3 font-medium text-center">조치</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark text-gray-700 dark:text-gray-300">
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-gray-900 dark:text-white">홍길동</span>
+<span class="text-xs text-gray-500">Mem-2023-089</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">1차</span>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">장기 미납</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
+                                            ₩3,500,000
+                                        </td>
+<td class="px-6 py-4 text-center">
+<button class="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-dark">납부 요청</button>
+</td>
+</tr>
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-gray-900 dark:text-white">이영희</span>
+<span class="text-xs text-gray-500">Mem-2023-102</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">지주</span>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">서류 미비</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
+                                            -
+                                        </td>
+<td class="px-6 py-4 text-center">
+<button class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-transparent dark:text-gray-300 dark:hover:bg-white/5">문자 발송</button>
+</td>
+</tr>
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-gray-900 dark:text-white">박철수</span>
+<span class="text-xs text-gray-500">Mem-2024-005</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">2차</span>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">미납</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
+                                            ₩1,200,000
+                                        </td>
+<td class="px-6 py-4 text-center">
+<button class="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-dark">납부 요청</button>
+</td>
+</tr>
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-gray-900 dark:text-white">최민수</span>
+<span class="text-xs text-gray-500">Mem-2023-311</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">1차</span>
+</td>
+<td class="px-6 py-4">
+<span class="rounded bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">계약 확인</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
+                                            -
+                                        </td>
+<td class="px-6 py-4 text-center">
+<button class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-transparent dark:text-gray-300 dark:hover:bg-white/5">확인 하기</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Activity Timeline (1/3 width) -->
+<div class="flex flex-col rounded-xl border border-border-light bg-surface-light shadow-sm dark:border-border-dark dark:bg-surface-dark">
+<div class="flex items-center justify-between border-b border-border-light p-5 dark:border-border-dark">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">최근 활동</h3>
+<button class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-white/5">
+<span class="material-symbols-outlined text-gray-500">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col p-5">
+<div class="relative flex gap-4 pb-8">
+<div class="flex flex-col items-center">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 ring-4 ring-white dark:bg-blue-900 dark:ring-surface-dark">
+<span class="material-symbols-outlined text-sm text-blue-600 dark:text-blue-300">sms</span>
+</div>
+<div class="h-full w-px bg-gray-200 dark:bg-gray-700"></div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-semibold text-gray-900 dark:text-white">납부 안내 문자 발송</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">미납 회원 24명에게 안내 메시지 발송 완료</p>
+<span class="text-[10px] font-medium text-gray-400">10분 전</span>
+</div>
+</div>
+<div class="relative flex gap-4 pb-8">
+<div class="flex flex-col items-center">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 ring-4 ring-white dark:bg-green-900 dark:ring-surface-dark">
+<span class="material-symbols-outlined text-sm text-green-600 dark:text-green-300">attach_money</span>
+</div>
+<div class="h-full w-px bg-gray-200 dark:bg-gray-700"></div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-semibold text-gray-900 dark:text-white">수납 확인: 김철수</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">3차 분담금 15,000,000원 입금 확인</p>
+<span class="text-[10px] font-medium text-gray-400">1시간 전</span>
+</div>
+</div>
+<div class="relative flex gap-4 pb-8">
+<div class="flex flex-col items-center">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 ring-4 ring-white dark:bg-purple-900 dark:ring-surface-dark">
+<span class="material-symbols-outlined text-sm text-purple-600 dark:text-purple-300">person_add</span>
+</div>
+<div class="h-full w-px bg-gray-200 dark:bg-gray-700"></div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-semibold text-gray-900 dark:text-white">신규 회원 등록</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">신규 지주 조합원 '이미자' 등록 완료</p>
+<span class="text-[10px] font-medium text-gray-400">3시간 전</span>
+</div>
+</div>
+<div class="relative flex gap-4">
+<div class="flex flex-col items-center">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 ring-4 ring-white dark:bg-orange-900 dark:ring-surface-dark">
+<span class="material-symbols-outlined text-sm text-orange-600 dark:text-orange-300">edit_document</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-semibold text-gray-900 dark:text-white">규약 변경 승인</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">관리자 승인 대기중</p>
+<span class="text-[10px] font-medium text-gray-400">어제</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

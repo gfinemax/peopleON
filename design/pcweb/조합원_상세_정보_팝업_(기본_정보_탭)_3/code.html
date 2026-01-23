@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Member Detail Modal - White Mode Folder Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3b82f6", 
+                        "slate-surface": "#F8FAFC", 
+                        "slate-border": "#E2E8F0",
+                        "text-main": "#1e293b",
+                        "text-muted": "#64748b",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'folder': '0 -4px 12px -2px rgba(0, 0, 0, 0.03)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .modal-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .modal-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+            border: 2px solid #ffffff;
+        }.tab-connector-left {background: radial-gradient(circle at top left, transparent 16px, #ffffff 16.5px);
+        }
+        .tab-connector-right {background: radial-gradient(circle at top right, transparent 16px, #ffffff 16.5px);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-200 font-display text-text-main min-h-screen flex flex-col overflow-hidden">
+<div class="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm transition-opacity flex justify-end">
+<div class="relative w-full md:w-1/2 h-full shadow-2xl overflow-hidden flex flex-col bg-slate-50 sm:rounded-l-2xl sm:my-0 sm:mr-0 sm:h-full border-l border-white/50">
+<div class="flex flex-col bg-slate-50 shrink-0 relative z-20">
+<div class="flex items-start justify-between px-8 pt-10 pb-6">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<h2 class="text-slate-900 text-2xl font-bold leading-tight tracking-tight">홍길동</h2>
+<span class="inline-flex items-center justify-center rounded-full bg-blue-100 border border-blue-200 px-2.5 py-0.5 text-blue-700 text-[11px] font-bold">
+                                조합장 추천
+                            </span>
+</div>
+<p class="text-text-muted text-sm font-normal">회원번호: <span class="text-slate-600 font-mono font-medium">2023-A-0045</span></p>
+</div>
+<button class="group p-2 rounded-full hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 transition-colors">close</span>
+</button>
+</div>
+<div class="px-8 pb-8">
+<div class="flex gap-2 flex-wrap">
+<div class="flex h-7 shrink-0 items-center justify-center gap-x-2 rounded-md bg-white px-3 border border-slate-200 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-slate-400">apartment</span>
+<p class="text-slate-600 text-xs font-semibold">101동 1004호</p>
+</div>
+<div class="flex h-7 shrink-0 items-center justify-center gap-x-2 rounded-md bg-white px-3 border border-slate-200 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-blue-500">verified</span>
+<p class="text-slate-600 text-xs font-semibold">1차 조합원</p>
+</div>
+<div class="flex h-7 shrink-0 items-center justify-center gap-x-2 rounded-md bg-white px-3 border border-slate-200 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-emerald-500">how_to_reg</span>
+<p class="text-slate-600 text-xs font-semibold">지주</p>
+</div>
+</div>
+</div>
+<div class="px-4 flex items-end overflow-x-auto hide-scrollbar select-none relative z-10 bg-slate-100 border-b border-white">
+<button class="relative z-20 group flex items-center justify-center min-w-[120px] pb-3 pt-3.5 px-6 outline-none">
+<div class="absolute bottom-0 -left-4 w-4 h-4 tab-connector-left z-10 pointer-events-none"></div>
+<div class="absolute inset-0 bg-white rounded-t-xl z-0 shadow-[0_-2px_10px_rgba(0,0,0,0.02)]"></div>
+<div class="absolute top-0 left-3 right-3 h-[3px] bg-blue-500 rounded-b-sm z-20"></div>
+<div class="absolute bottom-0 -right-4 w-4 h-4 tab-connector-right z-10 pointer-events-none"></div>
+<div class="relative z-20 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-blue-600">id_card</span>
+<p class="text-slate-800 text-sm font-bold tracking-tight">기본 정보</p>
+</div>
+</button>
+<button class="relative z-10 group flex items-center justify-center min-w-[110px] pb-3 pt-3.5 px-5 outline-none ml-1 -mb-[1px]">
+<div class="absolute inset-0 bg-slate-200 rounded-t-lg transform skew-x-1 group-hover:bg-slate-200/80 transition-colors border-t border-r border-l border-white/20"></div>
+<div class="relative z-10 flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px] text-slate-500">history</span>
+<p class="text-slate-600 text-xs font-bold">관리 이력</p>
+</div>
+</button>
+<button class="relative z-10 group flex items-center justify-center min-w-[110px] pb-3 pt-3.5 px-5 outline-none ml-1 -mb-[1px]">
+<div class="absolute inset-0 bg-slate-200 rounded-t-lg transform skew-x-1 group-hover:bg-slate-200/80 transition-colors border-t border-r border-l border-white/20"></div>
+<div class="relative z-10 flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px] text-slate-500">payments</span>
+<p class="text-slate-600 text-xs font-bold">납부 현황</p>
+</div>
+</button>
+<button class="relative z-10 group flex items-center justify-center min-w-[110px] pb-3 pt-3.5 px-5 outline-none ml-1 -mb-[1px]">
+<div class="absolute inset-0 bg-slate-200 rounded-t-lg transform skew-x-1 group-hover:bg-slate-200/80 transition-colors border-t border-r border-l border-white/20"></div>
+<div class="relative z-10 flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px] text-slate-500">folder_open</span>
+<p class="text-slate-600 text-xs font-bold">증빙 서류</p>
+</div>
+</button>
+<div class="absolute bottom-0 left-0 right-0 h-[1px] bg-white z-10"></div>
+</div>
+</div>
+<div class="modal-scroll flex-1 overflow-y-auto bg-white px-8 py-8 relative">
+<div class="mb-8 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50/50 p-5 shadow-sm border border-blue-100 relative overflow-hidden group">
+<div class="absolute -right-6 -top-6 w-32 h-32 bg-white rounded-full blur-2xl opacity-60"></div>
+<div class="flex items-center gap-2 mb-4 relative z-10">
+<div class="p-1 bg-white rounded-md shadow-sm">
+<span class="material-symbols-outlined text-blue-600 text-xl block">smart_toy</span>
+</div>
+<h3 class="text-slate-800 text-sm font-bold tracking-tight">AI 분석 인사이트</h3>
+</div>
+<div class="flex flex-wrap gap-2 relative z-10">
+<div class="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-100 px-3 py-1.5 shadow-sm">
+<span class="material-symbols-outlined text-red-500 text-[16px]">warning</span>
+<span class="text-red-700 text-xs font-bold">#강성민원</span>
+</div>
+<div class="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-3 py-1.5 shadow-sm">
+<span class="material-symbols-outlined text-blue-500 text-[16px]">thumb_up</span>
+<span class="text-blue-700 text-xs font-bold">#납부동의완료</span>
+</div>
+<div class="flex items-center gap-1.5 rounded-lg bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+<span class="material-symbols-outlined text-slate-500 text-[16px]">schedule</span>
+<span class="text-slate-600 text-xs font-bold">#평일오전연락선호</span>
+</div>
+</div>
+</div>
+<div class="bg-white">
+<h3 class="text-slate-900 text-lg font-bold mb-6 flex items-center gap-2">
+<span class="w-1.5 h-5 bg-slate-900 rounded-full"></span>
+                        상세 정보
+                    </h3>
+<div class="flex flex-col gap-0">
+<div class="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-slate-100 py-4 first:pt-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">smartphone</span>
+<p class="text-slate-500 text-xs font-semibold">휴대전화</p>
+</div>
+<p class="text-slate-800 text-sm font-medium">010-1234-5678</p>
+</div>
+<div class="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-slate-100 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">contact_phone</span>
+<p class="text-slate-500 text-xs font-semibold">비상연락망</p>
+</div>
+<div class="flex items-center gap-2">
+<p class="text-slate-800 text-sm font-medium">010-9876-5432</p>
+<span class="text-[10px] text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-bold">배우자</span>
+</div>
+</div>
+<div class="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-slate-100 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">cake</span>
+<p class="text-slate-500 text-xs font-semibold">생년월일</p>
+</div>
+<p class="text-slate-800 text-sm font-medium">1980.05.15 <span class="text-slate-400 text-xs ml-1 font-normal">(만 43세)</span></p>
+</div>
+<div class="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-slate-100 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">mail</span>
+<p class="text-slate-500 text-xs font-semibold">이메일</p>
+</div>
+<p class="text-slate-800 text-sm font-medium font-mono">hong.gd@example.com</p>
+</div>
+<div class="grid grid-cols-[100px_1fr] items-start gap-4 border-b border-slate-100 py-4">
+<div class="flex items-center gap-2 mt-0.5">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">home</span>
+<p class="text-slate-500 text-xs font-semibold">현주소</p>
+</div>
+<p class="text-slate-800 text-sm font-medium break-keep leading-relaxed">서울시 강남구 테헤란로 123, 래미안 101동 502호</p>
+</div>
+<div class="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-slate-100 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">family_restroom</span>
+<p class="text-slate-500 text-xs font-semibold">가족 관계</p>
+</div>
+<p class="text-slate-800 text-sm font-medium">배우자 1명, 자녀 2명 <span class="text-slate-400 font-normal">(함께 거주)</span></p>
+</div>
+<div class="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-slate-100 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">account_balance_wallet</span>
+<p class="text-slate-500 text-xs font-semibold">계좌 정보</p>
+</div>
+<p class="text-slate-800 text-sm font-medium font-mono">신한 110-333-444455 (예금주: 홍길동)</p>
+</div>
+<div class="flex flex-col gap-3 pt-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500 text-[18px]">sticky_note_2</span>
+<p class="text-slate-500 text-xs font-semibold">관리자 메모</p>
+</div>
+<div class="bg-amber-50 border border-amber-100 p-4 rounded-lg shadow-sm">
+<p class="text-slate-700 text-sm leading-relaxed break-keep">
+                                    주말 연락 요망. 2024년 5월까지 납부 유예 신청함. 상담 시 자녀 교육 문제로 이사 고려중이라고 언급하심.
+                                </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="shrink-0 flex items-center justify-between gap-3 p-6 border-t border-slate-100 bg-slate-50">
+<button class="flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 text-sm font-bold leading-normal px-4 py-3.5 transition-all hover:bg-slate-100 hover:text-slate-900 shadow-sm">
+<span class="truncate">닫기</span>
+</button>
+<button class="flex-[2] cursor-pointer items-center justify-center rounded-lg bg-slate-900 text-white text-sm font-bold leading-normal px-4 py-3.5 shadow-lg shadow-slate-300 transition-all hover:bg-slate-800 hover:shadow-slate-400/50">
+<div class="flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+<span class="truncate">정보 수정</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+
+</body></html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>People On 로그인</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#137fec",
+              "background-light": "#f6f7f8",
+              "background-dark": "#0f172a", // Deep charcoal/slate
+            },
+            fontFamily: {
+              "display": ["Public Sans", "Noto Sans KR", "sans-serif"],
+              "body": ["Public Sans", "Noto Sans KR", "sans-serif"],
+            },
+            borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom subtle geometric pattern for background */
+        .bg-pattern {
+            background-color: #0f172a;
+            background-image: 
+                linear-gradient(30deg, #1e293b 12%, transparent 12.5%, transparent 87%, #1e293b 87.5%, #1e293b),
+                linear-gradient(150deg, #1e293b 12%, transparent 12.5%, transparent 87%, #1e293b 87.5%, #1e293b),
+                linear-gradient(30deg, #1e293b 12%, transparent 12.5%, transparent 87%, #1e293b 87.5%, #1e293b),
+                linear-gradient(150deg, #1e293b 12%, transparent 12.5%, transparent 87%, #1e293b 87.5%, #1e293b),
+                linear-gradient(60deg, #1e293b77 25%, transparent 25.5%, transparent 75%, #1e293b77 75%, #1e293b77),
+                linear-gradient(60deg, #1e293b77 25%, transparent 25.5%, transparent 75%, #1e293b77 75%, #1e293b77);
+            background-size: 80px 140px;
+            background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
+            /* Blend it heavily so it's very subtle */
+            background-blend-mode: overlay;
+        }
+        
+        /* Glow effect for logo text */
+        .text-glow {
+            text-shadow: 0 0 15px rgba(19, 127, 236, 0.5);
+        }
+    </style>
+</head>
+<body class="relative flex h-full min-h-screen w-full flex-col bg-pattern dark:bg-background-dark text-slate-200 font-display overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col items-center justify-center p-4">
+<!-- Main Card Container -->
+<div class="w-full max-w-[440px] flex flex-col bg-[#1e293b] dark:bg-[#1e293b] rounded-xl border border-slate-700/50 shadow-2xl relative overflow-hidden">
+<!-- Top Gradient Line -->
+<div class="h-1 w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-80"></div>
+<div class="flex flex-col p-8 sm:p-10 gap-6">
+<!-- Header Section -->
+<div class="flex flex-col items-center justify-center gap-2 mb-2">
+<!-- Logo / Brand -->
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 text-primary">
+<span class="material-symbols-outlined text-2xl">apartment</span>
+</div>
+<h1 class="text-3xl font-bold tracking-tight text-white text-glow">People On</h1>
+</div>
+<p class="text-slate-400 text-sm font-medium tracking-wide">통합 CRM &amp; ERP 플랫폼</p>
+</div>
+<!-- Form Section -->
+<form class="flex flex-col gap-5 w-full" onsubmit="event.preventDefault();">
+<!-- ID Input -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-slate-300 ml-1" for="username">아이디</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-500 group-focus-within:text-primary transition-colors text-[20px]">person</span>
+</div>
+<input class="w-full h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder:text-slate-600 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 hover:border-slate-600" id="username" placeholder="아이디를 입력하세요" type="text"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-slate-300 ml-1" for="password">비밀번호</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-500 group-focus-within:text-primary transition-colors text-[20px]">lock</span>
+</div>
+<input class="w-full h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder:text-slate-600 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 hover:border-slate-600" id="password" placeholder="비밀번호를 입력하세요" type="password"/>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center mt-1">
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="relative flex items-center">
+<input class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-600 bg-[#0f172a] checked:border-primary checked:bg-primary transition-all focus:ring-2 focus:ring-primary/30 focus:ring-offset-0 focus:ring-offset-transparent" type="checkbox"/>
+<span class="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[12px] text-white opacity-0 peer-checked:opacity-100 pointer-events-none font-bold">check</span>
+</div>
+<span class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">아이디 저장</span>
+</label>
+</div>
+<!-- Submit Button -->
+<button class="w-full h-12 mt-2 bg-primary hover:bg-blue-600 active:bg-blue-700 text-white text-base font-bold rounded-lg shadow-lg shadow-primary/20 transition-all duration-200 flex items-center justify-center gap-2 group">
+<span>로그인</span>
+<span class="material-symbols-outlined text-lg group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+</button>
+</form>
+<!-- Footer Links -->
+<div class="flex items-center justify-center gap-4 text-sm text-slate-500 pt-2 border-t border-slate-700/50">
+<a class="hover:text-primary transition-colors" href="#">비밀번호 찾기</a>
+<span class="text-slate-700">|</span>
+<a class="hover:text-primary transition-colors" href="#">계정 신청 문의</a>
+</div>
+</div>
+</div>
+<!-- Bottom Copyright -->
+<div class="mt-8 text-slate-600 text-xs text-center">
+<p>© People On Corp. All rights reserved.</p>
+</div>
+</div>
+</body></html>

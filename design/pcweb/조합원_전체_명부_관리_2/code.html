@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>People On - Member Management</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;family=Noto+Sans+KR:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-dark": "#106cc9",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111418", 
+                        "surface-dark": "#1c2127",
+                        "surface-highlight": "#283039",
+                        "border-dark": "#3b4754",
+                        "text-secondary": "#9dabb9",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "Noto Sans KR", "sans-serif"],
+                        "sans": ["Public Sans", "Noto Sans KR", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Public Sans", "Noto Sans KR", sans-serif;
+        }
+        /* Custom scrollbar for table */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1c2127;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b4754;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #4b5966;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white antialiased min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex-none flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-border-dark bg-white dark:bg-background-dark px-6 py-3 z-20">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 flex items-center justify-center bg-primary rounded-lg text-white">
+<span class="material-symbols-outlined text-[20px]">people</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">People On</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-500 dark:text-text-secondary hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">대시보드</a>
+<a class="text-primary font-bold text-sm leading-normal transition-colors" href="#">조합원 관리</a>
+<a class="text-slate-500 dark:text-text-secondary hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">회계 관리</a>
+<a class="text-slate-500 dark:text-text-secondary hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">문서 관리</a>
+<a class="text-slate-500 dark:text-text-secondary hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">설정</a>
+</nav>
+<div class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-border-dark">
+<div class="text-right hidden lg:block">
+<p class="text-xs font-bold dark:text-white">김관리 매니저</p>
+<p class="text-[10px] dark:text-text-secondary">시스템 관리자</p>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 ring-2 ring-gray-100 dark:ring-border-dark cursor-pointer" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCaHxFPnsEOw8vTA4gg5ivL9_0tDee7oYvoqtPfetojOxUnYYG6jsa_U6tuz7TVofnOP9TreJIYGuHt4Owi8_rBjzH2DDllWBj03l6AOBbJoSPmNQ9mxP7THtsbYFlO2mujy47OOJHwTgT5ubmtoUErFyLxkmVyFx0BE6YzuH2ap_9wW7UTaiZgrqk2zKpHdqwox1r0LMUPSKkZr7OYsXSM4PppXi9OSOm7pftySHTTdlnqLT_YYza6ZU6ZBzcF4mm831JPsYEy3zXh");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar (Optional context, usually hidden on smaller screens, simplified for this view) -->
+<aside class="hidden xl:flex w-64 flex-col border-r border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-surface-dark overflow-y-auto">
+<div class="p-4">
+<p class="text-xs font-bold text-slate-400 dark:text-text-secondary uppercase tracking-wider mb-3 px-2">조합원 관리 메뉴</p>
+<ul class="flex flex-col gap-1">
+<li><a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm" href="#"><span class="material-symbols-outlined text-[18px]">list_alt</span>전체 명부 관리</a></li>
+<li><a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-surface-highlight text-slate-600 dark:text-slate-300 font-medium text-sm transition-colors" href="#"><span class="material-symbols-outlined text-[18px]">person_add</span>신규 가입 승인</a></li>
+<li><a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-surface-highlight text-slate-600 dark:text-slate-300 font-medium text-sm transition-colors" href="#"><span class="material-symbols-outlined text-[18px]">how_to_reg</span>자격 심사 관리</a></li>
+<li><a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-surface-highlight text-slate-600 dark:text-slate-300 font-medium text-sm transition-colors" href="#"><span class="material-symbols-outlined text-[18px]">label</span>태그/그룹 관리</a></li>
+</ul>
+</div>
+</aside>
+<!-- Main Scrollable Area -->
+<main class="flex-1 flex flex-col relative overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Sticky Page Header & Actions -->
+<div class="flex-none px-6 py-5 border-b border-gray-200 dark:border-border-dark bg-background-light dark:bg-background-dark z-10">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 mb-2">
+<a class="text-slate-500 dark:text-text-secondary text-sm font-medium hover:text-primary transition-colors" href="#">홈</a>
+<span class="text-slate-400 dark:text-text-secondary text-xs font-medium">/</span>
+<a class="text-slate-500 dark:text-text-secondary text-sm font-medium hover:text-primary transition-colors" href="#">조합원 관리</a>
+<span class="text-slate-400 dark:text-text-secondary text-xs font-medium">/</span>
+<span class="text-slate-800 dark:text-white text-sm font-medium">전체 명부 관리</span>
+</div>
+<div class="flex flex-wrap justify-between items-end gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">조합원 전체 명부 관리</h1>
+<p class="text-slate-500 dark:text-text-secondary text-sm">조합원의 상세 정보 조회 및 관리, 문자 발송 및 라벨 출력이 가능합니다.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 bg-white dark:bg-surface-highlight border border-gray-200 dark:border-border-dark text-slate-700 dark:text-white text-sm font-semibold hover:bg-gray-50 dark:hover:bg-[#323b46] transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]">file_upload</span>
+<span class="truncate">엑셀 일괄 등록</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span class="truncate">신규 조합원 등록</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Filters & Table Content -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+<div class="flex flex-col gap-6 max-w-[1400px] mx-auto">
+<!-- Search & Filter Card -->
+<div class="bg-white dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-border-dark p-5 shadow-sm">
+<div class="flex flex-col lg:flex-row gap-4 items-end">
+<!-- Search Input -->
+<div class="flex-1 w-full relative group">
+<label class="block text-xs font-semibold text-slate-500 dark:text-text-secondary mb-1.5 uppercase tracking-wide">통합 검색</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#111418] text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" placeholder="이름, 조합원번호(동호수), 전화번호 검색" type="text"/>
+</div>
+</div>
+<!-- Dropdown Filters -->
+<div class="w-full lg:w-auto flex flex-wrap gap-3">
+<div class="flex-1 min-w-[140px]">
+<label class="block text-xs font-semibold text-slate-500 dark:text-text-secondary mb-1.5 uppercase tracking-wide">차수 (Tier)</label>
+<div class="relative">
+<select class="w-full h-11 pl-3 pr-8 rounded-lg border border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#111418] text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer">
+<option>전체</option>
+<option>1차 조합원</option>
+<option>2차 조합원</option>
+<option>지주 조합원</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</span>
+</div>
+</div>
+<div class="flex-1 min-w-[140px]">
+<label class="block text-xs font-semibold text-slate-500 dark:text-text-secondary mb-1.5 uppercase tracking-wide">상태 (Status)</label>
+<div class="relative">
+<select class="w-full h-11 pl-3 pr-8 rounded-lg border border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#111418] text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer">
+<option>전체</option>
+<option>정상</option>
+<option>소송 진행중</option>
+<option>탈퇴 / 제명</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</span>
+</div>
+</div>
+<div class="flex-1 min-w-[180px]">
+<label class="block text-xs font-semibold text-slate-500 dark:text-text-secondary mb-1.5 uppercase tracking-wide">태그 (Tags)</label>
+<div class="relative">
+<input class="w-full h-11 pl-3 pr-4 rounded-lg border border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#111418] text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" placeholder="#태그 입력" type="text"/>
+</div>
+</div>
+</div>
+<!-- Search Button -->
+<button class="h-11 px-6 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 shadow-sm min-w-[100px]">
+<span>검색</span>
+</button>
+</div>
+<!-- Active Chips Area -->
+<div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-border-dark">
+<span class="text-xs font-medium text-slate-500 dark:text-text-secondary self-center mr-2">활성 필터:</span>
+<div class="flex items-center gap-1 pl-2 pr-1 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+<span>상태: 정상</span>
+<button class="hover:bg-primary/20 rounded-full p-0.5"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+<div class="flex items-center gap-1 pl-2 pr-1 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+<span>차수: 1차</span>
+<button class="hover:bg-primary/20 rounded-full p-0.5"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+<button class="text-xs text-slate-500 hover:text-slate-700 dark:text-text-secondary dark:hover:text-white underline ml-auto">필터 초기화</button>
+</div>
+</div>
+<!-- List Area -->
+<div class="flex flex-col gap-4">
+<!-- Toolbar -->
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-2">
+<span class="text-slate-900 dark:text-white font-bold">전체 1,248명</span>
+<span class="text-slate-500 dark:text-text-secondary text-sm">중 검색 결과 <span class="text-primary font-semibold">24</span>명</span>
+</div>
+<!-- Bulk Actions -->
+<div class="flex items-center gap-2">
+<button class="group flex items-center gap-2 h-9 px-3 rounded border border-gray-300 dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-surface-highlight text-slate-700 dark:text-gray-300 text-sm font-medium transition-all">
+<span class="material-symbols-outlined text-[18px] text-slate-500 dark:text-gray-400 group-hover:text-primary">sms</span>
+                                    문자 발송
+                                </button>
+<button class="group flex items-center gap-2 h-9 px-3 rounded border border-gray-300 dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-surface-highlight text-slate-700 dark:text-gray-300 text-sm font-medium transition-all">
+<span class="material-symbols-outlined text-[18px] text-slate-500 dark:text-gray-400 group-hover:text-primary">print</span>
+                                    라벨 출력
+                                </button>
+<button class="group flex items-center gap-2 h-9 px-3 rounded border border-gray-300 dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-surface-highlight text-slate-700 dark:text-gray-300 text-sm font-medium transition-all">
+<span class="material-symbols-outlined text-[18px] text-slate-500 dark:text-gray-400 group-hover:text-primary">download</span>
+                                    엑셀 다운로드
+                                </button>
+</div>
+</div>
+<!-- Table -->
+<div class="bg-white dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-border-dark shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-gray-50 dark:bg-[#151a21] text-xs uppercase text-slate-500 dark:text-text-secondary font-semibold border-b border-gray-200 dark:border-border-dark sticky top-0 z-10">
+<tr>
+<th class="p-4 w-12 text-center">
+<input class="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#111418] text-primary focus:ring-primary/20 dark:focus:ring-offset-surface-dark" type="checkbox"/>
+</th>
+<th class="p-4 min-w-[120px]">조합원번호 (동호수)</th>
+<th class="p-4 min-w-[100px]">성명</th>
+<th class="p-4 min-w-[80px]">차수</th>
+<th class="p-4 min-w-[100px]">상태</th>
+<th class="p-4 min-w-[140px]">연락처</th>
+<th class="p-4 min-w-[200px]">특이사항 (태그)</th>
+<th class="p-4 w-[100px] text-center">관리</th>
+</tr>
+</thead>
+<tbody class="text-sm divide-y divide-gray-100 dark:divide-border-dark">
+<!-- Row 1 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-highlight/50 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#111418] text-primary focus:ring-primary/20 dark:focus:ring-offset-surface-dark" type="checkbox"/>
+</td>
+<td class="p-4 font-medium text-slate-900 dark:text-white">104-1203</td>
+<td class="p-4">
+<a class="text-slate-900 dark:text-white font-semibold hover:text-primary dark:hover:text-primary hover:underline" href="#">홍길동</a>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300">1차</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 정상
+                                                </span>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300 font-mono">010-1234-5678</td>
+<td class="p-4">
+<div class="flex gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 dark:bg-border-dark text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-600">#납부약정</span>
+<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30">#강성</span>
+</div>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-surface-highlight">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-highlight/50 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#111418] text-primary focus:ring-primary/20 dark:focus:ring-offset-surface-dark" type="checkbox"/>
+</td>
+<td class="p-4 font-medium text-slate-900 dark:text-white">101-0501</td>
+<td class="p-4">
+<a class="text-slate-900 dark:text-white font-semibold hover:text-primary dark:hover:text-primary hover:underline" href="#">김철수</a>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300">지주</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> 소송
+                                                </span>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300 font-mono">010-9876-5432</td>
+<td class="p-4">
+<div class="flex gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 dark:bg-border-dark text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-600">#부재중</span>
+</div>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-surface-highlight">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-highlight/50 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#111418] text-primary focus:ring-primary/20 dark:focus:ring-offset-surface-dark" type="checkbox"/>
+</td>
+<td class="p-4 font-medium text-slate-900 dark:text-white">109-1102</td>
+<td class="p-4">
+<a class="text-slate-900 dark:text-white font-semibold hover:text-primary dark:hover:text-primary hover:underline" href="#">이영희</a>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300">2차</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 정상
+                                                </span>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300 font-mono">010-5555-4444</td>
+<td class="p-4">
+<div class="flex gap-2 flex-wrap">
+<!-- No Tags -->
+<span class="text-slate-400 text-xs">-</span>
+</div>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-surface-highlight">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-highlight/50 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#111418] text-primary focus:ring-primary/20 dark:focus:ring-offset-surface-dark" type="checkbox"/>
+</td>
+<td class="p-4 font-medium text-slate-900 dark:text-white">102-0304</td>
+<td class="p-4">
+<a class="text-slate-900 dark:text-white font-semibold hover:text-primary dark:hover:text-primary hover:underline" href="#">박민수</a>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300">1차</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> 탈퇴
+                                                </span>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300 font-mono">010-3333-2222</td>
+<td class="p-4">
+<div class="flex gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 dark:bg-border-dark text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-600">#환불완료</span>
+</div>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-surface-highlight">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-highlight/50 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#111418] text-primary focus:ring-primary/20 dark:focus:ring-offset-surface-dark" type="checkbox"/>
+</td>
+<td class="p-4 font-medium text-slate-900 dark:text-white">105-0801</td>
+<td class="p-4">
+<a class="text-slate-900 dark:text-white font-semibold hover:text-primary dark:hover:text-primary hover:underline" href="#">최지훈</a>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300">1차</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 정상
+                                                </span>
+</td>
+<td class="p-4 text-slate-600 dark:text-slate-300 font-mono">010-7777-8888</td>
+<td class="p-4">
+<div class="flex gap-2 flex-wrap">
+<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30">#임원</span>
+</div>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-surface-highlight">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-border-dark bg-white dark:bg-surface-dark">
+<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+<div>
+<p class="text-sm text-slate-600 dark:text-text-secondary">
+                                            총 <span class="font-medium text-slate-900 dark:text-white">24</span>개 결과 중 <span class="font-medium text-slate-900 dark:text-white">1</span> - <span class="font-medium text-slate-900 dark:text-white">10</span> 표시
+                                        </p>
+</div>
+<div>
+<nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+<a class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-500 dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-surface-highlight" href="#">
+<span class="sr-only">Previous</span>
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</a>
+<a aria-current="page" class="z-10 bg-primary/10 border-primary text-primary relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">1</a>
+<a class="bg-white dark:bg-surface-dark border-gray-300 dark:border-border-dark text-slate-500 dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-surface-highlight relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">2</a>
+<a class="bg-white dark:bg-surface-dark border-gray-300 dark:border-border-dark text-slate-500 dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-surface-highlight relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">3</a>
+<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-700 dark:text-text-secondary">...</span>
+<a class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-500 dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-surface-highlight" href="#">
+<span class="sr-only">Next</span>
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</a>
+</nav>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>조합원 프로필 및 타임라인</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-dark": "#1A2230",
+                        "surface-light": "#FFFFFF",
+                    },
+                    fontFamily: {
+                        "display": ["Noto Sans KR", "Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex flex-col antialiased">
+<header class="sticky top-0 z-50 bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center p-4 justify-between h-16">
+<button class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white">arrow_back_ios_new</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight">조합원 상세 정보</h2>
+<button class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-primary">edit</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-8">
+<section class="p-4 flex flex-col items-center gap-6 pt-6">
+<div class="relative">
+<div class="size-32 rounded-full p-1 bg-gradient-to-tr from-primary to-transparent">
+<div class="w-full h-full rounded-full bg-cover bg-center border-4 border-background-light dark:border-background-dark" data-alt="Portrait of a female member named Jane Doe" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDObXrZ8Ddehd4M-cfjj7khH1JC8_JBTVgEOvRyV0wWY7MxS6epmVh4NQtfknltugnn1bPDv1rkt1764P75Si9RsMHCwEx8h39Pi3tvJRYhM9bvwEvasabvHB8qcM5Yr__qdBR74geB95mnvZrkW056I8n_cf1jxoieANn7TO8KgtmNF1D7LDjtqM_l11AgBd_a7kuTWYkczTa9DE-UE9bjFm052dfcdrRjY_LRJSI_XdFMpcaGEozm9pwn5pvGm8K80-20UWC6DRA');">
+</div>
+</div>
+<div class="absolute -bottom-2 inset-x-0 flex justify-center">
+<span class="bg-amber-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-background-light dark:border-background-dark uppercase tracking-wider shadow-sm">
+                        골드 등급
+                    </span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 text-center w-full max-w-sm">
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white">김영희</h1>
+<div class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+<span>회원번호: <span class="font-mono text-primary font-medium">#88219</span></span>
+<span class="size-1 bg-slate-400 rounded-full"></span>
+<span>402호</span>
+</div>
+<div class="mt-2 flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
+<span class="material-symbols-outlined text-red-500 text-[18px]">gavel</span>
+<span class="text-red-600 dark:text-red-400 font-bold text-sm uppercase tracking-wide">소송 진행 중</span>
+</div>
+</div>
+</section>
+<section class="px-4 py-2">
+<div class="grid grid-cols-4 gap-3">
+<button class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
+<div class="size-12 rounded-full bg-primary/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary text-[24px]">call</span>
+</div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">전화</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
+<div class="size-12 rounded-full bg-primary/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary text-[24px]">chat_bubble</span>
+</div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">문자</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
+<div class="size-12 rounded-full bg-primary/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary text-[24px]">mail</span>
+</div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">이메일</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
+<div class="size-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/25 group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-white text-[24px]">add</span>
+</div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">상담 기록</span>
+</button>
+</div>
+</section>
+<section class="px-4 py-2">
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 shrink-0">
+<span class="material-symbols-outlined text-red-500 text-[16px]">warning</span>
+<span class="text-xs font-semibold text-red-600 dark:text-red-400">#강성민원</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 shrink-0">
+<span class="material-symbols-outlined text-amber-500 text-[16px]">handshake</span>
+<span class="text-xs font-semibold text-amber-600 dark:text-amber-400">#납부약정</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 shrink-0">
+<span class="material-symbols-outlined text-blue-500 text-[16px]">build</span>
+<span class="text-xs font-semibold text-blue-600 dark:text-blue-400">#보수요청</span>
+</div>
+</div>
+</section>
+<div class="h-2 bg-slate-100 dark:bg-[#0c1018] my-4"></div>
+<section class="px-4">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">활동 타임라인</h3>
+<div class="flex bg-slate-200 dark:bg-surface-dark p-1 rounded-lg">
+<button class="px-3 py-1 text-xs font-medium rounded bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white">전체</button>
+<button class="px-3 py-1 text-xs font-medium rounded text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">통화</button>
+<button class="px-3 py-1 text-xs font-medium rounded text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">방문</button>
+</div>
+</div>
+<div class="relative flex flex-col gap-6 pl-2">
+<div class="absolute left-[19px] top-2 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800"></div>
+<div class="relative pl-10 group">
+<div class="absolute left-0 top-1 size-10 rounded-full bg-slate-100 dark:bg-surface-dark border border-slate-200 dark:border-slate-700 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-blue-500 text-[20px]">phone_in_talk</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white">연체료 관련 논의</h4>
+<span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">오전 10:00</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">
+                        3월 미납금 관련하여 통화 진행. 금요일까지 납부하기로 약속함.
+                    </p>
+<div class="flex items-center gap-2 mt-1">
+<div class="size-5 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] text-white font-bold" title="Staff: Mike Ross">박</div>
+<span class="text-xs text-slate-400 dark:text-slate-500">기록: 박민수</span>
+</div>
+</div>
+</div>
+<div class="relative pl-10 group">
+<div class="absolute left-0 top-1 size-10 rounded-full bg-slate-100 dark:bg-surface-dark border border-slate-200 dark:border-slate-700 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-emerald-500 text-[20px]">location_on</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white">현장 방문: 402호</h4>
+<span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">어제</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">
+                        욕실 천장 누수 신고 건 점검. 시설관리팀에 통보 완료.
+                    </p>
+<div class="mt-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 flex gap-2 overflow-hidden">
+<div class="h-12 w-16 bg-cover bg-center rounded" data-alt="Close up of a water stain on a ceiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAsSrAqvWuT2ohviSAvWcpvNIR8vjf3yoJLlAzb6syAquuIgdXNq3A4vC5OG9p9htGI5B0E4X4JprL6yeHKtTx4GICtzdj4epOsWzKew55rOZxVWl8EiRgt-XBPqb8mN9QuBGtsFc2okswZ-Clj40QWpjgrt4zBKJfN8BxLx1SsZDTRp1inlQHbNS8WfYDDqCzIp8_BXWWUH6IYulU-GPKNJcBrezcEVLdg962a3CuHdJykk4T3JqSqpGe3IzjKMeqS-ghOdN8C4J4');"></div>
+<div class="h-12 w-16 bg-cover bg-center rounded" data-alt="Plumbing pipes in a bathroom wall" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCimNOVfXuMwn2Ru1JutZwGhddWmWAkPO7NebrWBGjGS3Vu8ZjogpFRv42-CuToOX7a14pC6XK3q9aT8FW-y5tlGRh0wGwg9m8_1-Hr97TP7oqzgSfjNQdAoGgcJB-hLe4zA1OEjrXzGI1VBWOBmq38d6KPdTkX81E6GwdLNTbZTTWjYYdr6jXen0A9K_Z_1NaQP8ubLAUJMrfJXV50KbemEETPKBlq4l1JdZVHH7C28WM-7bBTK77qqtNH1CosSGk5jwAjVxFGnYg');"></div>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<div class="size-5 rounded-full bg-pink-500 flex items-center justify-center text-[8px] text-white font-bold" title="Staff: Sarah Lee">이</div>
+<span class="text-xs text-slate-400 dark:text-slate-500">기록: 이영희</span>
+</div>
+</div>
+</div>
+<div class="relative pl-10 group">
+<div class="absolute left-0 top-1 size-10 rounded-full bg-slate-100 dark:bg-surface-dark border border-slate-200 dark:border-slate-700 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-purple-500 text-[20px]">mail</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white">납부 약정서 발송</h4>
+<span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">4월 12일</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">
+                        전자 서명을 위한 정식 납부 계획 문서를 이메일로 발송함.
+                    </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">시스템 자동 발송</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="h-20"></div>
+</main>
+<div class="fixed bottom-6 right-4 z-50">
+<button class="flex items-center justify-center size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</div>
+
+</body></html>
