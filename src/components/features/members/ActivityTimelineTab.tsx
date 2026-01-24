@@ -90,9 +90,9 @@ export function ActivityTimelineTab({ memberId }: ActivityTimelineTabProps) {
                         <button
                             key={value}
                             onClick={() => setFilter(value as typeof filter)}
-                            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${filter === value
-                                    ? 'bg-card shadow-sm text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground'
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all active:scale-95 ${filter === value
+                                ? 'bg-card shadow-sm text-foreground font-bold'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {label}
@@ -126,46 +126,48 @@ export function ActivityTimelineTab({ memberId }: ActivityTimelineTabProps) {
                         const isLast = idx === logs.length - 1;
 
                         return (
-                            <div key={log.id} className="relative pl-10 group">
-                                <div className={`absolute left-0 top-1 size-10 rounded-full ${typeInfo.bg} border border-border flex items-center justify-center z-10`}>
+                            <div key={log.id} className="relative pl-10 group min-h-[80px]">
+                                <div className={`absolute left-0 top-1 size-10 rounded-full ${typeInfo.bg} border border-border flex items-center justify-center z-10 shadow-sm`}>
                                     <MaterialIcon name={typeInfo.icon} size="md" className={typeInfo.color} />
                                 </div>
 
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col gap-1.5 pb-2">
                                     <div className="flex justify-between items-start">
-                                        <h4 className="text-sm font-semibold text-foreground">
+                                        <h4 className="text-sm font-bold text-foreground leading-tight">
                                             {log.summary?.split('\n')[0] || typeInfo.label}
                                         </h4>
-                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                        <span className="text-[11px] text-muted-foreground/60 whitespace-nowrap font-medium bg-muted/20 px-1.5 py-0.5 rounded">
                                             {formatDate(log.created_at)}
                                         </span>
                                     </div>
 
                                     {log.summary && log.summary.includes('\n') && (
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
                                             {log.summary.split('\n').slice(1).join('\n')}
                                         </p>
                                     )}
 
-                                    {log.direction && (
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${log.direction === 'Inbound'
-                                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                                : 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                                            }`}>
-                                            {log.direction === 'Inbound' ? '수신' : '발신'}
-                                        </span>
-                                    )}
-
-                                    {log.staff_name && (
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <div className="size-5 rounded-full bg-primary flex items-center justify-center text-[8px] text-white font-bold">
-                                                {log.staff_name.charAt(0)}
-                                            </div>
-                                            <span className="text-xs text-muted-foreground">
-                                                기록: {log.staff_name}
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                        {log.direction && (
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${log.direction === 'Inbound'
+                                                ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900/50'
+                                                : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-900/50'
+                                                }`}>
+                                                {log.direction === 'Inbound' ? '수신' : '발신'}
                                             </span>
-                                        </div>
-                                    )}
+                                        )}
+
+                                        {log.staff_name && (
+                                            <div className="flex items-center gap-1.5 bg-muted/30 pl-1 pr-2 py-0.5 rounded-full border border-border/50">
+                                                <div className="size-4 rounded-full bg-slate-500 flex items-center justify-center text-[8px] text-white font-bold">
+                                                    {log.staff_name.charAt(0)}
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground font-medium">
+                                                    {log.staff_name}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );

@@ -18,18 +18,18 @@ export default function ForgotPasswordPage() {
                 className="absolute top-4 right-4 p-2 rounded-lg bg-card/50 border border-border hover:bg-accent transition-colors z-10"
                 aria-label="Toggle theme"
             >
-                <MaterialIcon 
-                    name={theme === 'dark' ? 'light_mode' : 'dark_mode'} 
+                <MaterialIcon
+                    name={theme === 'dark' ? 'light_mode' : 'dark_mode'}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                     size="md"
                 />
             </button>
 
             {/* Main Card Container */}
-            <div className="w-full max-w-[440px] flex flex-col bg-card rounded-xl border border-border shadow-2xl relative overflow-hidden">
+            <div className="w-full max-w-[440px] flex flex-col bg-card rounded-lg border border-border shadow-2xl relative overflow-hidden">
                 {/* Top Gradient Line */}
                 <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
-                
+
                 <div className="flex flex-col p-8 sm:p-10 gap-6">
                     {/* Header Section */}
                     <div className="flex flex-col items-center justify-center gap-2 mb-2">
@@ -76,9 +76,9 @@ export default function ForgotPasswordPage() {
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <MaterialIcon 
-                                            name="email" 
-                                            className="text-muted-foreground group-focus-within:text-primary transition-colors" 
+                                        <MaterialIcon
+                                            name="email"
+                                            className="text-muted-foreground group-focus-within:text-primary transition-colors"
                                             size="md"
                                         />
                                     </div>
@@ -107,9 +107,9 @@ export default function ForgotPasswordPage() {
                                 ) : (
                                     <>
                                         <span>재설정 링크 발송</span>
-                                        <MaterialIcon 
-                                            name="send" 
-                                            className="group-hover:translate-x-0.5 transition-transform" 
+                                        <MaterialIcon
+                                            name="send"
+                                            className="group-hover:translate-x-0.5 transition-transform"
                                             size="md"
                                         />
                                     </>

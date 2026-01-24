@@ -38,16 +38,16 @@ export default async function SmsPage() {
                         {/* Left Panel: Recipient Selection */}
                         <div className="lg:col-span-1 space-y-6">
                             {/* Quick Stats */}
-                            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-                                <h3 className="text-sm font-semibold text-muted-foreground mb-4">발송 대상</h3>
+                            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+                                <h3 className="text-xs font-bold text-muted-foreground/40 mb-4 uppercase tracking-wider">발송 대상</h3>
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-muted-foreground">전체 조합원</span>
+                                        <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wide">전체 조합원</span>
                                         <span className="text-lg font-bold text-foreground">{memberCount || 0}명</span>
                                     </div>
                                     <div className="h-px bg-border" />
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-muted-foreground">선택된 대상</span>
+                                        <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wide">선택된 대상</span>
                                         <span className="text-lg font-bold text-primary">0명</span>
                                     </div>
                                 </div>
@@ -55,14 +55,14 @@ export default async function SmsPage() {
 
                             {/* Filter Options */}
                             <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
-                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                    <MaterialIcon name="filter_list" size="md" className="text-muted-foreground" />
+                                <h3 className="text-[13px] font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                                    <MaterialIcon name="filter_list" size="sm" className="text-muted-foreground/20" />
                                     수신자 필터
                                 </h3>
 
                                 {/* Tier Filter */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    <label className="text-xs font-bold text-muted-foreground/30 uppercase tracking-wider">
                                         차수 (Tier)
                                     </label>
                                     <select className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary">
@@ -75,7 +75,7 @@ export default async function SmsPage() {
 
                                 {/* Status Filter */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    <label className="text-xs font-bold text-muted-foreground/30 uppercase tracking-wider">
                                         상태 (Status)
                                     </label>
                                     <select className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary">
@@ -88,7 +88,7 @@ export default async function SmsPage() {
 
                                 {/* Payment Status Filter */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    <label className="text-xs font-bold text-muted-foreground/30 uppercase tracking-wider">
                                         납부 상태
                                     </label>
                                     <select className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary">
@@ -109,8 +109,8 @@ export default async function SmsPage() {
                         <div className="lg:col-span-2 space-y-6">
                             {/* Template Selection */}
                             <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
-                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                    <MaterialIcon name="description" size="md" className="text-muted-foreground" />
+                                <h3 className="text-[13px] font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                                    <MaterialIcon name="description" size="sm" className="text-muted-foreground/20" />
                                     메시지 템플릿
                                 </h3>
 
@@ -132,7 +132,7 @@ export default async function SmsPage() {
                                                 size="lg"
                                                 className="text-muted-foreground group-hover:text-primary transition-colors"
                                             />
-                                            <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                                            <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors tracking-tight">
                                                 {template.name}
                                             </span>
                                         </button>
@@ -143,11 +143,11 @@ export default async function SmsPage() {
                             {/* Message Content */}
                             <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                        <MaterialIcon name="sms" size="md" className="text-muted-foreground" />
+                                    <h3 className="text-[13px] font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                                        <MaterialIcon name="sms" size="sm" className="text-muted-foreground/20" />
                                         메시지 내용
                                     </h3>
-                                    <span className="text-xs text-muted-foreground">0 / 90자 (SMS)</span>
+                                    <span className="text-[11px] font-bold text-muted-foreground/30 tracking-tight">0 / 90자 (SMS)</span>
                                 </div>
 
                                 <textarea
@@ -157,11 +157,11 @@ export default async function SmsPage() {
 
                                 {/* Variable Chips */}
                                 <div className="flex flex-wrap gap-2">
-                                    <span className="text-xs text-muted-foreground mr-2">변수 삽입:</span>
+                                    <span className="text-[11px] font-bold text-muted-foreground/20 uppercase tracking-wider mr-2">변수 삽입:</span>
                                     {['{이름}', '{동호수}', '{미납액}', '{납부기한}'].map((variable) => (
                                         <button
                                             key={variable}
-                                            className="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                                            className="px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary text-[11px] font-bold hover:bg-primary/20 transition-all border border-primary/20 badge-glow-primary"
                                         >
                                             {variable}
                                         </button>
@@ -171,8 +171,8 @@ export default async function SmsPage() {
 
                             {/* Preview */}
                             <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
-                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                    <MaterialIcon name="preview" size="md" className="text-muted-foreground" />
+                                <h3 className="text-[13px] font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+                                    <MaterialIcon name="preview" size="sm" className="text-muted-foreground/20" />
                                     미리보기
                                 </h3>
 

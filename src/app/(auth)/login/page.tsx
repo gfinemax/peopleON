@@ -19,18 +19,18 @@ export default function LoginPage() {
                 className="absolute top-4 right-4 p-2 rounded-lg bg-card/50 border border-border hover:bg-accent transition-colors z-10"
                 aria-label="Toggle theme"
             >
-                <MaterialIcon 
-                    name={theme === 'dark' ? 'light_mode' : 'dark_mode'} 
+                <MaterialIcon
+                    name={theme === 'dark' ? 'light_mode' : 'dark_mode'}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                     size="md"
                 />
             </button>
 
             {/* Main Card Container */}
-            <div className="w-full max-w-[440px] flex flex-col bg-card rounded-xl border border-border shadow-2xl relative overflow-hidden">
+            <div className="w-full max-w-[440px] flex flex-col bg-card rounded-lg border border-border shadow-2xl relative overflow-hidden">
                 {/* Top Gradient Line */}
                 <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
-                
+
                 <div className="flex flex-col p-8 sm:p-10 gap-6">
                     {/* Header Section */}
                     <div className="flex flex-col items-center justify-center gap-2 mb-2">
@@ -65,9 +65,9 @@ export default function LoginPage() {
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <MaterialIcon 
-                                        name="person" 
-                                        className="text-muted-foreground group-focus-within:text-primary transition-colors" 
+                                    <MaterialIcon
+                                        name="person"
+                                        className="text-muted-foreground group-focus-within:text-primary transition-colors"
                                         size="md"
                                     />
                                 </div>
@@ -89,9 +89,9 @@ export default function LoginPage() {
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <MaterialIcon 
-                                        name="lock" 
-                                        className="text-muted-foreground group-focus-within:text-primary transition-colors" 
+                                    <MaterialIcon
+                                        name="lock"
+                                        className="text-muted-foreground group-focus-within:text-primary transition-colors"
                                         size="md"
                                     />
                                 </div>
@@ -108,8 +108,8 @@ export default function LoginPage() {
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-0 inset-y-0 px-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                                 >
-                                    <MaterialIcon 
-                                        name={showPassword ? 'visibility_off' : 'visibility'} 
+                                    <MaterialIcon
+                                        name={showPassword ? 'visibility_off' : 'visibility'}
                                         size="md"
                                     />
                                 </button>
@@ -124,8 +124,8 @@ export default function LoginPage() {
                                         type="checkbox"
                                         className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-input bg-background dark:bg-[#0f172a] checked:border-primary checked:bg-primary transition-all focus:ring-2 focus:ring-primary/30 focus:ring-offset-0"
                                     />
-                                    <MaterialIcon 
-                                        name="check" 
+                                    <MaterialIcon
+                                        name="check"
                                         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[12px] text-white opacity-0 peer-checked:opacity-100 pointer-events-none font-bold"
                                         size="xs"
                                     />
@@ -150,9 +150,9 @@ export default function LoginPage() {
                             ) : (
                                 <>
                                     <span>로그인</span>
-                                    <MaterialIcon 
-                                        name="arrow_forward" 
-                                        className="group-hover:translate-x-0.5 transition-transform" 
+                                    <MaterialIcon
+                                        name="arrow_forward"
+                                        className="group-hover:translate-x-0.5 transition-transform"
                                         size="md"
                                     />
                                 </>

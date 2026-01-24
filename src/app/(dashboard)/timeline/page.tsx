@@ -107,8 +107,8 @@ export default function TimelinePage() {
                             <button
                                 key={tab.value}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${tab.active
-                                        ? 'bg-primary text-white shadow-md'
-                                        : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent'
+                                    ? 'bg-primary text-white shadow-md'
+                                    : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent'
                                     }`}
                             >
                                 {tab.icon && <MaterialIcon name={tab.icon} size="sm" />}
@@ -118,7 +118,7 @@ export default function TimelinePage() {
                     </div>
 
                     {/* Timeline */}
-                    <div className="rounded-xl border border-border bg-card shadow-sm">
+                    <div className="rounded-lg border border-border bg-card shadow-sm">
                         <div className="p-6">
                             <div className="relative flex flex-col gap-8 pl-2">
                                 <div className="absolute left-[19px] top-2 bottom-4 w-0.5 bg-border" />
@@ -134,7 +134,7 @@ export default function TimelinePage() {
                                                 <h4 className="text-sm font-bold text-foreground">
                                                     {activity.title}
                                                 </h4>
-                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                <span className="text-[11px] font-bold text-muted-foreground/30 font-mono tracking-tight bg-white/5 px-2 py-0.5 rounded">
                                                     {activity.time}
                                                 </span>
                                             </div>

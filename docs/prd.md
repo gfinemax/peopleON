@@ -6,7 +6,7 @@
 | **버전** | **v2.1 (Schema Integrated)** |
 | **작성/관리** | Antigravity (PM: 파인맥스) |
 | **핵심 컨셉** | **"재무(ERP)와 관계(CRM)의 통합"**<br>현재 구축된 조합원 DB를 기반으로, 자금 흐름과 상담 이력을 연결하는 시스템 |
-| **플랫폼** | **PC Web (행정/회계/발송)** + **Mobile Web (현장조회/음성기록)** |
+| **플랫폼** | **Adaptive Web UI** (Desktop Admin + Smartphone optimized view) |
 
 ---
 

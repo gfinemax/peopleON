@@ -63,7 +63,7 @@ export default async function PaymentsPage({
                     {/* KPI Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Total Collection */}
-                        <div className="flex flex-col gap-2 rounded-xl p-6 bg-card border border-border shadow-sm">
+                        <div className="flex flex-col gap-2 rounded-lg p-6 bg-card border border-border shadow-sm">
                             <div className="flex justify-between items-start">
                                 <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
                                     총 수납액
@@ -82,7 +82,7 @@ export default async function PaymentsPage({
                         </div>
 
                         {/* Total Unpaid */}
-                        <div className="flex flex-col gap-2 rounded-xl p-6 bg-card border border-border shadow-sm relative overflow-hidden">
+                        <div className="flex flex-col gap-2 rounded-lg p-6 bg-card border border-border shadow-sm relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent pointer-events-none" />
                             <div className="flex justify-between items-start relative z-10">
                                 <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
@@ -104,7 +104,7 @@ export default async function PaymentsPage({
                         </div>
 
                         {/* Collection Rate */}
-                        <div className="flex flex-col gap-2 rounded-xl p-6 bg-card border border-border shadow-sm">
+                        <div className="flex flex-col gap-2 rounded-lg p-6 bg-card border border-border shadow-sm">
                             <div className="flex justify-between items-start">
                                 <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
                                     이번 달 수납률
@@ -129,7 +129,7 @@ export default async function PaymentsPage({
                     </div>
 
                     {/* Monthly Chart Section */}
-                    <div className="flex flex-col md:flex-row gap-6 rounded-xl p-6 bg-card border border-border shadow-sm">
+                    <div className="flex flex-col md:flex-row gap-6 rounded-lg p-6 bg-card border border-border shadow-sm">
                         <div className="flex flex-col gap-4 min-w-[240px]">
                             <div>
                                 <h3 className="text-foreground text-lg font-bold">월별 수납 진행률</h3>
@@ -202,7 +202,7 @@ export default async function PaymentsPage({
                     </div>
 
                     {/* Payments Table */}
-                    <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+                    <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left whitespace-nowrap">
                                 <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border">

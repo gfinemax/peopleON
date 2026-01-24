@@ -119,30 +119,30 @@
    DARK MODE
    ======================================== */
 .dark {
-    /* Background & Foreground */
-    --background: #111827;
-    --foreground: #f9fafb;
+    /* Background & Foreground - Deeper Navy/Gray */
+    --background: #0b0f1a;
+    --foreground: #f1f5f9;
 
-    /* Card */
-    --card: #1f2937;
-    --card-foreground: #f9fafb;
+    /* Card - More subtle and deeper */
+    --card: #151b2b;
+    --card-foreground: #f1f5f9;
 
     /* Popover */
-    --popover: #1f2937;
-    --popover-foreground: #f9fafb;
+    --popover: #151b2b;
+    --popover-foreground: #f1f5f9;
 
-    /* Primary - Brand Blue (Vibrant) */
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
+    /* Primary - More sophisticated blue */
+    --primary: #1d4ed8;
+    --primary-hover: #1e40af;
     --primary-foreground: #ffffff;
 
     /* Secondary */
-    --secondary: #374151;
-    --secondary-foreground: #f9fafb;
+    --secondary: #1e293b;
+    --secondary-foreground: #f1f5f9;
 
     /* Muted */
-    --muted: #374151;
-    --muted-foreground: #9ca3af;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
 
     /* Accent */
     --accent: #374151;
@@ -161,8 +161,8 @@
     --warning-foreground: #ffffff;
 
     /* Borders & Inputs */
-    --border: #374151;
-    --input: #374151;
+    --border: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.05);
     --ring: #3b82f6;
 
     /* Charts */
@@ -229,7 +229,21 @@
 
     /* Text glow effect for branding */
     .text-glow {
-        text-shadow: 0 0 15px rgba(19, 127, 236, 0.5);
+        text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Subtle glow for badges */
+    .badge-glow-success {
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+
+    .badge-glow-primary {
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+    }
+
+    /* Glassmorphism */
+    .glass-card {
+        @apply bg-card/60 backdrop-blur-md border border-white/5;
     }
 
     /* Subtle geometric background pattern for dark mode */

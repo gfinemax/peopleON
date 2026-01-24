@@ -42,7 +42,7 @@ export function Sidebar() {
                     {/* Brand & Toggle */}
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-3 px-1 overflow-hidden">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex-shrink-0 transition-transform duration-300">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 flex-shrink-0 transition-transform duration-300">
                                 <MaterialIcon name="apartment" size="md" />
                             </div>
                             {!isCollapsed && (
@@ -50,7 +50,7 @@ export function Sidebar() {
                                     <h1 className="text-base font-bold leading-none tracking-tight text-foreground truncate">
                                         People On
                                     </h1>
-                                    <p className="mt-1 text-[10px] font-medium text-muted-foreground truncate">
+                                    <p className="mt-1 text-[10px] font-bold text-muted-foreground/40 truncate uppercase tracking-wider">
                                         통합 관리 시스템
                                     </p>
                                 </div>
@@ -127,7 +127,7 @@ export function Sidebar() {
                     {/* User Profile */}
                     <div
                         className={cn(
-                            "flex items-center rounded-xl bg-sidebar-accent/60 border border-sidebar-border/50 hover:bg-sidebar-accent transition-colors overflow-hidden relative",
+                            "flex items-center rounded-lg bg-sidebar-accent/60 border border-sidebar-border/50 hover:bg-sidebar-accent transition-colors overflow-hidden relative",
                             isCollapsed ? "flex-col p-2 gap-2" : "gap-2 p-2"
                         )}
                     >
@@ -138,8 +138,8 @@ export function Sidebar() {
                         </div>
                         {!isCollapsed && (
                             <div className="flex flex-col overflow-hidden flex-1 animate-in fade-in slide-in-from-left-1">
-                                <p className="truncate text-[11px] font-bold text-foreground">김관리</p>
-                                <p className="truncate text-[9px] text-muted-foreground">admin@peopleon...</p>
+                                <p className="truncate text-xs font-bold text-foreground">김관리</p>
+                                <p className="truncate text-[9px] text-muted-foreground/40 font-mono tracking-tighter">admin@peopleon...</p>
                             </div>
                         )}
                         <form action={signOut} className={isCollapsed ? "w-full" : ""}>

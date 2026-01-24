@@ -41,29 +41,29 @@ export default async function MemberDetailPage({
                     {/* --- Left Sidebar: Profile Card --- */}
                     <div className="w-full lg:w-80 flex flex-col gap-6 flex-shrink-0">
                         {/* 1. Page Breadcrumbs for Mobile/Tablet context */}
-                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] mb-2">
+                        <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/40 uppercase tracking-wide mb-2 transition-opacity hover:opacity-100 opacity-60">
                             <span>홈</span> / <span>조합원 관리</span> / <span className="text-foreground">조합원 상세</span>
                         </div>
 
                         {/* 2. Main Profile Card */}
-                        <div className="flex flex-col rounded-3xl border border-border/50 bg-card p-10 relative overflow-hidden shadow-sm group">
+                        <div className="flex flex-col rounded-lg border border-border/50 bg-card p-10 relative overflow-hidden shadow-sm group">
                             <div className="absolute top-0 right-0 p-4">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 text-[10px] font-black text-success border border-success/20 uppercase tracking-widest">
-                                    <span className="size-1.5 rounded-full bg-success animate-pulse" />
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-[11px] font-bold text-success border border-success/30 uppercase tracking-wider badge-glow-success">
+                                    <span className="size-1.5 rounded-full bg-success" />
                                     {member.status} (Active)
                                 </span>
                             </div>
 
                             <div className="flex flex-col items-center text-center mt-4">
                                 <div className="relative mb-6">
-                                    <div className="size-32 rounded-3xl overflow-hidden border-4 border-border/30 shadow-2xl transition-transform group-hover:scale-105 duration-500">
+                                    <div className="size-32 rounded-lg overflow-hidden border-4 border-border/30 shadow-2xl transition-transform group-hover:scale-105 duration-500">
                                         <img
                                             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
                                             alt={member.name}
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 bg-primary text-white size-8 rounded-xl flex items-center justify-center shadow-lg border-2 border-card">
+                                    <div className="absolute -bottom-2 -right-2 bg-primary text-white size-8 rounded-lg flex items-center justify-center shadow-lg border-2 border-card">
                                         <MaterialIcon name="verified" size="sm" />
                                     </div>
                                 </div>
@@ -73,7 +73,7 @@ export default async function MemberDetailPage({
                                         ({member.name_en || 'Kim Chul-soo'})
                                     </span>
                                 </h2>
-                                <p className="text-xs font-black text-muted-foreground/60 uppercase tracking-[0.3em] mt-2">
+                                <p className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wide mt-2">
                                     {member.tier} 조합원 | {new Date(member.created_at).toLocaleDateString()} 가입
                                 </p>
                             </div>
@@ -86,9 +86,9 @@ export default async function MemberDetailPage({
                             </div>
 
                             <div className="mt-10 pt-10 border-t border-border/30">
-                                <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-6 px-1">세대 구성원</h3>
-                                <div className="flex items-center gap-4 rounded-2xl bg-muted/10 p-4 border border-border/20 group/member hover:bg-muted/20 transition-all">
-                                    <div className="size-11 rounded-xl overflow-hidden shadow-sm">
+                                <h3 className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider mb-6 px-1">세대 구성원</h3>
+                                <div className="flex items-center gap-4 rounded-lg bg-muted/10 p-4 border border-border/20 group/member hover:bg-muted/20 transition-all">
+                                    <div className="size-11 rounded-lg overflow-hidden shadow-sm">
                                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=family" alt="member" className="w-full h-full" />
                                     </div>
                                     <div className="flex flex-col">
@@ -100,7 +100,7 @@ export default async function MemberDetailPage({
                         </div>
 
                         {/* 3. Financial Summary Card */}
-                        <div className="flex flex-col rounded-3xl border border-border/50 bg-card p-8 shadow-sm">
+                        <div className="flex flex-col rounded-lg border border-border/50 bg-card p-8 shadow-sm">
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-sm font-black text-foreground">납부 요약</h3>
                                 <button className="text-[10px] font-black text-primary hover:underline underline-offset-4 uppercase tracking-widest">상세보기</button>
@@ -136,11 +136,11 @@ export default async function MemberDetailPage({
                                     <MaterialIcon name="edit_square" size="sm" />
                                     프로필 수정
                                 </button>
-                                <button className="flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-[11px] font-black text-foreground hover:bg-muted/10 transition-all uppercase tracking-widest shadow-sm">
+                                <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-[11px] font-black text-foreground hover:bg-muted/10 transition-all uppercase tracking-widest shadow-sm">
                                     <MaterialIcon name="picture_as_pdf" size="sm" />
                                     PDF 내보내기
                                 </button>
-                                <button className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-5 py-2.5 text-[11px] font-black text-destructive hover:bg-destructive/20 transition-all uppercase tracking-widest">
+                                <button className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-5 py-2.5 text-[11px] font-black text-destructive hover:bg-destructive/20 transition-all uppercase tracking-widest">
                                     <MaterialIcon name="block" size="sm" />
                                     비활성화
                                 </button>
@@ -155,7 +155,7 @@ export default async function MemberDetailPage({
                         </div>
 
                         {/* 3. New Activity Log Input */}
-                        <div className="flex flex-col rounded-3xl border border-border/50 bg-card/40 overflow-hidden shadow-sm">
+                        <div className="flex flex-col rounded-lg border border-border/50 bg-card/40 overflow-hidden shadow-sm">
                             <div className="p-6 bg-muted/5 flex items-center justify-between border-b border-border/30">
                                 <div className="flex items-center gap-3">
                                     <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -169,7 +169,7 @@ export default async function MemberDetailPage({
                                 <div className="relative group">
                                     <textarea
                                         placeholder="상담 내용이나 메모를 입력하세요..."
-                                        className="w-full h-32 bg-card/60 rounded-2xl border border-border p-6 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none placeholder:text-muted-foreground/40 font-medium"
+                                        className="w-full h-32 bg-card/60 rounded-lg border border-border p-6 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none placeholder:text-muted-foreground/40 font-medium"
                                     />
                                     <button className="absolute bottom-6 right-6 text-muted-foreground hover:text-primary transition-colors">
                                         <MaterialIcon name="mic" size="md" />
@@ -181,7 +181,7 @@ export default async function MemberDetailPage({
                                         <ActivityTypeBtn icon="group" label="방문" />
                                         <ActivityTypeBtn icon="sms" label="문자" />
                                     </div>
-                                    <button className="flex items-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-black text-white shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all">
+                                    <button className="flex items-center gap-2 rounded-lg bg-primary px-8 py-3 text-sm font-black text-white shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all">
                                         저장 <MaterialIcon name="send" size="sm" />
                                     </button>
                                 </div>
@@ -218,10 +218,10 @@ export default async function MemberDetailPage({
                             <div className="relative pt-4 text-center">
                                 <div className="absolute top-0 left-[21px] bottom-0 w-px bg-border/30 -z-10" />
                                 <div className="inline-flex flex-col items-center gap-1 group cursor-pointer">
-                                    <div className="size-11 rounded-2xl bg-card border border-border/50 flex items-center justify-center text-muted-foreground/40 group-hover:text-white transition-colors">
+                                    <div className="size-11 rounded-lg bg-card border border-border/50 flex items-center justify-center text-muted-foreground/40 group-hover:text-white transition-colors">
                                         <MaterialIcon name="history" size="sm" />
                                     </div>
-                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-2">이전 기록 3건 더 보기...</span>
+                                    <span className="text-sm font-black text-muted-foreground uppercase tracking-widest mt-2">이전 기록 3건 더 보기...</span>
                                 </div>
                             </div>
                         </div>
@@ -239,7 +239,7 @@ function ProfileInfoItem({ icon, label, value, isMono = false }: any) {
                 <MaterialIcon name={icon} size="sm" />
             </div>
             <div className="flex flex-col">
-                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">{label}</p>
+                <p className="text-[11px] font-bold text-muted-foreground/30 uppercase tracking-wider">{label}</p>
                 <p className={cn("text-sm font-bold text-foreground transition-colors group-hover/item:text-primary", isMono && "font-mono")}>{value}</p>
             </div>
         </div>
@@ -262,7 +262,7 @@ function TabItem({ label, active = false }: any) {
 function ActivityTypeBtn({ icon, label, active = false }: any) {
     return (
         <button className={cn(
-            "flex items-center gap-2 px-5 py-2.5 rounded-xl border font-black text-xs transition-all shadow-sm",
+            "flex items-center gap-2 px-5 py-2.5 rounded-lg border font-black text-xs transition-all shadow-sm",
             active
                 ? "bg-primary/10 border-primary text-primary shadow-sm"
                 : "border-border bg-card text-muted-foreground hover:bg-muted/10 hover:text-foreground"
@@ -286,18 +286,18 @@ function TimelineEntry({ type, title, manager, time, content, attachment, color 
             <div className="absolute top-12 bottom-0 left-[21px] w-px bg-border/30 -z-10" />
 
             <div className="flex flex-col items-center flex-shrink-0 pt-1">
-                <div className={cn("size-11 rounded-2xl border border-border/50 flex items-center justify-center shadow-lg transition-transform group-hover/entry:scale-110 duration-300", iconColors[color])}>
+                <div className={cn("size-11 rounded-lg border border-border/50 flex items-center justify-center shadow-lg transition-transform group-hover/entry:scale-110 duration-300", iconColors[color])}>
                     <MaterialIcon name={type} size="sm" />
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col rounded-3xl border border-border/50 bg-card/20 p-8 shadow-sm group-hover/entry:bg-card/30 transition-all border-l-4 border-l-transparent group-hover/entry:border-l-primary/40">
+            <div className="flex-1 flex flex-col rounded-lg border border-border/50 bg-card/20 p-8 shadow-sm group-hover/entry:bg-card/30 transition-all border-l-4 border-l-transparent group-hover/entry:border-l-primary/40">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
                     <div className="flex items-center gap-3">
-                        <h4 className="text-base font-black text-foreground">{title}</h4>
-                        <span className="text-[10px] font-black text-muted-foreground/40 bg-muted/10 px-2 py-0.5 rounded uppercase tracking-widest">{manager}</span>
+                        <h4 className="text-base font-bold text-foreground">{title}</h4>
+                        <span className="text-xs font-bold text-muted-foreground/30 bg-white/5 px-2 py-0.5 rounded uppercase tracking-wider">{manager}</span>
                     </div>
-                    <span className="text-[11px] font-bold text-muted-foreground/30 font-mono tracking-widest tracking-tight">{time}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground/20 font-mono tracking-tight">{time}</span>
                 </div>
                 <p className="text-sm font-medium text-muted-foreground/80 leading-relaxed max-w-2xl">{content}</p>
                 {attachment && (
@@ -305,7 +305,7 @@ function TimelineEntry({ type, title, manager, time, content, attachment, color 
                         <div className="size-10 bg-destructive/10 text-destructive rounded-lg flex items-center justify-center">
                             <MaterialIcon name="image" size="sm" />
                         </div>
-                        <span className="text-[11px] font-black text-muted-foreground group-hover/attach:text-foreground">{attachment}</span>
+                        <span className="text-sm font-black text-muted-foreground group-hover/attach:text-foreground">{attachment}</span>
                     </div>
                 )}
             </div>

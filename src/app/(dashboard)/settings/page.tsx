@@ -95,7 +95,7 @@ export default function SettingsPage() {
                                     )}
                                 >
                                     <div className={cn(
-                                        "relative aspect-[4/3] rounded-xl border-2 overflow-hidden bg-[#F8FAFC] p-2 transition-all",
+                                        "relative aspect-[4/3] rounded-lg border-2 overflow-hidden bg-[#F8FAFC] p-2 transition-all",
                                         theme === 'light' ? "border-primary ring-2 ring-primary/20" : "border-border group-hover:border-primary/50"
                                     )}>
                                         {/* Mini UI Representation */}
@@ -130,7 +130,7 @@ export default function SettingsPage() {
                                     )}
                                 >
                                     <div className={cn(
-                                        "relative aspect-[4/3] rounded-xl border-2 overflow-hidden bg-[#0F172A] p-2 transition-all",
+                                        "relative aspect-[4/3] rounded-lg border-2 overflow-hidden bg-[#0F172A] p-2 transition-all",
                                         theme === 'dark' ? "border-primary ring-2 ring-primary/20" : "border-border group-hover:border-primary/50"
                                     )}>
                                         {/* Mini UI Representation */}
@@ -165,7 +165,7 @@ export default function SettingsPage() {
                                     )}
                                 >
                                     <div className={cn(
-                                        "relative aspect-[4/3] rounded-xl border-2 overflow-hidden bg-slate-100 transition-all",
+                                        "relative aspect-[4/3] rounded-lg border-2 overflow-hidden bg-slate-100 transition-all",
                                         theme === 'system' ? "border-primary ring-2 ring-primary/20" : "border-border group-hover:border-primary/50"
                                     )}>
                                         <div className="absolute inset-0 flex">

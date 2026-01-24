@@ -49,17 +49,17 @@ export default async function MembersPage({
                 {/* 1. Header Area with Breadcrumbs & Title */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">
+                        <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/50 uppercase tracking-wide">
                             <span>홈</span>
-                            <span className="text-[10px]">/</span>
+                            <span>/</span>
                             <span>조합원 관리</span>
-                            <span className="text-[10px]">/</span>
+                            <span>/</span>
                             <span className="text-white">전체 명부 관리</span>
                         </div>
                         <h2 className="text-2xl font-extrabold tracking-tight text-white">
                             조합원 전체 명부 관리
                         </h2>
-                        <p className="text-muted-foreground font-medium text-xs">
+                        <p className="text-muted-foreground/60 font-medium text-sm tracking-tight opacity-70">
                             조합원의 상세 정보 조회 및 관리, 문자 발송 및 라벨 출력이 가능합니다.
                         </p>
                     </div>
@@ -79,10 +79,10 @@ export default async function MembersPage({
                 </div>
 
                 {/* 2. Filter Block */}
-                <div className="flex flex-col rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
-                        <div className="lg:col-span-4 space-y-1.5">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-0.5">통합 검색</label>
+                <div className="flex flex-col rounded-xl border border-border/40 bg-card/20 backdrop-blur-sm p-6 space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-5 items-end">
+                        <div className="lg:col-span-4 space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">통합 검색</label>
                             <div className="relative group">
                                 <MaterialIcon
                                     name="search"
@@ -97,8 +97,8 @@ export default async function MembersPage({
                                 />
                             </div>
                         </div>
-                        <div className="lg:col-span-2 space-y-1.5">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-0.5">차수 (TIER)</label>
+                        <div className="lg:col-span-2 space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">차수 (TIER)</label>
                             <Select defaultValue="all">
                                 <SelectTrigger className="h-10 rounded-lg bg-card/60 border-border w-full text-sm">
                                     <SelectValue placeholder="전체" />
@@ -111,8 +111,8 @@ export default async function MembersPage({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="lg:col-span-2 space-y-1.5">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-0.5">상태 (STATUS)</label>
+                        <div className="lg:col-span-2 space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">상태 (STATUS)</label>
                             <Select defaultValue="all">
                                 <SelectTrigger className="h-10 rounded-lg bg-card/60 border-border w-full text-sm">
                                     <SelectValue placeholder="전체" />
@@ -125,8 +125,8 @@ export default async function MembersPage({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="lg:col-span-3 space-y-1.5">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-0.5">태그 (TAGS)</label>
+                        <div className="lg:col-span-3 space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">태그 (TAGS)</label>
                             <input
                                 type="text"
                                 placeholder="#태그 입력"
@@ -144,15 +144,15 @@ export default async function MembersPage({
 
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">활성 필터:</span>
+                            <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider">활성 필터:</span>
                             <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-black text-primary border border-primary/20">
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-black text-primary border border-primary/20">
                                     상태: 정상
                                     <button className="hover:text-white transition-colors">
                                         <MaterialIcon name="close" size="xs" />
                                     </button>
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-black text-primary border border-primary/20">
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-black text-primary border border-primary/20">
                                     차수: 1차
                                     <button className="hover:text-white transition-colors">
                                         <MaterialIcon name="close" size="xs" />
@@ -160,7 +160,7 @@ export default async function MembersPage({
                                 </span>
                             </div>
                         </div>
-                        <button className="text-[11px] font-black text-muted-foreground/60 hover:text-white underline underline-offset-4 tracking-widest transition-colors">
+                        <button className="text-xs font-bold text-muted-foreground/40 hover:text-white underline underline-offset-4 tracking-wider transition-colors">
                             필터 초기화
                         </button>
                     </div>
@@ -173,15 +173,15 @@ export default async function MembersPage({
                         <span className="text-sm font-bold text-muted-foreground/60">중 검색 결과 <span className="text-primary">{searchResultCount}</span>명</span>
                     </div>
                     <div className="flex gap-2.5">
-                        <button className="flex items-center gap-2 rounded-xl border border-border bg-card/40 px-4 py-2 text-[11px] font-black text-white hover:bg-card transition-all uppercase tracking-widest">
+                        <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/20 px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider">
                             <MaterialIcon name="chat" size="sm" />
                             문자 발송
                         </button>
-                        <button className="flex items-center gap-2 rounded-xl border border-border bg-card/40 px-4 py-2 text-[11px] font-black text-white hover:bg-card transition-all uppercase tracking-widest">
+                        <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/20 px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider">
                             <MaterialIcon name="print" size="sm" />
                             라벨 출력
                         </button>
-                        <button className="flex items-center gap-2 rounded-xl border border-border bg-card/40 px-4 py-2 text-[11px] font-black text-white hover:bg-card transition-all uppercase tracking-widest">
+                        <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/20 px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider">
                             <MaterialIcon name="download" size="sm" />
                             엑셀 다운로드
                         </button>
@@ -189,7 +189,7 @@ export default async function MembersPage({
                 </div>
 
                 {/* 4. Table area */}
-                <div className="flex flex-col rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
+                <div className="flex flex-col rounded-lg border border-border/50 bg-card overflow-hidden shadow-sm">
                     {members && members.length > 0 ? (
                         <MembersTable
                             members={members}
@@ -205,7 +205,7 @@ export default async function MembersPage({
 
                 {/* 5. Pagination (Mock for now) */}
                 <div className="flex justify-center mt-4">
-                    <div className="flex items-center gap-2 rounded-xl bg-card border border-border/50 p-1 shadow-sm">
+                    <div className="flex items-center gap-2 rounded-lg bg-card border border-border/50 p-1 shadow-sm">
                         <button className="p-2 text-muted-foreground hover:text-white hover:bg-muted/10 rounded-lg transition-all">
                             <MaterialIcon name="chevron_left" size="sm" />
                         </button>

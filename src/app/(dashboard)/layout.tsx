@@ -1,5 +1,5 @@
 import { Sidebar } from '@/components/layout/Sidebar';
-import { BottomNav } from '@/components/layout/BottomNav';
+import { MobileNav } from '@/components/layout/MobileNav';
 
 export default function DashboardLayout({
     children,
@@ -21,7 +21,7 @@ export default function DashboardLayout({
                 </main>
 
                 {/* Mobile Bottom Navigation - Visible on small screens only */}
-                <BottomNav />
+                <MobileNav />
             </div>
         </div>
     );

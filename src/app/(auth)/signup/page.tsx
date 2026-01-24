@@ -30,7 +30,7 @@ export default function SignUpPage() {
     if (state.success) {
         return (
             <div className="min-h-screen flex items-center justify-center p-8 bg-[#0d1525]">
-                <div className="w-full max-w-md space-y-8 text-center bg-slate-900/50 border border-slate-700 rounded-2xl p-8 backdrop-blur-sm">
+                <div className="w-full max-w-md space-y-8 text-center bg-slate-900/50 border border-slate-700 rounded-lg p-8 backdrop-blur-sm">
                     <div className="flex justify-center">
                         <CheckCircle2 className="h-16 w-16 text-green-500" />
                     </div>
