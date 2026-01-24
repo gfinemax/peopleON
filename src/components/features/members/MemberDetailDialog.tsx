@@ -1,9 +1,10 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -16,12 +17,12 @@ interface Member {
     member_number: string;
     phone: string | null;
     email: string | null;
-    address: string | null;
+    address_legal: string | null;
     tier: string | null;
     status: string | null;
     is_registered: boolean;
     unit_group: string | null;
-    notes: string | null;
+    memo: string | null;
     tags?: string[] | null;
 }
 
@@ -47,14 +48,55 @@ export function MemberDetailDialog({
     const [formData, setFormData] = useState<Partial<Member>>({});
     const [activeTab, setActiveTab] = useState<TabType>('info');
 
+    // Draggable Logic
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const handlePointerMove = (e: PointerEvent) => {
+            if (isDragging) {
+                setPosition({
+                    x: e.clientX - dragStart.x,
+                    y: e.clientY - dragStart.y
+                });
+            }
+        };
+        const handlePointerUp = () => {
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+        }
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+        };
+    }, [isDragging, dragStart]);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        // Prevent drag if clicking buttons or inputs
+        if ((e.target as HTMLElement).closest('button, input, textarea, a')) return;
+
+        setIsDragging(true);
+        setDragStart({
+            x: e.clientX - position.x,
+            y: e.clientY - position.y
+        });
+    };
+
     useEffect(() => {
         if (open && memberId) {
+            setPosition({ x: 0, y: 0 });
             fetchMember(memberId);
+            // Default to 'info' as typically desired, or keep 'timeline' if debugging is done.
+            // Returning to 'info' for standard behavior, 'timeline' update            // Returning to default behavior
             setActiveTab('info');
         }
     }, [open, memberId]);
 
-    // Close button for mobile full screen
     const handleClose = () => {
         onOpenChange(false);
     };
@@ -89,8 +131,8 @@ export function MemberDetailDialog({
                 name: formData.name,
                 phone: formData.phone,
                 email: formData.email,
-                address: formData.address,
-                notes: formData.notes,
+                address_legal: formData.address_legal,
+                memo: formData.memo,
             })
             .eq('id', memberId);
 
@@ -103,318 +145,280 @@ export function MemberDetailDialog({
     };
 
     const tabs = [
-        { id: 'info' as TabType, label: '기본 정보' },
-        { id: 'timeline' as TabType, label: '관리 이력' },
-        { id: 'payment' as TabType, label: '납부 현황' },
+        { id: 'info' as TabType, label: '기본 정보', icon: 'person' },
+        { id: 'timeline' as TabType, label: '관리 이력', icon: 'history' },
+        { id: 'payment' as TabType, label: '납부 현황', icon: 'payments' },
     ];
+
+    if (!member && !loading) {
+        return (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogTitle className="sr-only">정보 없음</DialogTitle>
+                    <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                        <MaterialIcon name="error_outline" size="xl" className="opacity-50 mb-2" />
+                        <p>정보를 불러올 수 없습니다.</p>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full h-full max-w-none max-h-none h-screen sm:h-auto sm:max-h-[90vh] sm:max-w-2xl p-0 border-0 sm:border sm:border-border/50 bg-card rounded-none sm:rounded-lg shadow-none sm:shadow-2xl flex flex-col fixed inset-0 z-50 translate-x-0 translate-y-0 sm:fixed sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] gap-0">
-                <DialogHeader className="p-4 sm:p-6 pb-3 border-b border-border/10 justify-center sm:justify-start">
-                    <div className="flex items-center justify-between w-full">
-                        <button
-                            onClick={handleClose}
-                            className="sm:hidden -ml-2 p-2 rounded-full hover:bg-muted/10 transition-colors"
-                        >
-                            <MaterialIcon name="arrow_back_ios_new" size="sm" />
-                        </button>
-                        <DialogTitle className="text-lg sm:text-2xl font-black text-foreground tracking-tight flex-1 text-center sm:text-left">
-                            조합원 정보
-                        </DialogTitle>
+            {/* Added overflow-hidden to contain everything nicely */}
+            <DialogContent
+                className="w-full h-full max-w-none max-h-none h-screen sm:h-auto sm:max-h-[85vh] sm:max-w-2xl p-0 border-0 sm:border sm:border-white/[0.1] bg-[#0F151B] rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 backdrop-blur-xl"
+                style={{
+                    marginLeft: position.x,
+                    marginTop: position.y
+                }}
+            >
+
+                {/* 1. Header Area: Member Summary + Actions */}
+                <div
+                    className="shrink-0 px-6 pt-6 pb-5 flex items-start justify-between bg-[#0F151B] relative z-20 cursor-move select-none"
+                    onPointerDown={handlePointerDown}
+                >
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                            <DialogTitle className="text-white text-2xl font-bold leading-tight tracking-tight drop-shadow-md">
+                                {member?.name || 'Loading...'}
+                            </DialogTitle>
+                            {member && (
+                                <span className={cn(
+                                    "inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-sm",
+                                    member.status === '정상'
+                                        ? "bg-blue-500/20 border-blue-500/30 text-blue-300"
+                                        : "bg-gray-500/20 border-gray-500/30 text-gray-300"
+                                )}>
+                                    {member.status || '미정'}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-gray-400 text-sm font-normal">
+                            회원번호: <span className="text-gray-300 font-mono">{member?.member_number}</span>
+                            {member?.unit_group && <span className="text-gray-500 mx-2">|</span>}
+                            {member?.unit_group && <span className="text-gray-400">{member.unit_group}</span>}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                         {member && (
                             <Link
                                 href={`/members/${member.id}`}
-                                className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary-hover transition-colors uppercase tracking-wide"
+                                className="group p-2 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
+                                title="전체 페이지로 이동"
                             >
-                                전체 페이지 <MaterialIcon name="open_in_new" size="xs" />
+                                <MaterialIcon name="open_in_new" className="text-gray-400 group-hover:text-white transition-colors" size="sm" />
                             </Link>
                         )}
+                        <button
+                            onClick={handleClose}
+                            className="group p-2 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
+                        >
+                            <MaterialIcon name="close" className="text-gray-400 group-hover:text-white transition-colors" size="sm" />
+                        </button>
                     </div>
-                </DialogHeader>
+                </div>
 
-                {loading ? (
-                    <div className="flex-1 flex flex-col items-center justify-center py-12 gap-3">
-                        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center animate-pulse">
-                            <MaterialIcon name="refresh" className="text-primary animate-spin" size="sm" />
-                        </div>
-                        <p className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wide">데이터 로딩 중...</p>
-                    </div>
-                ) : member ? (
-                    <div className="flex-1 overflow-hidden flex flex-col">
-                        {/* Profile Header (Desktop) */}
-                        <div className="hidden sm:flex px-6 py-5 items-start justify-between">
-                            <div className="space-y-1.5">
-                                <div className="flex items-center gap-2.5">
-                                    <h2 className="text-2xl font-black text-foreground tracking-tight">{member.name}</h2>
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-0.5 text-[11px] font-bold text-success border border-success/30 uppercase tracking-wider badge-glow-success">
-                                        <span className="size-1.5 rounded-full bg-success" />
-                                        {member.status || '정상'}
-                                    </span>
-                                    <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold text-primary border border-primary/30 uppercase tracking-wider">
-                                        {member.tier || '1차'}
-                                    </span>
-                                </div>
-                                <p className="text-xs font-bold text-muted-foreground/60 tracking-widest">
-                                    권리증NO: <span className="text-foreground font-mono">{member.member_number}</span>
-                                </p>
-                            </div>
-                            <Button
-                                size="sm"
-                                className="rounded-lg bg-white/5 border border-white/10 h-10 px-4 text-xs font-bold text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all uppercase tracking-wide"
-                                onClick={() => setIsEditing(!isEditing)}
-                            >
-                                {isEditing ? '취소' : '수정'}
-                            </Button>
-                        </div>
+                {/* 2. Folder Tabs & Content Container */}
+                <div className="flex-1 flex flex-col min-h-0 relative px-0 pb-0 bg-[#0F151B]">
 
-                        {/* Profile Header (Mobile) - Matching Design */}
-                        <section className="sm:hidden flex flex-col items-center gap-6 pt-6 px-4 pb-4">
-                            <div className="relative">
-                                <div className="size-32 rounded-full p-1 bg-gradient-to-tr from-primary to-transparent">
-                                    <div className="w-full h-full rounded-full bg-muted border-4 border-card overflow-hidden">
-                                        {/* Placeholder for avatar image */}
-                                        <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
-                                            <span className="text-4xl font-black text-muted-foreground/50">{member.name.charAt(0)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="absolute -bottom-2 inset-x-0 flex justify-center">
-                                    <span className="bg-amber-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-card uppercase tracking-wider shadow-sm">
-                                        골드 등급
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center gap-2 text-center w-full">
-                                <h1 className="text-2xl font-bold text-foreground">{member.name}</h1>
-                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                    <span>회원번호: <span className="font-mono text-primary font-medium">#{member.member_number}</span></span>
-                                    <span className="size-1 bg-muted-foreground/40 rounded-full"></span>
-                                    <span>{member.unit_group || '402호'}</span>
-                                </div>
-                                <div className="mt-2 flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
-                                    <MaterialIcon name="gavel" className="text-red-500" size="sm" />
-                                    <span className="text-red-600 dark:text-red-400 font-bold text-sm uppercase tracking-wide">소송 진행 중</span>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Mobile: Quick Actions & Tags (Visible on Mobile Only or Adaptive) */}
-                        <div className="px-6 pb-2 sm:hidden flex flex-col gap-4">
-                            {/* Quick Actions Grid */}
-                            <div className="grid grid-cols-4 gap-3">
-                                <QuickActionButton icon="call" label="전화" />
-                                <QuickActionButton icon="chat_bubble" label="문자" />
-                                <QuickActionButton icon="mail" label="이메일" />
-                                <QuickActionButton icon="edit_note" label="기록" isPrimary />
-                            </div>
-
-                            {/* AI Tags Scroll */}
-                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-6 px-6">
-                                {(member.tags || ['#강성민원', '#납부약정', '#보수요청']).map((tag, i) => (
-                                    <span key={i} className={cn(
-                                        "flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 border",
-                                        tag.includes('강성') ? "bg-red-500/10 text-red-600 border-red-500/20" :
-                                            tag.includes('약정') ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
-                                                "bg-blue-500/10 text-blue-600 border-blue-500/20"
-                                    )}>
-                                        <MaterialIcon name={tag.includes('강성') ? 'warning' : tag.includes('약정') ? 'handshake' : 'build'} size="xs" />
-                                        {tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Navigation Tabs */}
-                        <div className="px-6 flex gap-3 border-b border-border/10">
-                            {tabs.map((tab) => (
+                    {/* Tabs Row */}
+                    <div className="flex items-end px-4 relative z-10">
+                        {tabs.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
-                                        "px-2 py-4 text-xs font-bold uppercase tracking-wider transition-all relative border-b-2 h-14",
-                                        activeTab === tab.id
-                                            ? "text-primary border-primary"
-                                            : "text-muted-foreground/30 border-transparent hover:text-foreground"
+                                        "relative group flex items-center justify-center min-w-[110px] pb-3 px-6 outline-none transition-all",
+                                        isActive ? "pt-3.5 z-20" : "pt-4 text-gray-500 hover:text-gray-300 z-10"
                                     )}
                                 >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Content Area */}
-                        <div className="flex-1 overflow-y-auto p-6 py-5 scrollbar-thin scrollbar-thumb-border/20">
-                            {activeTab === 'info' && (
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                                        <InfoField
-                                            icon="call"
-                                            label="전화번호"
-                                            isEditing={isEditing}
-                                            value={member.phone || '미입력'}
-                                            editElement={
-                                                <Input
-                                                    className="h-10 rounded-lg bg-muted/10 border-border"
-                                                    value={formData.phone || ''}
-                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                    placeholder="010-0000-0000"
-                                                />
-                                            }
-                                        />
-                                        <InfoField
-                                            icon="mail"
-                                            label="이메일"
-                                            isEditing={isEditing}
-                                            value={member.email || '미입력'}
-                                            editElement={
-                                                <Input
-                                                    className="h-10 rounded-lg bg-muted/10 border-border"
-                                                    value={formData.email || ''}
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    placeholder="email@example.com"
-                                                />
-                                            }
-                                        />
-                                        <div className="col-span-2">
-                                            <InfoField
-                                                icon="location_on"
-                                                label="주소"
-                                                isEditing={isEditing}
-                                                value={member.address || '미입력'}
-                                                editElement={
-                                                    <Input
-                                                        className="h-10 rounded-lg bg-muted/10 border-border"
-                                                        value={formData.address || ''}
-                                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                        placeholder="주소를 입력하세요"
-                                                    />
-                                                }
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <InfoField
-                                                icon="notes"
-                                                label="비고"
-                                                isEditing={isEditing}
-                                                value={member.notes || '메모 없음'}
-                                                isSecondary
-                                                editElement={
-                                                    <textarea
-                                                        className="w-full h-20 rounded-lg bg-muted/10 border border-border p-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
-                                                        value={formData.notes || ''}
-                                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                                        placeholder="메모를 입력하세요"
-                                                    />
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {isEditing && (
-                                        <div className="flex justify-end gap-2 pt-3 border-t border-border/10">
-                                            <Button
-                                                variant="ghost"
-                                                className="rounded-lg font-black text-xs uppercase"
-                                                onClick={() => setIsEditing(false)}
-                                            >
-                                                취소
-                                            </Button>
-                                            <Button
-                                                className="rounded-lg bg-primary px-6 font-black text-xs uppercase shadow-md shadow-primary/20"
-                                                onClick={handleSave}
-                                                disabled={saving}
-                                            >
-                                                {saving ? '저장 중...' : '변경 사항 저장'}
-                                            </Button>
-                                        </div>
-                                    )}
-
-                                    {!isEditing && (
+                                    {isActive ? (
                                         <>
-                                            <div className="h-px bg-border/20 w-full" />
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-muted-foreground/30 uppercase tracking-wide">등기여부:</span>
-                                                    <span className={cn(
-                                                        "px-2.5 py-1 rounded text-[10px] font-bold border tracking-wide",
-                                                        member.is_registered
-                                                            ? "bg-primary/10 text-primary border-primary/20"
-                                                            : "bg-muted/10 text-muted-foreground/40 border-border/20"
-                                                    )}>
-                                                        {member.is_registered ? '등기완료' : '미등기'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-muted-foreground/30 uppercase tracking-wide">동 그룹:</span>
-                                                    <span className="text-sm font-bold text-foreground/80">{member.unit_group || '미지정'}</span>
-                                                </div>
+                                            {/* Active Tab Backgrounds */}
+                                            <div className="absolute bottom-0 -left-4 w-4 h-4 z-10 pointer-events-none"
+                                                style={{ background: 'radial-gradient(circle at top left, transparent 16px, #1A2633 16.5px)' }} />
+                                            <div className="absolute inset-0 bg-[#1A2633] rounded-t-xl z-0 shadow-[-1px_-1px_0_rgba(255,255,255,0.05)]" />
+
+                                            {/* LIGHTING EFFECT (Blue Gradient Line) */}
+                                            <div className="absolute top-0 left-2 right-2 h-[2px] bg-gradient-to-r from-blue-400/0 via-blue-400 to-blue-400/0 opacity-70 z-20" />
+
+                                            <div className="absolute bottom-0 -right-4 w-4 h-4 z-10 pointer-events-none"
+                                                style={{ background: 'radial-gradient(circle at top right, transparent 16px, #1A2633 16.5px)' }} />
+
+                                            {/* Active Content */}
+                                            <div className="relative z-20 flex items-center gap-2">
+                                                <MaterialIcon
+                                                    name={tab.icon}
+                                                    className="text-[18px] text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                                />
+                                                <p className="text-white text-sm font-bold tracking-wide">{tab.label}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* Hover Effect */}
+                                            <div className="absolute inset-x-2 top-2 bottom-0 rounded-t-lg bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                            {/* Inactive Content */}
+                                            <div className="relative z-10 flex items-center gap-2">
+                                                <MaterialIcon name={tab.icon} className="text-[18px]" />
+                                                <p className="text-xs font-semibold">{tab.label}</p>
                                             </div>
                                         </>
                                     )}
+                                </button>
+                            );
+                        })}
+                        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#1A2633] z-0" />
+                    </div>
+
+                    {/* Content Box */}
+                    <div className="flex-1 bg-[#1A2633] relative z-0 overflow-hidden flex flex-col">
+                        <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-white/10">
+                            {loading ? (
+                                <div className="h-full flex flex-col items-center justify-center gap-3 opacity-50">
+                                    <MaterialIcon name="refresh" className="animate-spin" />
+                                    <span className="text-xs font-bold">로딩 중...</span>
                                 </div>
-                            )}
+                            ) : (
+                                <>
+                                    {activeTab === 'info' && member && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            {/* AI Insight Card */}
+                                            <div className="mb-8 rounded-xl bg-gradient-to-br from-[#233040] to-[#1e2836] p-5 shadow-lg border border-white/5 relative overflow-hidden group">
+                                                <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-colors"></div>
+                                                <div className="flex items-center gap-2 mb-4 relative z-10">
+                                                    <MaterialIcon name="smart_toy" className="text-blue-400 text-xl" />
+                                                    <h3 className="text-white text-sm font-bold tracking-wide">AI 분석 인사이트</h3>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 relative z-10">
+                                                    {(member.tags || ['#강성민원', '#납부약정']).map((tag, i) => (
+                                                        <div key={i} className={cn(
+                                                            "flex items-center gap-1.5 rounded-lg px-3 py-1.5 border",
+                                                            tag.includes('강성') ? "bg-red-500/10 border-red-500/20 text-red-200" :
+                                                                tag.includes('납부') ? "bg-blue-500/10 border-blue-500/20 text-blue-200" :
+                                                                    "bg-gray-700/50 border-gray-600/50 text-gray-300"
+                                                        )}>
+                                                            <MaterialIcon
+                                                                name={tag.includes('강성') ? 'warning' : tag.includes('납부') ? 'thumb_up' : 'schedule'}
+                                                                className={cn("text-[16px]", tag.includes('강성') ? "text-red-400" : tag.includes('납부') ? "text-blue-400" : "text-gray-400")}
+                                                            />
+                                                            <span className="text-xs font-bold">{tag}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
 
-                            {activeTab === 'timeline' && memberId && (
-                                <ActivityTimelineTab memberId={memberId} />
-                            )}
+                                            {/* Detail Info Section */}
+                                            <div className="bg-[#233040] rounded-xl shadow-sm border border-white/5 p-6">
+                                                <h3 className="text-white text-base font-bold mb-5 flex items-center gap-2">
+                                                    <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
+                                                    상세 정보
+                                                </h3>
+                                                <div className="flex flex-col gap-0">
+                                                    <InfoRow
+                                                        icon="smartphone" label="휴대전화"
+                                                        value={member.phone || '미입력'}
+                                                        isEditing={isEditing}
+                                                        editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />}
+                                                    />
+                                                    <InfoRow
+                                                        icon="mail" label="이메일"
+                                                        value={member.email || '미입력'}
+                                                        isEditing={isEditing}
+                                                        editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />}
+                                                    />
+                                                    <InfoRow
+                                                        icon="home" label="현주소"
+                                                        value={member.address_legal || '미입력'}
+                                                        isEditing={isEditing}
+                                                        editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.address_legal || ''} onChange={e => setFormData({ ...formData, address_legal: e.target.value })} />}
+                                                    />
 
-                            {activeTab === 'payment' && memberId && (
-                                <PaymentStatusTab memberId={memberId} memberName={member.name} />
+                                                    <div className="flex flex-col gap-3 pt-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <MaterialIcon name="sticky_note_2" className="text-yellow-500/70 text-[18px]" />
+                                                            <p className="text-gray-400 text-xs font-medium">관리자 메모</p>
+                                                        </div>
+                                                        {isEditing ? (
+                                                            <textarea
+                                                                className="w-full h-24 rounded-lg bg-[#1A2633] border border-white/10 p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-white resize-none"
+                                                                value={formData.memo || ''}
+                                                                onChange={e => setFormData({ ...formData, memo: e.target.value })}
+                                                            />
+                                                        ) : (
+                                                            <div className="bg-yellow-900/10 border border-yellow-500/20 p-4 rounded-lg">
+                                                                <p className="text-gray-200 text-sm leading-relaxed break-keep">
+                                                                    {member.memo || '메모가 없습니다.'}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons */}
+                                            <div className="shrink-0 flex items-center justify-between gap-3 pt-4">
+                                                {isEditing ? (
+                                                    <div className="flex gap-2 w-full justify-end">
+                                                        <Button variant="ghost" onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-white">취소</Button>
+                                                        <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20">
+                                                            {saving ? '저장 중...' : '저장 완료'}
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => setIsEditing(true)}
+                                                        className="w-full py-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 font-bold text-sm"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <MaterialIcon name="edit" size="sm" />
+                                                            정보 수정
+                                                        </div>
+                                                    </Button>
+                                                )}
+                                            </div>
+
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'timeline' && memberId && (
+                                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <ActivityTimelineTab memberId={memberId} />
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'payment' && memberId && (
+                                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <PaymentStatusTab memberId={memberId} memberName={member.name} />
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center p-20 gap-4">
-                        <MaterialIcon name="error_outline" size="xl" className="text-muted-foreground/20" />
-                        <p className="text-sm font-bold text-muted-foreground">조합원 정보를 불러올 수 없습니다.</p>
-                    </div>
-                )}
+                </div>
             </DialogContent>
         </Dialog>
     );
 }
 
-function InfoField({ icon, label, value, isEditing, editElement, isSecondary = false, isMono = false }: any) {
-    if (isEditing) {
-        return (
-            <div className="space-y-3">
-                <Label className="flex items-center gap-2 text-xs font-bold text-muted-foreground/30 uppercase tracking-wide ml-1">
-                    <MaterialIcon name={icon} size="xs" /> {label}
-                </Label>
-                {editElement}
-            </div>
-        );
-    }
-
+function InfoRow({ icon, label, value, isEditing, editElement }: any) {
     return (
-        <div className="space-y-1 group/field">
-            <h4 className="flex items-center gap-2 text-xs font-bold text-muted-foreground/30 uppercase tracking-wide ml-0.5">
-                <MaterialIcon name={icon} size="xs" className="opacity-40 group-hover/field:opacity-100 transition-opacity" /> {label}
-            </h4>
-            <div className={cn(
-                "text-sm tracking-tight pl-0.5 transition-colors",
-                isSecondary ? "text-muted-foreground/40 font-medium text-xs leading-relaxed" : "text-foreground group-hover/field:text-primary",
-                isMono && "font-mono"
-            )}>
-                {value}
+        <div className="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-white/5 py-4 last:border-0">
+            <div className="flex items-center gap-2">
+                <MaterialIcon name={icon} className="text-gray-500 text-[18px]" />
+                <p className="text-gray-400 text-xs font-medium">{label}</p>
             </div>
+            {isEditing ? editElement : (
+                <p className="text-gray-100 text-sm font-normal break-all">{value}</p>
+            )}
         </div>
-    );
-}
-
-function QuickActionButton({ icon, label, isPrimary }: any) {
-    return (
-        <button className="flex flex-col items-center gap-2 group">
-            <div className={cn(
-                "size-12 rounded-full flex items-center justify-center transition-transform group-active:scale-95",
-                isPrimary
-                    ? "bg-primary text-white shadow-lg shadow-primary/25"
-                    : "bg-primary/5 text-primary hover:bg-primary/10"
-            )}>
-                <MaterialIcon name={icon} size="sm" />
-            </div>
-            <span className="text-xs font-bold text-muted-foreground">{label}</span>
-        </button>
     );
 }

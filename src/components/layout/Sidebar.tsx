@@ -9,11 +9,11 @@ import { useState, useEffect } from 'react';
 
 const menuItems = [
     { name: '대시보드', href: '/', icon: 'dashboard' },
-    { name: '회원 관리', href: '/members', icon: 'group' },
+    { name: '조합원 관리', href: '/members', icon: 'group' },
     { name: '분담금 관리', href: '/payments', icon: 'payments' },
-    { name: '권리/환불 관리', href: '/finance', icon: 'account_balance' },
+    { name: '과거 권리증', href: '/finance', icon: 'account_balance' },
     { name: '활동 타임라인', href: '/timeline', icon: 'history' },
-    { name: '대량 문자 발송', href: '/sms', icon: 'send' },
+    { name: '부가관리기능', href: '/sms', icon: 'send' },
 ];
 
 export function Sidebar() {
@@ -124,37 +124,7 @@ export function Sidebar() {
                         {!isCollapsed && <span className="text-[12.5px] font-semibold group-hover:text-foreground animate-in fade-in slide-in-from-left-1">설정</span>}
                     </Link>
 
-                    {/* User Profile */}
-                    <div
-                        className={cn(
-                            "flex items-center rounded-lg bg-sidebar-accent/60 border border-sidebar-border/50 hover:bg-sidebar-accent transition-colors overflow-hidden relative",
-                            isCollapsed ? "flex-col p-2 gap-2" : "gap-2 p-2"
-                        )}
-                    >
-                        <div
-                            className="size-7 overflow-hidden rounded-full border border-sidebar-border bg-sidebar-accent flex items-center justify-center flex-shrink-0"
-                        >
-                            <MaterialIcon name="person" size="xs" className="text-muted-foreground" />
-                        </div>
-                        {!isCollapsed && (
-                            <div className="flex flex-col overflow-hidden flex-1 animate-in fade-in slide-in-from-left-1">
-                                <p className="truncate text-xs font-bold text-foreground">김관리</p>
-                                <p className="truncate text-[9px] text-muted-foreground/40 font-mono tracking-tighter">admin@peopleon...</p>
-                            </div>
-                        )}
-                        <form action={signOut} className={isCollapsed ? "w-full" : ""}>
-                            <button
-                                type="submit"
-                                title="로그아웃"
-                                className={cn(
-                                    "flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors",
-                                    isCollapsed ? "w-full p-1.5" : "p-1"
-                                )}
-                            >
-                                <MaterialIcon name="logout" size="sm" />
-                            </button>
-                        </form>
-                    </div>
+
                 </div>
             </div>
         </aside>

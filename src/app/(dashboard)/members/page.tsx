@@ -3,20 +3,14 @@ import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
 import Link from 'next/link';
 import { MembersTable } from '@/components/features/members/MembersTable';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
+import { MembersFilter } from '@/components/features/members/MembersFilter';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MembersPage({
     searchParams,
 }: {
-    searchParams: Promise<{ q?: string; sort?: string; order?: string }>;
+    searchParams: Promise<{ q?: string; sort?: string; order?: string; page?: string; tier?: string; status?: string; tag?: string }>;
 }) {
     const supabase = await createClient();
 
@@ -25,52 +19,109 @@ export default async function MembersPage({
     const query = params?.q || '';
     const sortField = params?.sort || 'member_number';
     const sortOrder = params?.order || 'asc';
+    const page = Number(params?.page) || 1;
+    const tier = params?.tier;
+    const status = params?.status;
+    const tag = params?.tag;
+    const pageSize = 30;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
     let queryBuilder = supabase
         .from('members')
-        .select('id, name, member_number, phone, tier, status, is_registered, unit_group');
+        .select('id, name, member_number, phone, tier, status, is_registered, unit_group, relationships(name, relation)', { count: 'exact' });
 
     if (query) {
-        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%`);
+        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%,phone.ilike.%${query}%`);
     }
 
-    const { data: members, error } = await queryBuilder
-        .order(sortField, { ascending: sortOrder === 'asc' })
-        .limit(200);
+    if (tier) {
+        queryBuilder = queryBuilder.eq('tier', tier);
+    }
 
-    const totalCount = 1248; // Mock value as per Image 0
-    const searchResultCount = members?.length || 0;
+    if (status) {
+        queryBuilder = queryBuilder.eq('status', status);
+    }
+
+    if (tag) {
+        queryBuilder = queryBuilder.contains('tags', [tag]);
+    }
+
+    const { data: members, count, error } = await queryBuilder
+        .order(sortField, { ascending: sortOrder === 'asc' })
+        .range(from, to);
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const startRange = Math.min((page - 1) * pageSize + 1, totalCount);
+    const endRange = Math.min(page * pageSize, totalCount);
+
+    // Pagination helpers
+    const getPageLink = (p: number) => {
+        const search = new URLSearchParams();
+        if (query) search.set('q', query);
+        if (sortField) search.set('sort', sortField);
+        if (sortOrder) search.set('order', sortOrder);
+        if (tier) search.set('tier', tier);
+        if (status) search.set('status', status);
+        if (tag) search.set('tag', tag);
+        search.set('page', p.toString());
+        return `/members?${search.toString()}`;
+    };
+
+    const renderPageNumbers = () => {
+        const pages = [];
+        const maxVisible = 5;
+        let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+        if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        if (totalPages === 0) return null;
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+                <Link
+                    key={i}
+                    href={getPageLink(i)}
+                    className={`size-8 flex items-center justify-center rounded border transition-all text-sm font-bold ${i === page
+                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.15)]'
+                        : 'border-white/[0.08] bg-[#161B22] text-gray-400 hover:text-white hover:border-white/20'
+                        }`}
+                >
+                    {i}
+                </Link>
+            );
+        }
+        return pages;
+    };
 
     return (
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
             <Header title="조합원 관리" />
 
-            <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
-                {/* 1. Header Area with Breadcrumbs & Title */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/50 uppercase tracking-wide">
-                            <span>홈</span>
-                            <span>/</span>
-                            <span>조합원 관리</span>
-                            <span>/</span>
-                            <span className="text-white">전체 명부 관리</span>
-                        </div>
-                        <h2 className="text-2xl font-extrabold tracking-tight text-white">
-                            조합원 전체 명부 관리
+            {/* 1. Fixed Top Section: Title + Action Bar */}
+            <div className="flex flex-col shrink-0 gap-0.5 px-4 lg:px-6 pt-2 lg:pt-4 pb-0 max-w-[1600px] mx-auto w-full">
+                {/* Title Area */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-0.5">
+                        <h2 className="text-xl font-extrabold tracking-tight text-white">
+                            조합원명부 관리
                         </h2>
-                        <p className="text-muted-foreground/60 font-medium text-sm tracking-tight opacity-70">
+                        <p className="text-muted-foreground/60 font-medium text-xs tracking-tight opacity-70">
                             조합원의 상세 정보 조회 및 관리, 문자 발송 및 라벨 출력이 가능합니다.
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="flex items-center gap-2 rounded-lg border border-border bg-card/40 px-4 py-2 text-sm font-bold text-white hover:bg-card transition-all shadow-sm">
+                        <button className="flex items-center gap-2 rounded-lg border border-border bg-card/40 px-3 py-2 text-xs font-bold text-white hover:bg-card transition-all shadow-sm h-9">
                             <MaterialIcon name="upload_file" size="sm" />
                             엑셀 일괄 등록
                         </button>
                         <Link
                             href="/members?action=new"
-                            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all"
+                            className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all h-9"
                         >
                             <MaterialIcon name="add" size="sm" />
                             신규 조합원 등록
@@ -78,146 +129,73 @@ export default async function MembersPage({
                     </div>
                 </div>
 
-                {/* 2. Filter Block */}
-                <div className="flex flex-col rounded-xl border border-border/40 bg-card/20 backdrop-blur-sm p-6 space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-5 items-end">
-                        <div className="lg:col-span-4 space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">통합 검색</label>
-                            <div className="relative group">
-                                <MaterialIcon
-                                    name="search"
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors font-bold"
-                                    size="sm"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="이름, 조합원번호(동호수), 전화번호 검색"
-                                    className="h-10 w-full rounded-lg border border-border bg-card/60 pl-10 pr-4 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                                    defaultValue={query}
-                                />
-                            </div>
-                        </div>
-                        <div className="lg:col-span-2 space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">차수 (TIER)</label>
-                            <Select defaultValue="all">
-                                <SelectTrigger className="h-10 rounded-lg bg-card/60 border-border w-full text-sm">
-                                    <SelectValue placeholder="전체" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">전체</SelectItem>
-                                    <SelectItem value="1">1차</SelectItem>
-                                    <SelectItem value="2">2차</SelectItem>
-                                    <SelectItem value="land">지주</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="lg:col-span-2 space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">상태 (STATUS)</label>
-                            <Select defaultValue="all">
-                                <SelectTrigger className="h-10 rounded-lg bg-card/60 border-border w-full text-sm">
-                                    <SelectValue placeholder="전체" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">전체</SelectItem>
-                                    <SelectItem value="normal">정상</SelectItem>
-                                    <SelectItem value="pending">탈퇴예정</SelectItem>
-                                    <SelectItem value="legal">소송중</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="lg:col-span-3 space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">태그 (TAGS)</label>
-                            <input
-                                type="text"
-                                placeholder="#태그 입력"
-                                className="h-10 w-full rounded-lg border border-border bg-card/60 px-4 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all font-mono"
-                            />
-                        </div>
-                        <div className="lg:col-span-1">
-                            <button className="h-10 w-full rounded-lg bg-primary text-white font-black text-sm hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all">
-                                검색
-                            </button>
-                        </div>
-                    </div>
+                {/* 2. Filter Block (Fixed) - Client Component */}
+                <MembersFilter />
 
-                    <div className="h-px bg-border/20 w-full" />
-
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider">활성 필터:</span>
-                            <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-black text-primary border border-primary/20">
-                                    상태: 정상
-                                    <button className="hover:text-white transition-colors">
-                                        <MaterialIcon name="close" size="xs" />
-                                    </button>
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-black text-primary border border-primary/20">
-                                    차수: 1차
-                                    <button className="hover:text-white transition-colors">
-                                        <MaterialIcon name="close" size="xs" />
-                                    </button>
-                                </span>
-                            </div>
-                        </div>
-                        <button className="text-xs font-bold text-muted-foreground/40 hover:text-white underline underline-offset-4 tracking-wider transition-colors">
-                            필터 초기화
-                        </button>
-                    </div>
-                </div>
-
-                {/* 3. Table Action Bar */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {/* 3. Table Action Bar (Fixed) */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-0.5 pb-0">
                     <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-black text-white whitespace-nowrap">전체 {totalCount.toLocaleString()}명</span>
-                        <span className="text-sm font-bold text-muted-foreground/60">중 검색 결과 <span className="text-primary">{searchResultCount}</span>명</span>
+                        <span className="text-lg font-black text-white whitespace-nowrap">전체 {totalCount.toLocaleString()}명</span>
+                        <span className="text-xs font-bold text-muted-foreground/60">중 검색 결과 <span className="text-primary">{count || 0}</span>명</span>
                     </div>
-                    <div className="flex gap-2.5">
-                        <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/20 px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider">
+                    <div className="flex gap-2">
+                        <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
                             <MaterialIcon name="chat" size="sm" />
                             문자 발송
                         </button>
-                        <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/20 px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider">
+                        <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
                             <MaterialIcon name="print" size="sm" />
                             라벨 출력
                         </button>
-                        <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/20 px-4 py-2.5 text-xs font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider">
+                        <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
                             <MaterialIcon name="download" size="sm" />
                             엑셀 다운로드
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* 4. Table area */}
-                <div className="flex flex-col rounded-lg border border-border/50 bg-card overflow-hidden shadow-sm">
+            {/* 4. Unified List Box (Table + Pagination) */}
+            <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-white/[0.08] bg-card overflow-hidden shadow-sm mx-4 lg:mx-6 mb-4">
+                {/* Scrollable Table Area - Logic moved to MembersTable for sticky support */}
+                <div className="flex-1 min-h-0 overflow-hidden">
                     {members && members.length > 0 ? (
                         <MembersTable
                             members={members}
                             tableKey={JSON.stringify(params)}
+                            startIndex={from}
                         />
                     ) : (
-                        <div className="h-64 flex flex-col items-center justify-center text-muted-foreground gap-4">
+                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 py-12">
                             <MaterialIcon name="search_off" size="xl" className="opacity-20" />
                             <p className="font-bold">검색 결과가 없습니다.</p>
                         </div>
                     )}
                 </div>
 
-                {/* 5. Pagination (Mock for now) */}
-                <div className="flex justify-center mt-4">
-                    <div className="flex items-center gap-2 rounded-lg bg-card border border-border/50 p-1 shadow-sm">
-                        <button className="p-2 text-muted-foreground hover:text-white hover:bg-muted/10 rounded-lg transition-all">
-                            <MaterialIcon name="chevron_left" size="sm" />
-                        </button>
-                        <div className="flex items-center px-1">
-                            <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white font-black text-sm shadow-lg shadow-primary/20">1</button>
-                            <button className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/10 font-bold text-sm transition-all">2</button>
-                            <button className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/10 font-bold text-sm transition-all">3</button>
-                            <span className="w-9 h-9 flex items-center justify-center text-muted-foreground/40 font-bold">...</span>
+                {/* Fixed Pagination Footer */}
+                <div className="shrink-0 z-20 bg-[#161B22] border-t border-white/[0.08]">
+                    <div className="px-6 py-3 flex items-center justify-between">
+                        <p className="text-xs text-gray-400">
+                            총 <span className="font-bold text-white">{totalCount.toLocaleString()}개</span> 결과 중 <span className="text-white">{startRange}-{endRange}</span> 표시
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <Link
+                                href={getPageLink(Math.max(1, page - 1))}
+                                className={`size-7 flex items-center justify-center rounded border border-white/[0.08] bg-[#161B22] text-gray-400 hover:text-white hover:border-white/20 transition-all ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+                            >
+                                <MaterialIcon name="chevron_left" size="sm" />
+                            </Link>
+
+                            {renderPageNumbers()}
+
+                            <Link
+                                href={getPageLink(Math.min(totalPages, page + 1))}
+                                className={`size-7 flex items-center justify-center rounded border border-white/[0.08] bg-[#161B22] text-gray-400 hover:text-white hover:border-white/20 transition-all ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+                            >
+                                <MaterialIcon name="chevron_right" size="sm" />
+                            </Link>
                         </div>
-                        <button className="p-2 text-muted-foreground hover:text-white hover:bg-muted/10 rounded-lg transition-all">
-                            <MaterialIcon name="chevron_right" size="sm" />
-                        </button>
                     </div>
                 </div>
             </div>
