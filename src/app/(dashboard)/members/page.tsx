@@ -211,11 +211,17 @@ export default async function MembersPage({
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 py-12">
                             {debugError ? (
-                                <div className="text-center p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-lg">
-                                    <p className="text-red-500 font-bold mb-2">데이터 로딩 오류</p>
-                                    <p className="text-xs text-red-300 font-mono text-left whitespace-pre-wrap break-all">
-                                        {JSON.stringify(debugError, null, 2)}
-                                    </p>
+                                <div className="text-center p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-lg text-left">
+                                    <p className="text-red-500 font-bold mb-2">데이터 로딩 오류 상세</p>
+                                    <div className="text-xs text-red-300 font-mono whitespace-pre-wrap break-all bg-black/50 p-4 rounded">
+                                        <div className="mb-2 text-white font-bold">Error Message:</div>
+                                        {debugError instanceof Error ? debugError.message : (debugError?.message || 'No message detected')}
+
+                                        <div className="mt-4 mb-2 text-white font-bold">Stack / Details:</div>
+                                        {debugError instanceof Error
+                                            ? debugError.stack
+                                            : JSON.stringify(debugError, null, 2)}
+                                    </div>
                                 </div>
                             ) : (
                                 <>
