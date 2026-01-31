@@ -12,45 +12,63 @@ export default async function MembersPage({
 }: {
     searchParams: Promise<{ q?: string; sort?: string; order?: string; page?: string; tier?: string; status?: string; tag?: string }>;
 }) {
-    const supabase = await createClient();
-
-    // In Next.js 16, searchParams is a Promise
-    const params = await searchParams;
-    const query = params?.q || '';
-    const sortField = params?.sort || 'member_number';
-    const sortOrder = params?.order || 'asc';
-    const page = Number(params?.page) || 1;
-    const tier = params?.tier;
-    const status = params?.status;
-    const tag = params?.tag;
-    const pageSize = 30;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-
-    let queryBuilder = supabase
-        .from('members')
-        .select('id, name, member_number, phone, tier, status, is_registered, unit_group, relationships(name, relation)', { count: 'exact' });
-
-    if (query) {
-        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%,phone.ilike.%${query}%`);
-    }
-
-    if (tier) {
-        queryBuilder = queryBuilder.eq('tier', tier);
-    }
-
-    if (status) {
-        queryBuilder = queryBuilder.eq('status', status);
-    }
-
-    if (tag) {
-        queryBuilder = queryBuilder.contains('tags', [tag]);
-    }
+    // Safe defaults
+    let params: any = {};
+    let query = '';
+    let sortField = 'member_number';
+    let sortOrder = 'asc';
+    let page = 1;
+    let tier: string | undefined;
+    let status: string | undefined;
+    let tag: string | undefined;
 
     let members: any[] | null = [];
     let totalCount = 0;
 
+    const pageSize = 30;
+
+    // Helper to calculate derived values safely
+    const getRange = (p: number, size: number) => {
+        const f = (p - 1) * size;
+        const t = f + size - 1;
+        return { from: f, to: t };
+    };
+
     try {
+        const supabase = await createClient();
+
+        // In Next.js 16, searchParams is a Promise
+        params = await searchParams || {};
+        query = params?.q || '';
+        sortField = params?.sort || 'member_number';
+        sortOrder = params?.order || 'asc';
+        page = Number(params?.page) || 1;
+        tier = params?.tier;
+        status = params?.status;
+        tag = params?.tag;
+
+        const { from, to } = getRange(page, pageSize);
+
+        let queryBuilder = supabase
+            .from('members')
+            .select('id, name, member_number, phone, tier, status, is_registered, unit_group, relationships(name, relation)', { count: 'exact' });
+
+        if (query) {
+            queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%,phone.ilike.%${query}%`);
+        }
+
+        if (tier) {
+            queryBuilder = queryBuilder.eq('tier', tier);
+        }
+
+        if (status) {
+            queryBuilder = queryBuilder.eq('status', status);
+        }
+
+        if (tag) {
+            queryBuilder = queryBuilder.contains('tags', [tag]);
+        }
+
         const { data, count, error } = await queryBuilder
             .order(sortField, { ascending: sortOrder === 'asc' })
             .range(from, to);
@@ -61,12 +79,16 @@ export default async function MembersPage({
 
         members = data || [];
         totalCount = count || 0;
+
     } catch (error) {
-        console.error("Members Page Crash Avoided:", error);
+        console.error("Members Page Critical Error:", error);
+        // Keep defaults
         members = [];
         totalCount = 0;
     }
 
+    // Derived values for render logic (using safe defaults if needed)
+    const { from, to } = getRange(page, pageSize);
     const totalPages = Math.ceil(totalCount / pageSize);
     const startRange = totalCount > 0 ? Math.min((page - 1) * pageSize + 1, totalCount) : 0;
     const endRange = Math.min(page * pageSize, totalCount);
