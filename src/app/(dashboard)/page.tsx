@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 
 import { MobileDashboard } from '@/components/features/dashboard/MobileDashboard';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
     // Safe Data Handling
     // Safe Data Handling
