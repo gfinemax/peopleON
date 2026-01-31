@@ -21,10 +21,74 @@ export default async function DashboardPage() {
     const tier1Percent = Math.round((t1Count / totalMembers) * 100);
     const landOwnerPercent = Math.round((lOwnerCount / totalMembers) * 100);
 
+    // Fetch payments for stats (using lightweight query)
+    const { data: allPayments } = await supabase.from('payments').select('amount_due, amount_paid');
+    const totalAmount = allPayments?.reduce((acc: any, p: any) => acc + (p.amount_due || 0), 0) || 0;
+    const collectedAmount = allPayments?.reduce((acc: any, p: any) => acc + (p.amount_paid || 0), 0) || 0;
+    const paymentStatsRate = totalAmount > 0 ? Math.round((collectedAmount / totalAmount) * 100) : 0; // Renamed to avoid collision
+
+    // Fetch recent events
+    // 1. Recent Payments
+    const { data: recentPayments } = await supabase
+        .from('payments')
+        .select('*, members(name)')
+        .not('paid_date', 'is', null)
+        .order('paid_date', { ascending: false })
+        .limit(3);
+
+    // 2. New Members
+    const { data: newMembers } = await supabase
+        .from('members')
+        .select('id, name, created_at, unit_group')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+    // Combine and Sort Events
+    const events: any[] = [];
+
+    recentPayments?.forEach((p: any) => {
+        events.push({
+            id: `pay-${p.id}`,
+            date: new Date(p.paid_date),
+            title: `수납 확인: ${p.members?.name || '조합원'}`,
+            time: p.paid_date?.substring(5, 10), // MM-DD
+            desc: `${p.step_name || p.step + '차'} 납부 완료 (${p.amount_paid.toLocaleString()}원)`,
+            type: 'payment'
+        });
+    });
+
+    newMembers?.forEach((m: any) => {
+        events.push({
+            id: `new-${m.id}`,
+            date: new Date(m.created_at),
+            title: `신규 가입: ${m.name}`,
+            time: m.created_at?.substring(5, 10),
+            desc: `${m.unit_group || '동호수 미정'} 조합원 등록`,
+            type: 'member'
+        });
+    });
+
+    // Sort by date desc
+    const sortedEvents = events.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5).map(e => ({
+        id: e.id,
+        title: e.title,
+        time: e.time,
+        desc: e.desc,
+        type: e.type
+    }));
+
     return (
         <>
             <div className="lg:hidden">
-                <MobileDashboard />
+                <MobileDashboard
+                    stats={{
+                        totalMembers: totalMembers,
+                        totalAmount: totalAmount,
+                        collectedAmount: collectedAmount,
+                        paymentRate: paymentStatsRate
+                    }}
+                    events={sortedEvents as any}
+                />
             </div>
             <div className="hidden lg:flex flex-1 flex-col h-full overflow-hidden bg-background">
                 <Header title="통합 대시보드" />

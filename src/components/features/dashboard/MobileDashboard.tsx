@@ -5,7 +5,27 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
-export function MobileDashboard() {
+export interface DashboardStats {
+    totalMembers: number;
+    totalAmount: number;     // Total expected from payments
+    collectedAmount: number; // Total collected
+    paymentRate: number;     // Percentage
+}
+
+export interface DashboardEvent {
+    id: string;
+    title: string;
+    time: string;
+    desc: string;
+    type: 'payment' | 'member' | 'issue';
+}
+
+interface MobileDashboardProps {
+    stats: DashboardStats;
+    events: DashboardEvent[];
+}
+
+export function MobileDashboard({ stats, events }: MobileDashboardProps) {
     return (
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* 1. Header & Search - Sticky */}
@@ -68,7 +88,7 @@ export function MobileDashboard() {
                             </div>
                             <p className="text-xs font-bold text-muted-foreground">전체 조합원</p>
                         </div>
-                        <p className="text-3xl font-black relative z-10 text-foreground">1,240</p>
+                        <p className="text-3xl font-black relative z-10 text-foreground">{stats.totalMembers.toLocaleString()}</p>
                     </div>
 
                     {/* Issues Card */}
@@ -94,16 +114,16 @@ export function MobileDashboard() {
                             <MaterialIcon name="payments" size="sm" className="text-success" />
                             <h4 className="font-bold text-sm text-foreground">납부 현황</h4>
                         </div>
-                        <span className="text-sm font-black text-foreground">92% <span className="text-muted-foreground font-medium text-xs">수납 완료</span></span>
+                        <span className="text-sm font-black text-foreground">{stats.paymentRate}% <span className="text-muted-foreground font-medium text-xs">수납 완료</span></span>
                     </div>
                     <div className="w-full bg-muted/30 rounded-full h-2.5 mb-3 overflow-hidden">
-                        <div className="bg-primary h-full rounded-full relative" style={{ width: '92%' }}>
+                        <div className="bg-primary h-full rounded-full relative" style={{ width: `${stats.paymentRate}%` }}>
                             <div className="absolute inset-0 bg-white/20 w-full h-full animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]"></div>
                         </div>
                     </div>
                     <div className="flex justify-between text-[11px] font-bold text-muted-foreground">
-                        <span>₩145억 수납</span>
-                        <span>₩12억 미납</span>
+                        <span>₩{(stats.collectedAmount / 100000000).toFixed(1)}억 수납</span>
+                        <span>₩{((stats.totalAmount - stats.collectedAmount) / 100000000).toFixed(1)}억 미납</span>
                     </div>
                 </div>
             </div>
@@ -111,64 +131,28 @@ export function MobileDashboard() {
             {/* 3. Feeds Section */}
             <div className="px-4 mb-6">
                 <div className="flex items-center justify-between mb-4 mt-2">
-                    <h3 className="text-lg font-extrabold text-foreground">금일 일정</h3>
-                    <button className="text-xs text-primary font-bold hover:underline">캘린더 보기</button>
+                    <h3 className="text-lg font-extrabold text-foreground">최근 활동</h3>
+                    <button className="text-xs text-primary font-bold hover:underline">더 보기</button>
                 </div>
 
                 <div className="bg-card rounded-xl p-5 shadow-sm border border-border/50">
                     <div className="relative pl-2">
                         <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border/40"></div>
 
-                        <TimelineItem
-                            title="현장 점검 - 402동"
-                            time="09:00 AM"
-                            desc="어제 접수된 배관 민원 확인."
-                            color="bg-primary"
-                        />
-                        <TimelineItem
-                            title="조합원 미팅 - 김철수"
-                            time="11:30 AM"
-                            desc="인테리어 공사 요청 논의."
-                            color="bg-muted-foreground"
-                        />
-                        <TimelineItem
-                            title="유지보수 검토"
-                            time="02:00 PM"
-                            desc="승강기 B호기 정기 점검."
-                            color="bg-muted-foreground"
-                        />
+                        {events.length > 0 ? events.map((event, i) => (
+                            <TimelineItem
+                                key={event.id}
+                                title={event.title}
+                                time={event.time}
+                                desc={event.desc}
+                                color={event.type === 'payment' ? 'bg-success' : event.type === 'issue' ? 'bg-destructive' : 'bg-primary'}
+                            />
+                        )) : (
+                            <div className="py-4 text-center text-xs text-muted-foreground">
+                                최근 활동 내역이 없습니다.
+                            </div>
+                        )}
                     </div>
-                </div>
-            </div>
-
-            <div className="px-4 pb-6">
-                <h3 className="text-lg font-extrabold text-foreground mb-4">최근 활동</h3>
-                <div className="flex flex-col gap-3">
-                    <ActivityCard
-                        initials="SM"
-                        bg="bg-purple-500/10"
-                        text="text-purple-500"
-                        name="박서연"
-                        detail="105동 • 고지서 발송됨"
-                        badge="발송완료"
-                        badgeColor="text-success bg-success/10 border-success/20"
-                    />
-                    <ActivityCard
-                        img="https://api.dicebear.com/7.x/avataaars/svg?seed=david"
-                        name="이대현"
-                        detail="302동 • 층간소음 민원"
-                        badge="진행중"
-                        badgeColor="text-orange-500 bg-orange-500/10 border-orange-500/20"
-                    />
-                    <ActivityCard
-                        icon="build"
-                        bg="bg-muted"
-                        text="text-muted-foreground"
-                        name="공용부"
-                        detail="로비 조명 교체"
-                        badge="완료"
-                        badgeColor="text-muted-foreground bg-muted/20 border-border"
-                    />
                 </div>
             </div>
 
