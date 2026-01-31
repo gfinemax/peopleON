@@ -8,18 +8,19 @@ import { MobileDashboard } from '@/components/features/dashboard/MobileDashboard
 
 export default async function DashboardPage() {
     // Safe Data Handling
+    // Safe Data Handling
     let safeStats = {
-        totalMembers: 1240,
+        totalMembers: 0,
         totalAmount: 0,
         collectedAmount: 0,
         paymentRate: 0
     };
     let safeEvents: any[] = [];
-    let t1Count = 558;
-    let lOwnerCount = 372;
-    let tier1Percent = 45;
-    let landOwnerPercent = 30;
-    let totalMembers = 1240;
+    let t1Count = 0;
+    let lOwnerCount = 0;
+    let tier1Percent = 0;
+    let landOwnerPercent = 0;
+    let totalMembers = 0;
 
     try {
         const supabase = await createClient();
@@ -30,11 +31,11 @@ export default async function DashboardPage() {
         const { count: landOwnerCountVal } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '지주');
 
         // Calculate percentages
-        totalMembers = memberCount || 1240;
-        t1Count = tier1CountVal || 558;
-        lOwnerCount = landOwnerCountVal || 372;
-        tier1Percent = Math.round((t1Count / totalMembers) * 100);
-        landOwnerPercent = Math.round((lOwnerCount / totalMembers) * 100);
+        totalMembers = memberCount ?? 0;
+        t1Count = tier1CountVal ?? 0;
+        lOwnerCount = landOwnerCountVal ?? 0;
+        tier1Percent = totalMembers > 0 ? Math.round((t1Count / totalMembers) * 100) : 0;
+        landOwnerPercent = totalMembers > 0 ? Math.round((lOwnerCount / totalMembers) * 100) : 0;
 
         // Fetch payments
         const { data: allPayments } = await supabase.from('payments').select('amount_due, amount_paid');
