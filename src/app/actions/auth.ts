@@ -39,11 +39,8 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
 
     if (error) {
         console.error('Sign In Error:', error.message, error.status);
-        // Specialized error message for fetch failures
-        if (error.message.includes('fetch failed')) {
-            return { error: '서버 연결 실패: 환경변수/네트워크 설정을 확인해주세요.' };
-        }
-        return { error: `로그인 실패: ${error.message}` };
+        // Show raw error to user for debugging
+        return { error: `에러 상세: ${error.message} (${error.status || 'No Status'})` };
     }
 
     console.log('Sign In Success for:', data.user?.email);
