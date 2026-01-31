@@ -24,7 +24,9 @@ export default async function MembersPage({
 
     let members: any[] | null = [];
     let totalCount = 0;
-    let debugError: any = null; // New debug variable
+
+    // Debug variable kept just in case of future issues, but UI will focus on data
+    let fetchError: any = null;
 
     const pageSize = 30;
 
@@ -52,10 +54,8 @@ export default async function MembersPage({
 
         let queryBuilder = supabase
             .from('members')
-            .select('*', { count: 'exact' }); // Simplest query
+            .select('id, name, member_number, phone, tier, status, is_registered, unit_group, relationships(name, relation)', { count: 'exact' });
 
-        // Temporarily comment out filters for debugging
-        /*
         if (query) {
             queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%,phone.ilike.%${query}%`);
         }
@@ -71,7 +71,6 @@ export default async function MembersPage({
         if (tag) {
             queryBuilder = queryBuilder.contains('tags', [tag]);
         }
-        */
 
         const { data, count, error } = await queryBuilder
             .order(sortField, { ascending: sortOrder === 'asc' })
@@ -79,7 +78,7 @@ export default async function MembersPage({
 
         if (error) {
             console.error("Members Fetch Error:", error);
-            debugError = error;
+            fetchError = error;
         }
 
         members = data || [];
@@ -87,7 +86,7 @@ export default async function MembersPage({
 
     } catch (error) {
         console.error("Members Page Critical Error:", error);
-        debugError = error;
+        fetchError = error;
         // Keep defaults
         members = [];
         totalCount = 0;
@@ -115,14 +114,18 @@ export default async function MembersPage({
     const renderPageNumbers = () => {
         const pages = [];
         const maxVisible = 5;
+        // Logic to construct pagination
+        // ... (reuse existing logic logic)
+        // Re-implementing simplified logic here for robustness within the overwrite
+
+        if (totalPages === 0) return null;
+
         let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
         let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
         if (endPage - startPage + 1 < maxVisible) {
             startPage = Math.max(1, endPage - maxVisible + 1);
         }
-
-        if (totalPages === 0) return null;
 
         for (let i = startPage; i <= endPage; i++) {
             pages.push(
@@ -145,9 +148,7 @@ export default async function MembersPage({
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
             <Header title="조합원 관리" />
 
-            {/* 1. Fixed Top Section: Title + Action Bar */}
             <div className="flex flex-col shrink-0 gap-0.5 px-4 lg:px-6 pt-2 lg:pt-4 pb-0 max-w-[1600px] mx-auto w-full">
-                {/* Title Area */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-0.5">
                         <h2 className="text-xl font-extrabold tracking-tight text-white">
@@ -172,10 +173,8 @@ export default async function MembersPage({
                     </div>
                 </div>
 
-                {/* 2. Filter Block (Fixed) - Client Component */}
                 <MembersFilter />
 
-                {/* 3. Table Action Bar (Fixed) */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-0.5 pb-0">
                     <div className="flex items-baseline gap-2">
                         <span className="text-lg font-black text-white whitespace-nowrap">전체 {totalCount.toLocaleString()}명</span>
@@ -198,9 +197,7 @@ export default async function MembersPage({
                 </div>
             </div>
 
-            {/* 4. Unified List Box (Table + Pagination) */}
             <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-white/[0.08] bg-card overflow-hidden shadow-sm mx-4 lg:mx-6 mb-4">
-                {/* Scrollable Table Area - Logic moved to MembersTable for sticky support */}
                 <div className="flex-1 min-h-0 overflow-hidden">
                     {members && members.length > 0 ? (
                         <MembersTable
@@ -210,18 +207,15 @@ export default async function MembersPage({
                         />
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 py-12">
-                            {debugError ? (
+                            {/* Show Error if exists, otherwise empty state */}
+                            {fetchError ? (
                                 <div className="text-center p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-lg text-left">
-                                    <p className="text-red-500 font-bold mb-2">데이터 로딩 오류 상세</p>
+                                    <p className="text-red-500 font-bold mb-2">데이터 로딩 오류</p>
                                     <div className="text-xs text-red-300 font-mono whitespace-pre-wrap break-all bg-black/50 p-4 rounded">
                                         <div className="mb-2 text-white font-bold">Error Message:</div>
-                                        {debugError instanceof Error ? debugError.message : (debugError?.message || 'No message detected')}
-
-                                        <div className="mt-4 mb-2 text-white font-bold">Stack / Details:</div>
-                                        {debugError instanceof Error
-                                            ? debugError.stack
-                                            : JSON.stringify(debugError, null, 2)}
+                                        {fetchError instanceof Error ? fetchError.message : (fetchError?.message || 'Unknown Error')}
                                     </div>
+                                    <p className="mt-4 text-xs text-muted-foreground">Vercel 환경변수 설정을 확인해주세요.</p>
                                 </div>
                             ) : (
                                 <>
@@ -233,7 +227,6 @@ export default async function MembersPage({
                     )}
                 </div>
 
-                {/* Fixed Pagination Footer */}
                 <div className="shrink-0 z-20 bg-[#161B22] border-t border-white/[0.08]">
                     <div className="px-6 py-3 flex items-center justify-between">
                         <p className="text-xs text-gray-400">
