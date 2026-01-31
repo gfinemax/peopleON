@@ -9,88 +9,109 @@ import { MobileDashboard } from '@/components/features/dashboard/MobileDashboard
 export default async function DashboardPage() {
     const supabase = await createClient();
 
-    // Fetch real data
-    const { count: memberCount } = await supabase.from('members').select('*', { count: 'exact', head: true });
-    const { count: tier1Count } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '1차');
-    const { count: landOwnerCount } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '지주');
+    // Safe Data Handling
+    let safeStats = {
+        totalMembers: 1240,
+        totalAmount: 0,
+        collectedAmount: 0,
+        paymentRate: 0
+    };
+    let safeEvents: any[] = [];
+    let t1Count = 558;
+    let lOwnerCount = 372;
+    let tier1Percent = 45;
+    let landOwnerPercent = 30;
+    let totalMembers = 1240; // Default fallback
 
-    // Calculate percentages
-    const totalMembers = memberCount || 1240; // Fallback for demo if no data
-    const t1Count = tier1Count || 558;
-    const lOwnerCount = landOwnerCount || 372;
-    const tier1Percent = Math.round((t1Count / totalMembers) * 100);
-    const landOwnerPercent = Math.round((lOwnerCount / totalMembers) * 100);
+    try {
+        // Fetch real data
+        const { count: memberCount } = await supabase.from('members').select('*', { count: 'exact', head: true });
+        const { count: tier1CountVal } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '1차');
+        const { count: landOwnerCountVal } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '지주');
 
-    // Fetch payments for stats (using lightweight query)
-    const { data: allPayments } = await supabase.from('payments').select('amount_due, amount_paid');
-    const totalAmount = allPayments?.reduce((acc: any, p: any) => acc + (p.amount_due || 0), 0) || 0;
-    const collectedAmount = allPayments?.reduce((acc: any, p: any) => acc + (p.amount_paid || 0), 0) || 0;
-    const paymentStatsRate = totalAmount > 0 ? Math.round((collectedAmount / totalAmount) * 100) : 0; // Renamed to avoid collision
+        // Calculate percentages
+        totalMembers = memberCount || 1240;
+        t1Count = tier1CountVal || 558;
+        lOwnerCount = landOwnerCountVal || 372;
+        tier1Percent = Math.round((t1Count / totalMembers) * 100);
+        landOwnerPercent = Math.round((lOwnerCount / totalMembers) * 100);
 
-    // Fetch recent events
-    // 1. Recent Payments
-    const { data: recentPayments } = await supabase
-        .from('payments')
-        .select('*, members(name)')
-        .not('paid_date', 'is', null)
-        .order('paid_date', { ascending: false })
-        .limit(3);
+        // Fetch payments
+        const { data: allPayments } = await supabase.from('payments').select('amount_due, amount_paid');
+        const totalAmount = allPayments?.reduce((acc: any, p: any) => acc + (p.amount_due || 0), 0) || 0;
+        const collectedAmount = allPayments?.reduce((acc: any, p: any) => acc + (p.amount_paid || 0), 0) || 0;
+        const paymentStatsRate = totalAmount > 0 ? Math.round((collectedAmount / totalAmount) * 100) : 0;
 
-    // 2. New Members
-    const { data: newMembers } = await supabase
-        .from('members')
-        .select('id, name, created_at, unit_group')
-        .order('created_at', { ascending: false })
-        .limit(3);
+        safeStats = {
+            totalMembers,
+            totalAmount,
+            collectedAmount,
+            paymentRate: paymentStatsRate
+        };
 
-    // Combine and Sort Events
-    const events: any[] = [];
+        // Fetch events
+        const { data: recentPayments } = await supabase
+            .from('payments')
+            .select('*, members(name)')
+            .not('paid_date', 'is', null)
+            .order('paid_date', { ascending: false })
+            .limit(3);
 
-    recentPayments?.forEach((p: any) => {
-        // Safe access to nested member name
-        const memberName = Array.isArray(p.members) ? p.members[0]?.name : p.members?.name;
+        const { data: newMembers } = await supabase
+            .from('members')
+            .select('id, name, created_at, unit_group')
+            .order('created_at', { ascending: false })
+            .limit(3);
 
-        events.push({
-            id: `pay-${p.id}`,
-            date: new Date(p.paid_date || Date.now()), // Fallback date
-            title: `수납 확인: ${memberName || '조합원'}`,
-            time: typeof p.paid_date === 'string' ? p.paid_date.substring(5, 10) : '-',
-            desc: `${p.step_name || p.step + '차'} 납부 완료 (${(p.amount_paid || 0).toLocaleString()}원)`,
-            type: 'payment'
+        // Process Events
+        const rawEvents: any[] = [];
+
+        recentPayments?.forEach((p: any) => {
+            const memberName = Array.isArray(p.members) ? p.members[0]?.name : p.members?.name;
+            rawEvents.push({
+                id: `pay-${p.id}`,
+                dateVal: new Date(p.paid_date || Date.now()).getTime(),
+                title: `수납 확인: ${memberName || '조합원'}`,
+                time: typeof p.paid_date === 'string' ? p.paid_date.substring(5, 10) : '-',
+                desc: `${p.step_name || p.step + '차'} 납부 완료 (${(p.amount_paid || 0).toLocaleString()}원)`,
+                type: 'payment'
+            });
         });
-    });
 
-    newMembers?.forEach((m: any) => {
-        events.push({
-            id: `new-${m.id}`,
-            date: new Date(m.created_at || Date.now()),
-            title: `신규 가입: ${m.name || '이름 미정'}`,
-            time: typeof m.created_at === 'string' ? m.created_at.substring(5, 10) : '-',
-            desc: `${m.unit_group || '동호수 미정'} 조합원 등록`,
-            type: 'member'
+        newMembers?.forEach((m: any) => {
+            rawEvents.push({
+                id: `new-${m.id}`,
+                dateVal: new Date(m.created_at || Date.now()).getTime(),
+                title: `신규 가입: ${m.name || '이름 미정'}`,
+                time: typeof m.created_at === 'string' ? m.created_at.substring(5, 10) : '-',
+                desc: `${m.unit_group || '동호수 미정'} 조합원 등록`,
+                type: 'member'
+            });
         });
-    });
 
-    // Sort by date desc
-    const sortedEvents = events.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5).map(e => ({
-        id: e.id,
-        title: String(e.title),
-        time: String(e.time),
-        desc: String(e.desc),
-        type: e.type
-    }));
+        // Strict Mapping for Client Component
+        safeEvents = rawEvents
+            .sort((a, b) => b.dateVal - a.dateVal)
+            .slice(0, 5)
+            .map(e => ({
+                id: String(e.id),
+                title: String(e.title),
+                time: String(e.time),
+                desc: String(e.desc),
+                type: e.type // Keep as is, it's a string literal in source
+            }));
+
+    } catch (error) {
+        console.error("Dashboard Data Fetch Error:", error);
+        // Fallback to empty events on error
+    }
 
     return (
         <>
             <div className="lg:hidden">
                 <MobileDashboard
-                    stats={{
-                        totalMembers: totalMembers,
-                        totalAmount: totalAmount,
-                        collectedAmount: collectedAmount,
-                        paymentRate: paymentStatsRate
-                    }}
-                    events={sortedEvents as any}
+                    stats={safeStats}
+                    events={safeEvents}
                 />
             </div>
             <div className="hidden lg:flex flex-1 flex-col h-full overflow-hidden bg-background">
