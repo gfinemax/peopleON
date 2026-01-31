@@ -394,7 +394,7 @@ export function MemberDetailDialog({
                                         </div>
                                     )}
 
-                                    {activeTab === 'payment' && memberId && (
+                                    {activeTab === 'payment' && memberId && member && (
                                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                                             <PaymentStatusTab memberId={memberId} memberName={member.name} />
                                         </div>
