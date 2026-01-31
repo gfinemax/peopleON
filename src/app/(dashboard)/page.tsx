@@ -105,27 +105,44 @@ export default async function DashboardPage() {
     }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background p-8 text-center space-y-4">
-            <div className="p-4 rounded-full bg-green-500/10 text-green-500 mb-2">
-                <MaterialIcon name="check_circle" size="xl" />
+        <>
+            <div className="lg:hidden">
+                <MobileDashboard
+                    stats={safeStats}
+                    events={safeEvents}
+                />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">시스템 정상 가동 중</h1>
-            <p className="text-muted-foreground max-w-md mx-auto">
-                현재 데이터 연동 안정성 테스트를 위해 '안전 모드'로 실행 중입니다.
-                <br />
-                DB 연결 상태: {safeStats.totalMembers > 0 ? '정상' : '확인 필요'}
-            </p>
-            <div className="p-4 bg-muted/50 rounded-lg text-left text-xs font-mono max-w-sm mx-auto overflow-hidden text-muted-foreground">
-                <p>Total Members: {safeStats.totalMembers}</p>
-                <p>Events Loaded: {safeEvents.length}</p>
+            <div className="hidden lg:flex flex-1 flex-col h-full overflow-hidden bg-background">
+                <Header title="통합 대시보드" />
+
+                <main className="flex flex-1 flex-col overflow-y-auto">
+                    <div className="flex flex-col gap-6 p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+                        {/* Page Heading */}
+                        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                            <div className="space-y-1">
+                                <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
+                                    안녕하세요, 관리자님
+                                </h2>
+                                <p className="text-muted-foreground/50 font-medium text-sm tracking-tight opacity-80">
+                                    오늘의 주요 현황 및 조치 필요 항목을 확인하세요.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* DEBUGGING: Desktop Components Temporarily Disabled */}
+                        <div className="p-12 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground">
+                            <MaterialIcon name="build" size="xl" className="mb-4 opacity-50" />
+                            <h3 className="text-lg font-bold">데스크탑 뷰 점검 중</h3>
+                            <p className="text-sm">모바일 대시보드 및 데이터 연동 안정성을 확인하고 있습니다.</p>
+                            <div className="mt-4 p-4 bg-muted/30 rounded text-xs font-mono text-left">
+                                <p>Stats Loaded: {safeStats.totalMembers}</p>
+                                <p>Events Loaded: {safeEvents.length}</p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
             </div>
-            <Link
-                href="/members"
-                className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all"
-            >
-                조합원 관리 바로가기
-            </Link>
-        </div>
+        </>
     );
 }
 
