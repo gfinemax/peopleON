@@ -11,6 +11,16 @@ export interface AuthState {
 
 export async function signIn(prevState: AuthState, formData: FormData): Promise<AuthState> {
     console.log('--- Sign In Attempt ---');
+
+    // Debug: Check Env Vars (safely)
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    console.log('Env Check (SignIn):', {
+        urlExists: !!sbUrl,
+        urlPrefix: sbUrl ? sbUrl.substring(0, 15) + '...' : 'UNDEFINED',
+        urlLen: sbUrl?.length,
+        keyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    });
+
     const supabase = await createClient();
 
     const email = formData.get('email') as string;
@@ -29,6 +39,10 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
 
     if (error) {
         console.error('Sign In Error:', error.message, error.status);
+        // Specialized error message for fetch failures
+        if (error.message.includes('fetch failed')) {
+            return { error: '서버 연결 실패: 환경변수/네트워크 설정을 확인해주세요.' };
+        }
         return { error: `로그인 실패: ${error.message}` };
     }
 
@@ -40,6 +54,16 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
 
 export async function signUp(prevState: AuthState, formData: FormData): Promise<AuthState> {
     console.log('--- Sign Up Attempt ---');
+
+    // Debug: Check Env Vars (safely)
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    console.log('Env Check (SignUp):', {
+        urlExists: !!sbUrl,
+        urlPrefix: sbUrl ? sbUrl.substring(0, 15) + '...' : 'UNDEFINED',
+        urlLen: sbUrl?.length,
+        keyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    });
+
     const supabase = await createClient();
 
     const email = formData.get('email') as string;
@@ -64,6 +88,9 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
 
     if (error) {
         console.error('Sign Up Error:', error.message, error.status);
+        if (error.message.includes('fetch failed')) {
+            return { error: '서버 연결 실패: 환경변수/네트워크 설정을 확인해주세요.' };
+        }
         return { error: `회원가입 실패: ${error.message}` };
     }
 
