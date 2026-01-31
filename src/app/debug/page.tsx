@@ -12,8 +12,8 @@ export default async function DebugPage() {
 
     try {
         const supabase = await createClient();
-        // Try a simple auth check which doesn't require table permissions
-        const { data, error } = await supabase.auth.getSession();
+        // Force a REAL network request (HEAD request to count members)
+        const { count, error } = await supabase.from('members').select('*', { count: 'exact', head: true });
 
         if (error) {
             connectionResult = 'Failed (Supabase Error)';
@@ -21,7 +21,7 @@ export default async function DebugPage() {
             details = JSON.stringify(error, null, 2);
         } else {
             connectionResult = 'Success';
-            details = 'Connected to Supabase successfully.';
+            details = `Connected to Supabase successfully. Member count access: ${count ?? 'Allowed'}`;
         }
     } catch (e: any) {
         connectionResult = 'Exception (Network/Config)';
