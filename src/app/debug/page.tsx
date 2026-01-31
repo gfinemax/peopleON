@@ -44,7 +44,18 @@ export default async function DebugPage() {
                         </div>
 
                         <div className="opacity-50">Value Preview</div>
-                        <div>{sbUrl ? `"${sbUrl.substring(0, 15)}..."` : '-'}</div>
+                        <div className="font-mono text-xs break-all bg-black p-2 rounded">
+                            {sbUrl ? (
+                                <>
+                                    "{sbUrl}"
+                                    <div className="mt-1 text-slate-500">
+                                        Lengths: {sbUrl.length} chars
+                                        <br />
+                                        RAW BYTES: {sbUrl.split('').map(c => c.charCodeAt(0)).join(' ')}
+                                    </div>
+                                </>
+                            ) : '-'}
+                        </div>
 
                         <div className="h-px bg-white/10 col-span-2 my-2"></div>
 
