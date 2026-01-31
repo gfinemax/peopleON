@@ -129,15 +129,108 @@ export default async function DashboardPage() {
                             </div>
                         </div>
 
+                        {/* KPI Stats Grid */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {/* Stat 1: Total Members */}
+                            <KpiCard
+                                title="총 조합원"
+                                icon="groups"
+                                value={totalMembers.toLocaleString()}
+                                unit="명"
+                                trend="+2.5%"
+                                trendIcon="trending_up"
+                                subtitle="지난달 대비 32명 증가"
+                                iconColor="text-blue-500"
+                                iconBg="bg-blue-500/10"
+                            />
+
+                            {/* Stat 2: Member Distribution */}
+                            <div className="group flex flex-col rounded-lg border border-border bg-card p-8 shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-300">
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                                            <MaterialIcon name="pie_chart" size="md" />
+                                        </div>
+                                        <h3 className="text-base font-bold text-muted-foreground">조합원 현황</h3>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-6">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-muted-foreground">
+                                                1차 <span className="text-muted-foreground/60 ml-1">({tier1Percent}%)</span>
+                                            </span>
+                                            <span className="text-sm font-extrabold text-foreground">{t1Count.toLocaleString()}명</span>
+                                        </div>
+                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted/30">
+                                            <div
+                                                className="bg-primary h-full rounded-full transition-all duration-1000"
+                                                style={{ width: `${tier1Percent}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-muted-foreground">
+                                                지주 <span className="text-muted-foreground/60 ml-1">({landOwnerPercent}%)</span>
+                                            </span>
+                                            <span className="text-sm font-extrabold text-foreground">{lOwnerCount.toLocaleString()}명</span>
+                                        </div>
+                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted/30">
+                                            <div
+                                                className="bg-purple-500 h-full rounded-full transition-all duration-1000"
+                                                style={{ width: `${landOwnerPercent}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stat 3: Total Collections */}
+                            <div className="group flex flex-col rounded-lg border border-border bg-card p-6 shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-300">
+                                <div className="mb-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success border border-success/20">
+                                            <MaterialIcon name="payments" size="sm" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-muted-foreground">총 수납액</h3>
+                                    </div>
+                                    <span className="flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-black text-success border border-success/20">
+                                        <MaterialIcon name="trending_up" size="xs" className="mr-1" /> +15.0%
+                                    </span>
+                                </div>
+                                <div className="flex items-baseline gap-2 mb-4">
+                                    <p className="text-3xl font-black text-foreground tracking-tighter">145.0</p>
+                                    <span className="text-base font-bold text-muted-foreground">억원</span>
+                                </div>
+                                <div className="flex w-full gap-4">
+                                    <div className="flex flex-col gap-1.5 w-1/2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">수납완료</span>
+                                            <span className="text-[10px] font-black text-foreground">92%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full rounded-full bg-muted/30">
+                                            <div className="h-full rounded-full bg-success shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: '92%' }} />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 w-1/2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">미수납</span>
+                                            <span className="text-[10px] font-black text-foreground">8%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full rounded-full bg-muted/30">
+                                            <div className="h-full rounded-full bg-destructive/60" style={{ width: '8%' }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* DEBUGGING: Desktop Components Temporarily Disabled */}
                         <div className="p-12 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground">
                             <MaterialIcon name="build" size="xl" className="mb-4 opacity-50" />
-                            <h3 className="text-lg font-bold">데스크탑 뷰 점검 중</h3>
-                            <p className="text-sm">모바일 대시보드 및 데이터 연동 안정성을 확인하고 있습니다.</p>
-                            <div className="mt-4 p-4 bg-muted/30 rounded text-xs font-mono text-left">
-                                <p>Stats Loaded: {safeStats.totalMembers}</p>
-                                <p>Events Loaded: {safeEvents.length}</p>
-                            </div>
+                            <h3 className="text-lg font-bold">테이블/타임라인 점검 중</h3>
+                            <p className="text-sm">차트(KPI Grid) 복구 완료. 테이블 안정성을 확인하고 있습니다.</p>
                         </div>
                     </div>
                 </main>
