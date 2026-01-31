@@ -24,6 +24,7 @@ export default async function MembersPage({
 
     let members: any[] | null = [];
     let totalCount = 0;
+    let debugError: any = null; // New debug variable
 
     const pageSize = 30;
 
@@ -51,9 +52,10 @@ export default async function MembersPage({
 
         let queryBuilder = supabase
             .from('members')
-            // REMOVED relationships(name, relation) to debug fetch error
-            .select('id, name, member_number, phone, tier, status, is_registered, unit_group', { count: 'exact' });
+            .select('*', { count: 'exact' }); // Simplest query
 
+        // Temporarily comment out filters for debugging
+        /*
         if (query) {
             queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%,phone.ilike.%${query}%`);
         }
@@ -69,6 +71,7 @@ export default async function MembersPage({
         if (tag) {
             queryBuilder = queryBuilder.contains('tags', [tag]);
         }
+        */
 
         const { data, count, error } = await queryBuilder
             .order(sortField, { ascending: sortOrder === 'asc' })
@@ -76,6 +79,7 @@ export default async function MembersPage({
 
         if (error) {
             console.error("Members Fetch Error:", error);
+            debugError = error;
         }
 
         members = data || [];
@@ -83,12 +87,13 @@ export default async function MembersPage({
 
     } catch (error) {
         console.error("Members Page Critical Error:", error);
+        debugError = error;
         // Keep defaults
         members = [];
         totalCount = 0;
     }
 
-    // Derived values for render logic (using safe defaults if needed)
+    // Derived values for render logic
     const { from, to } = getRange(page, pageSize);
     const totalPages = Math.ceil(totalCount / pageSize);
     const startRange = totalCount > 0 ? Math.min((page - 1) * pageSize + 1, totalCount) : 0;
@@ -205,8 +210,19 @@ export default async function MembersPage({
                         />
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 py-12">
-                            <MaterialIcon name="search_off" size="xl" className="opacity-20" />
-                            <p className="font-bold">검색 결과가 없습니다.</p>
+                            {debugError ? (
+                                <div className="text-center p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-lg">
+                                    <p className="text-red-500 font-bold mb-2">데이터 로딩 오류</p>
+                                    <p className="text-xs text-red-300 font-mono text-left whitespace-pre-wrap break-all">
+                                        {JSON.stringify(debugError, null, 2)}
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <MaterialIcon name="search_off" size="xl" className="opacity-20" />
+                                    <p className="font-bold">검색 결과가 없습니다.</p>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
