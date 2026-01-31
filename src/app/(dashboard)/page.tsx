@@ -47,12 +47,15 @@ export default async function DashboardPage() {
     const events: any[] = [];
 
     recentPayments?.forEach((p: any) => {
+        // Safe access to nested member name
+        const memberName = Array.isArray(p.members) ? p.members[0]?.name : p.members?.name;
+
         events.push({
             id: `pay-${p.id}`,
-            date: new Date(p.paid_date),
-            title: `수납 확인: ${p.members?.name || '조합원'}`,
-            time: p.paid_date?.substring(5, 10), // MM-DD
-            desc: `${p.step_name || p.step + '차'} 납부 완료 (${p.amount_paid.toLocaleString()}원)`,
+            date: new Date(p.paid_date || Date.now()), // Fallback date
+            title: `수납 확인: ${memberName || '조합원'}`,
+            time: typeof p.paid_date === 'string' ? p.paid_date.substring(5, 10) : '-',
+            desc: `${p.step_name || p.step + '차'} 납부 완료 (${(p.amount_paid || 0).toLocaleString()}원)`,
             type: 'payment'
         });
     });
@@ -60,9 +63,9 @@ export default async function DashboardPage() {
     newMembers?.forEach((m: any) => {
         events.push({
             id: `new-${m.id}`,
-            date: new Date(m.created_at),
-            title: `신규 가입: ${m.name}`,
-            time: m.created_at?.substring(5, 10),
+            date: new Date(m.created_at || Date.now()),
+            title: `신규 가입: ${m.name || '이름 미정'}`,
+            time: typeof m.created_at === 'string' ? m.created_at.substring(5, 10) : '-',
             desc: `${m.unit_group || '동호수 미정'} 조합원 등록`,
             type: 'member'
         });
@@ -71,9 +74,9 @@ export default async function DashboardPage() {
     // Sort by date desc
     const sortedEvents = events.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5).map(e => ({
         id: e.id,
-        title: e.title,
-        time: e.time,
-        desc: e.desc,
+        title: String(e.title),
+        time: String(e.time),
+        desc: String(e.desc),
         type: e.type
     }));
 
@@ -130,7 +133,7 @@ export default async function DashboardPage() {
                                 unit="명"
                                 trend="+2.5%"
                                 trendIcon="trending_up"
-                                subtitle={<>지난달 대비 <span className="text-foreground font-bold">32명</span> 증가</>}
+                                subtitle="지난달 대비 32명 증가"
                                 iconColor="text-blue-500"
                                 iconBg="bg-blue-500/10"
                             />
