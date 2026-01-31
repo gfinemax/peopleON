@@ -47,13 +47,28 @@ export default async function MembersPage({
         queryBuilder = queryBuilder.contains('tags', [tag]);
     }
 
-    const { data: members, count, error } = await queryBuilder
-        .order(sortField, { ascending: sortOrder === 'asc' })
-        .range(from, to);
+    let members: any[] | null = [];
+    let totalCount = 0;
 
-    const totalCount = count || 0;
+    try {
+        const { data, count, error } = await queryBuilder
+            .order(sortField, { ascending: sortOrder === 'asc' })
+            .range(from, to);
+
+        if (error) {
+            console.error("Members Fetch Error:", error);
+        }
+
+        members = data || [];
+        totalCount = count || 0;
+    } catch (error) {
+        console.error("Members Page Crash Avoided:", error);
+        members = [];
+        totalCount = 0;
+    }
+
     const totalPages = Math.ceil(totalCount / pageSize);
-    const startRange = Math.min((page - 1) * pageSize + 1, totalCount);
+    const startRange = totalCount > 0 ? Math.min((page - 1) * pageSize + 1, totalCount) : 0;
     const endRange = Math.min(page * pageSize, totalCount);
 
     // Pagination helpers
@@ -136,7 +151,7 @@ export default async function MembersPage({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-0.5 pb-0">
                     <div className="flex items-baseline gap-2">
                         <span className="text-lg font-black text-white whitespace-nowrap">전체 {totalCount.toLocaleString()}명</span>
-                        <span className="text-xs font-bold text-muted-foreground/60">중 검색 결과 <span className="text-primary">{count || 0}</span>명</span>
+                        <span className="text-xs font-bold text-muted-foreground/60">중 검색 결과 <span className="text-primary">{totalCount || 0}</span>명</span>
                     </div>
                     <div className="flex gap-2">
                         <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
