@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { signIn, AuthState } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
@@ -10,6 +10,12 @@ export default function LoginPage() {
     const [state, formAction, isPending] = useActionState<AuthState, FormData>(signIn, {});
     const [showPassword, setShowPassword] = useState(false);
     const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // Prevent hydration mismatch
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 bg-pattern-dark dark:bg-pattern-dark bg-gradient-light">
@@ -19,11 +25,15 @@ export default function LoginPage() {
                 className="absolute top-4 right-4 p-2 rounded-lg bg-card/50 border border-border hover:bg-accent transition-colors z-10"
                 aria-label="Toggle theme"
             >
-                <MaterialIcon
-                    name={theme === 'dark' ? 'light_mode' : 'dark_mode'}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    size="md"
-                />
+                {mounted ? (
+                    <MaterialIcon
+                        name={theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        size="md"
+                    />
+                ) : (
+                    <div className="w-6 h-6" /> // Placeholder to prevent layout shift
+                )}
             </button>
 
             {/* Main Card Container */}
