@@ -146,32 +146,20 @@ export default async function MembersPage({
 
     return (
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
-            <Header title="조합원 관리" />
+            <Header
+                title="조합원 관리"
+                leftContent={
+                    <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                        <span className="text-sm font-black text-foreground">전체 {totalCount}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground">· 검색 <span className="text-primary">{totalCount}</span></span>
+                    </div>
+                }
+            />
 
             <div className="flex flex-col shrink-0 gap-0.5 px-4 lg:px-6 pt-2 lg:pt-4 pb-0 max-w-[1600px] mx-auto w-full">
 
                 <MembersFilter />
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-0.5 pb-0">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-black text-white whitespace-nowrap">전체 {totalCount.toLocaleString()}명</span>
-                        <span className="text-xs font-bold text-muted-foreground/60">중 검색 결과 <span className="text-primary">{totalCount || 0}</span>명</span>
-                    </div>
-                    <div className="flex gap-2">
-                        <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
-                            <MaterialIcon name="chat" size="sm" />
-                            문자 발송
-                        </button>
-                        <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
-                            <MaterialIcon name="print" size="sm" />
-                            라벨 출력
-                        </button>
-                        <button className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/20 px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-card/40 hover:text-white transition-all uppercase tracking-wider h-8">
-                            <MaterialIcon name="download" size="sm" />
-                            엑셀 다운로드
-                        </button>
-                    </div>
-                </div>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-white/[0.08] bg-card overflow-hidden shadow-sm mx-4 lg:mx-6 mb-4">

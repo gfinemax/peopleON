@@ -8,9 +8,10 @@ import { GlobalSearch } from '@/components/features/search/GlobalSearch';
 interface HeaderProps {
     title?: string;
     showBreadcrumb?: boolean;
+    leftContent?: React.ReactNode;
 }
 
-export function Header({ title = '통합 대시보드' }: HeaderProps) {
+export function Header({ title = '통합 대시보드', leftContent }: HeaderProps) {
     const { theme, setTheme } = useTheme();
     // useRouter and state removed as GlobalSearch handles it
 
@@ -19,10 +20,16 @@ export function Header({ title = '통합 대시보드' }: HeaderProps) {
             {/* Left: Title */}
             {/* Left: Search & Menu */}
             <div className="flex items-center gap-4">
-                {/* Mobile Menu Toggle */}
-                <button className="text-muted-foreground hover:text-foreground md:hidden">
-                    <MaterialIcon name="menu" size="md" />
-                </button>
+                {/* Mobile Menu Toggle or Custom Content */}
+                {leftContent ? (
+                    <div className="md:hidden">
+                        {leftContent}
+                    </div>
+                ) : (
+                    <button className="text-muted-foreground hover:text-foreground md:hidden">
+                        <MaterialIcon name="menu" size="md" />
+                    </button>
+                )}
                 {/* Global Search (Moved from Right) */}
                 <GlobalSearch />
             </div>
