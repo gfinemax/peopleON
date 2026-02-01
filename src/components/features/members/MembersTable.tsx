@@ -233,9 +233,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         }}
                                         className={`flex items-center gap-0.5 text-[14px] py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-500 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
                                     >
-                                        <div className={`flex items-center justify-center rounded-full size-[14px] ${member.phone ? "bg-blue-500 text-white" : "bg-gray-600/30 text-gray-400"}`}>
-                                            <MaterialIcon name="call" size="xs" className="text-[8px]" />
-                                        </div>
+                                        <MaterialIcon name="call" size="xs" className={`${member.phone ? "text-blue-500" : "opacity-30"} text-[8px]`} />
                                         <span className="font-mono tracking-tight font-bold text-blue-500">{member.phone || '전화번호 없음'}</span>
                                     </a>
 
