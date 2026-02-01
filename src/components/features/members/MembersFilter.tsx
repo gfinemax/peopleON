@@ -78,8 +78,8 @@ export function MembersFilter() {
 
     return (
         <div className="flex flex-col rounded-xl border border-border/40 bg-card/20 backdrop-blur-sm p-2 space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-2 items-end">
-                <div className="lg:col-span-4 space-y-1.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 items-end">
+                <div className="col-span-2 lg:col-span-4 space-y-1.5">
                     <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">통합 검색</label>
                     <div className="relative group">
                         <MaterialIcon
@@ -97,7 +97,7 @@ export function MembersFilter() {
                         />
                     </div>
                 </div>
-                <div className="lg:col-span-2 space-y-1.5">
+                <div className="col-span-1 lg:col-span-2 space-y-1.5">
                     <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">차수 (TIER)</label>
                     <Select value={tier} onValueChange={(val) => updateSearch('tier', val)}>
                         <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
@@ -112,7 +112,7 @@ export function MembersFilter() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="lg:col-span-2 space-y-1.5">
+                <div className="col-span-1 lg:col-span-2 space-y-1.5">
                     <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">상태 (STATUS)</label>
                     <Select value={status} onValueChange={(val) => updateSearch('status', val)}>
                         <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
@@ -127,7 +127,7 @@ export function MembersFilter() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="lg:col-span-3 space-y-1.5">
+                <div className="col-span-2 lg:col-span-3 space-y-1.5">
                     <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">태그 (TAGS)</label>
                     <input
                         type="text"
@@ -138,7 +138,7 @@ export function MembersFilter() {
                         onKeyDown={handleTagKeyDown}
                     />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="col-span-2 lg:col-span-1">
                     <button
                         onClick={handleSearch}
                         className="h-9 w-full rounded-lg bg-primary text-white font-black text-xs hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all"
