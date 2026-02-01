@@ -80,80 +80,61 @@ export default function TimelinePage() {
             />
 
             <main className="flex-1 overflow-y-auto bg-background">
-                <div className="p-6 lg:p-10 max-w-[900px] mx-auto space-y-6">
-                    {/* Page Header */}
-                    <div className="flex flex-wrap justify-between items-end gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                                활동 타임라인
-                            </h1>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                조합원 관련 모든 활동 이력을 시간순으로 확인합니다.
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button className="flex items-center gap-2 rounded-lg h-10 px-4 bg-card border border-border text-foreground text-sm font-medium shadow-sm hover:bg-accent transition-colors">
-                                <MaterialIcon name="filter_list" size="md" />
-                                필터
-                            </button>
-                            <button className="flex items-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold shadow-md hover:bg-[#0f6bd0] transition-colors">
-                                <MaterialIcon name="add" size="md" />
-                                활동 기록
-                            </button>
-                        </div>
-                    </div>
+                <div className="p-4 w-full max-w-md mx-auto flex flex-col gap-6">
+                    {/* Page Header Removed as per user request */}
+                    <div>
+                        <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
 
-                    {/* Filter Tabs */}
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                        {[
-                            { label: '전체', value: 'all', active: true },
-                            { label: '통화', value: 'call', icon: 'phone' },
-                            { label: '방문', value: 'meeting', icon: 'location_on' },
-                            { label: '문자', value: 'sms', icon: 'sms' },
-                            { label: '수납', value: 'payment', icon: 'payments' },
-                            { label: '문서', value: 'document', icon: 'description' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.value}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${tab.active
-                                    ? 'bg-primary text-white shadow-md'
-                                    : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent'
-                                    }`}
-                            >
-                                {tab.icon && <MaterialIcon name={tab.icon} size="sm" />}
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="rounded-lg border border-border bg-card shadow-sm">
-                        <div className="p-6">
-                            <div className="relative flex flex-col gap-8 pl-2">
-                                <div className="absolute left-[19px] top-2 bottom-4 w-0.5 bg-border" />
-
-                                {activities.map((activity, idx) => (
-                                    <div key={activity.id} className="relative pl-12 group">
-                                        <div className={`absolute left-0 top-0 size-10 rounded-full ${activity.iconBg} border border-border flex items-center justify-center z-10 ring-4 ring-card`}>
-                                            <MaterialIcon name={activity.icon} size="md" className={activity.iconColor} />
-                                        </div>
-
-                                        <div className="flex flex-col gap-1 bg-muted/30 rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="text-sm font-bold text-foreground">
-                                                    {activity.title}
-                                                </h4>
-                                                <span className="text-[11px] font-bold text-muted-foreground/30 font-mono tracking-tight bg-white/5 px-2 py-0.5 rounded">
-                                                    {activity.time}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                {activity.description}
-                                            </p>
-                                        </div>
-                                    </div>
+                            {/* Filter Tabs */}
+                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                {[
+                                    { label: '전체', value: 'all', active: true },
+                                    { label: '통화', value: 'call', icon: 'phone' },
+                                    { label: '방문', value: 'meeting', icon: 'location_on' },
+                                    { label: '문자', value: 'sms', icon: 'sms' },
+                                    { label: '수납', value: 'payment', icon: 'payments' },
+                                    { label: '문서', value: 'document', icon: 'description' },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.value}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors border ${tab.active
+                                            ? 'bg-primary text-white border-primary'
+                                            : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                                            }`}
+                                    >
+                                        {tab.icon && <MaterialIcon name={tab.icon} size="xs" className="text-[14px]" />}
+                                        {tab.label}
+                                    </button>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="relative flex flex-col gap-6 pl-2">
+                            {/* Vertical Line - Centered (left-5 = 20px, half of size-10) */}
+                            <div className="absolute left-5 top-2 bottom-4 w-0.5 bg-border -z-10" />
+
+                            {activities.map((activity, idx) => (
+                                <div key={activity.id} className="relative pl-14 group">
+                                    <div className={`absolute left-0 top-0 size-10 rounded-full ${activity.iconBg} border border-border flex items-center justify-center z-10 bg-background`}>
+                                        <MaterialIcon name={activity.icon} size="md" className={activity.iconColor} />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1 py-1">
+                                        <div className="flex justify-between items-start">
+                                            <h4 className="text-[15px] font-bold text-foreground leading-none">
+                                                {activity.title}
+                                            </h4>
+                                            <span className="text-[11px] font-bold text-muted-foreground/50 font-mono tracking-tight">
+                                                {activity.time}
+                                            </span>
+                                        </div>
+                                        <p className="text-[13px] text-muted-foreground line-clamp-2">
+                                            {activity.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Load More */}
