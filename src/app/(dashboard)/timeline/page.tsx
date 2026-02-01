@@ -369,9 +369,11 @@ export default function TimelinePage() {
                     </div>
 
                     {/* Timeline */}
-                    <div className="relative flex flex-col gap-6 pl-2">
+                    <div className="relative flex flex-col gap-6">
                         {/* Vertical Line - Centered (left-5 = 20px, half of size-10) */}
-                        <div className="absolute left-5 top-2 bottom-4 w-0.5 bg-border -z-10" />
+                        {filteredActivities.length > 0 && (
+                            <div className="absolute left-5 top-2 bottom-4 w-[2px] bg-border -z-10" />
+                        )}
 
                         {filteredActivities.length > 0 ? (
                             filteredActivities.map((activity, idx) => (
