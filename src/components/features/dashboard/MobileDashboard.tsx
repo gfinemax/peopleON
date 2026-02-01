@@ -31,7 +31,7 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* 1. Header & Search - Sticky */}
             <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm transition-colors border-b border-border/40">
-                <div className="flex items-center justify-between px-4 pt-[10px] pb-2">
+                <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-2">
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <div className="size-10 rounded-full bg-muted/20 border-2 border-primary/20 overflow-hidden">
@@ -53,7 +53,7 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
                         <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-destructive border border-background"></span>
                     </button>
                 </div>
-                <div className="px-4 py-2 pb-3">
+                <div className="px-4 py-2 pb-1">
                     <GlobalSearch
                         trigger={
                             <div className="relative group">
@@ -72,20 +72,7 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
             </header>
 
             {/* 2. Key Metrics Cards */}
-            <div className="px-3 space-y-3 pt-2">
-                <div className="flex items-center justify-between px-1">
-                    <div>
-                        <span className="text-[10px] font-bold tracking-wider text-primary uppercase block opacity-70">현재 사업장</span>
-                        <h3 className="text-lg font-extrabold tracking-tight text-foreground">오학동 지역주택조합</h3>
-                    </div>
-                    <button
-                        onClick={() => alert('🚧 다중 사업장 관리 기능은 준비 중입니다.\n(추후 업데이트 예정)')}
-                        className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/20 transition-colors"
-                    >
-                        변경
-                    </button>
-                </div>
-
+            <div className="px-3 space-y-3 pt-1">
                 <div className="grid grid-cols-2 gap-2">
                     {/* Total Members */}
                     <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden group">
