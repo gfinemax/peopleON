@@ -82,68 +82,42 @@ export default function TimelinePage() {
             <main className="flex-1 overflow-y-auto bg-background">
                 <div className="p-4 w-full max-w-md mx-auto flex flex-col gap-6">
                     {/* Page Header Removed as per user request */}
-                    <div>
-                        <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
 
-                            {/* Filter Tabs */}
-                            <div className="flex gap-2 overflow-x-auto pb-2">
-                                {[
-                                    { label: '전체', value: 'all', active: true },
-                                    { label: '통화', value: 'call', icon: 'phone' },
-                                    { label: '방문', value: 'meeting', icon: 'location_on' },
-                                    { label: '문자', value: 'sms', icon: 'sms' },
-                                    { label: '수납', value: 'payment', icon: 'payments' },
-                                    { label: '문서', value: 'document', icon: 'description' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.value}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors border ${tab.active
-                                            ? 'bg-primary text-white border-primary'
-                                            : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                                            }`}
-                                    >
-                                        {tab.icon && <MaterialIcon name={tab.icon} size="xs" className="text-[14px]" />}
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
 
-                        {/* Timeline */}
-                        <div className="relative flex flex-col gap-6 pl-2">
-                            {/* Vertical Line - Centered (left-5 = 20px, half of size-10) */}
-                            <div className="absolute left-5 top-2 bottom-4 w-0.5 bg-border -z-10" />
+                    {/* Timeline */}
+                    <div className="relative flex flex-col gap-6 pl-2">
+                        {/* Vertical Line - Centered (left-5 = 20px, half of size-10) */}
+                        <div className="absolute left-5 top-2 bottom-4 w-0.5 bg-border -z-10" />
 
-                            {activities.map((activity, idx) => (
-                                <div key={activity.id} className="relative pl-14 group">
-                                    <div className={`absolute left-0 top-0 size-10 rounded-full ${activity.iconBg} border border-border flex items-center justify-center z-10 bg-background`}>
-                                        <MaterialIcon name={activity.icon} size="md" className={activity.iconColor} />
-                                    </div>
-
-                                    <div className="flex flex-col gap-1 py-1">
-                                        <div className="flex justify-between items-start">
-                                            <h4 className="text-[15px] font-bold text-foreground leading-none">
-                                                {activity.title}
-                                            </h4>
-                                            <span className="text-[11px] font-bold text-muted-foreground/50 font-mono tracking-tight">
-                                                {activity.time}
-                                            </span>
-                                        </div>
-                                        <p className="text-[13px] text-muted-foreground line-clamp-2">
-                                            {activity.description}
-                                        </p>
-                                    </div>
+                        {activities.map((activity, idx) => (
+                            <div key={activity.id} className="relative pl-14 group">
+                                <div className={`absolute left-0 top-0 size-10 rounded-full ${activity.iconBg} border border-border flex items-center justify-center z-10 bg-background`}>
+                                    <MaterialIcon name={activity.icon} size="md" className={activity.iconColor} />
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* Load More */}
-                        <div className="border-t border-border p-4">
-                            <button className="w-full py-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-2">
-                                <MaterialIcon name="expand_more" size="md" />
-                                더 보기
-                            </button>
-                        </div>
+                                <div className="flex flex-col gap-1 py-1">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="text-[15px] font-bold text-foreground leading-none">
+                                            {activity.title}
+                                        </h4>
+                                        <span className="text-[11px] font-bold text-muted-foreground/50 font-mono tracking-tight">
+                                            {activity.time}
+                                        </span>
+                                    </div>
+                                    <p className="text-[13px] text-muted-foreground line-clamp-2">
+                                        {activity.description}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Load More */}
+                    <div className="border-t border-border p-4">
+                        <button className="w-full py-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-2">
+                            <MaterialIcon name="expand_more" size="md" />
+                            더 보기
+                        </button>
                     </div>
                 </div>
             </main>
