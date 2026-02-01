@@ -231,10 +231,12 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                                 alert('전화번호가 없습니다.');
                                             }
                                         }}
-                                        className={`flex items-center gap-2 text-[14px] py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-green-600 hover:bg-green-500/10 active:bg-green-500/20' : 'text-gray-600 cursor-not-allowed'}`}
+                                        className={`flex items-center gap-0.5 text-[14px] py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-500 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
                                     >
-                                        <MaterialIcon name="call" size="xs" className={`${member.phone ? "text-green-600" : "opacity-30"} text-[8px]`} />
-                                        <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
+                                        <div className={`flex items-center justify-center rounded-full size-[14px] ${member.phone ? "bg-blue-500 text-white" : "bg-gray-600/30 text-gray-400"}`}>
+                                            <MaterialIcon name="call" size="xs" className="text-[8px]" />
+                                        </div>
+                                        <span className="font-mono tracking-tight font-bold text-blue-500">{member.phone || '전화번호 없음'}</span>
                                     </a>
 
                                     {/* Representative Info */}
@@ -242,9 +244,9 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         <a
                                             href={`tel:${member.relationships[0].phone}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1.5 text-[14px] py-1 px-2 rounded hover:bg-emerald-500/10 active:bg-emerald-500/20 transition-colors text-emerald-600"
+                                            className="flex items-center gap-0.5 text-[14px] py-1 px-2 rounded hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors text-orange-500"
                                         >
-                                            <MaterialIcon name="contact_page" size="xs" className="text-[8px]" />
+                                            <MaterialIcon name="contacts" size="xs" className="text-[10px]" />
                                             <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
                                         </a>
                                     )}

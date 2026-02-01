@@ -86,6 +86,7 @@ export const Icons = {
     sms: 'sms',
     call: 'call',
     contactPage: 'contact_page',
+    contacts: 'contacts',
 
     // Business
     apartment: 'apartment',
