@@ -207,6 +207,11 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         </div>
                                         <div className="text-[11px] text-muted-foreground">
                                             {member.tier || '차수미정'} / {member.unit_group || '동호수미정'}
+                                            {member.relationships && member.relationships.length > 0 && (
+                                                <span className="ml-2 text-orange-400 font-bold">
+                                                    {member.relationships[0].name} ({member.relationships[0].relation})
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -241,7 +246,6 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         >
                                             <MaterialIcon name="supervisor_account" size="xs" />
                                             <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
-                                            <span className="text-[10px] text-muted-foreground ml-1">{member.relationships[0].name}</span>
                                         </a>
                                     )}
                                 </div>

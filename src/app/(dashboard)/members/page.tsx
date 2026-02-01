@@ -29,7 +29,7 @@ export default async function MembersPage({
     // Debug variable kept just in case of future issues, but UI will focus on data
     let fetchError: any = null;
 
-    const pageSize = 30;
+    const pageSize = 2000;
 
     // Helper to calculate derived values safely
     const getRange = (p: number, size: number) => {
