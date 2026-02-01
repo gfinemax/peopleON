@@ -4,6 +4,7 @@ import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useState } from 'react';
+import { GlobalSearch } from '@/components/features/search/GlobalSearch';
 
 export interface DashboardStats {
     totalMembers: number;
@@ -53,16 +54,20 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
                     </button>
                 </div>
                 <div className="px-4 py-2 pb-3">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MaterialIcon name="search" size="sm" className="text-muted-foreground group-focus-within:text-primary transition-colors" />
-                        </div>
-                        <input
-                            className="block w-full pl-10 pr-3 py-3 border-none rounded-xl leading-5 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm transition-all font-medium text-sm"
-                            placeholder="조합원, 동호수 검색..."
-                            type="text"
-                        />
-                    </div>
+                    <GlobalSearch
+                        trigger={
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <MaterialIcon name="search" size="sm" className="text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                </div>
+                                <div
+                                    className="block w-full pl-10 pr-3 py-3 border-none rounded-xl leading-5 bg-muted/30 text-foreground text-muted-foreground shadow-sm transition-all font-medium text-sm text-left cursor-text"
+                                >
+                                    조합원, 동호수 검색...
+                                </div>
+                            </div>
+                        }
+                    />
                 </div>
             </header>
 
