@@ -177,12 +177,12 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
             </div>
 
             {/* Mobile Card View */}
-            <div className="block md:hidden w-full h-full overflow-y-auto overflow-x-hidden p-4 space-y-3 pb-20 scrollbar-hide">
+            <div className="block md:hidden w-full h-full overflow-y-auto overflow-x-hidden p-4 space-y-2 pb-20 scrollbar-hide">
                 {members.map((member, index) => (
                     <div
                         key={member.id}
                         onClick={() => handleRowClick(member.id)}
-                        className="flex flex-col gap-3 p-4 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm"
+                        className="flex flex-col gap-2 p-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm"
                     >
                         <div className="flex justify-between items-start">
                             <div className="flex gap-3 items-center">
@@ -205,10 +205,20 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                         <div className="h-px w-full bg-white/[0.04]" />
 
                         <div className="flex justify-between items-center px-1">
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                <MaterialIcon name="phone" size="xs" className="opacity-50" />
-                                <span className="font-mono tracking-tight">{member.phone || '-'}</span>
-                            </div>
+                            <a
+                                href={member.phone ? `tel:${member.phone}` : undefined}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!member.phone) {
+                                        e.preventDefault();
+                                        alert('전화번호가 없습니다.');
+                                    }
+                                }}
+                                className={`flex items-center gap-2 text-xs py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
+                            >
+                                <MaterialIcon name="call" size="xs" className={member.phone ? "text-blue-400" : "opacity-30"} />
+                                <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
+                            </a>
                             {/* Simple Tag Summary if needed */}
                             <div className="flex gap-1.5">
                                 {member.status === '탈퇴예정' && <span className="size-1.5 rounded-full bg-red-500" />}
