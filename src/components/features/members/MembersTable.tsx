@@ -241,6 +241,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         >
                                             <MaterialIcon name="supervisor_account" size="xs" />
                                             <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
+                                            <span className="text-[10px] text-muted-foreground ml-1">{member.relationships[0].name}</span>
                                         </a>
                                     )}
                                 </div>
