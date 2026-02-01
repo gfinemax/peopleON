@@ -68,7 +68,7 @@ export default function TimelinePage() {
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <Header title="활동 타임라인" />
+            <Header title="활동 타임라인" iconName="history" />
 
             <main className="flex-1 overflow-y-auto bg-background">
                 <div className="p-6 lg:p-10 max-w-[900px] mx-auto space-y-6">

@@ -21,7 +21,7 @@ export default function SettingsPage() {
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <Header title="설정" />
+            <Header title="설정" iconName="settings" />
 
             <main className="flex-1 overflow-y-auto bg-background">
                 <div className="p-5 lg:p-8 max-w-[800px] mx-auto space-y-5">

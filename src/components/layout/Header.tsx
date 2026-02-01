@@ -7,18 +7,18 @@ import { GlobalSearch } from '@/components/features/search/GlobalSearch';
 
 interface HeaderProps {
     title?: string;
+    iconName?: string; // New prop for icon
     showBreadcrumb?: boolean;
     leftContent?: React.ReactNode;
 }
 
-export function Header({ title = '통합 대시보드', leftContent }: HeaderProps) {
+export function Header({ title = '통합 대시보드', iconName, leftContent }: HeaderProps) {
     const { theme, setTheme } = useTheme();
     // useRouter and state removed as GlobalSearch handles it
 
     return (
         <header className="sticky top-0 z-10 flex h-auto min-h-14 w-full items-center justify-between border-b border-border bg-background px-4 pt-[calc(env(safe-area-inset-top)+5px)] pb-3 md:pt-0 md:pb-0 md:h-14">
-            {/* Left: Title */}
-            {/* Left: Search & Menu */}
+            {/* Left: icon + Title (Mobile/Desktop consistent) */}
             <div className="flex items-center gap-4">
                 {/* Mobile Menu Toggle or Custom Content */}
                 {leftContent ? (
@@ -26,16 +26,25 @@ export function Header({ title = '통합 대시보드', leftContent }: HeaderPro
                         {leftContent}
                     </div>
                 ) : (
-                    <button className="text-muted-foreground hover:text-foreground md:hidden">
-                        <MaterialIcon name="menu" size="md" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button className="text-muted-foreground hover:text-foreground md:hidden">
+                            <MaterialIcon name="menu" size="md" />
+                        </button>
+                        {/* Title with Icon */}
+                        <div className="flex items-center gap-2">
+                            {iconName && (
+                                <MaterialIcon name={iconName} size="md" className="text-muted-foreground" />
+                            )}
+                            <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+                        </div>
+                    </div>
                 )}
                 {/* Global Search (Moved from Right) */}
                 <GlobalSearch />
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2"> {/* Reduced gap from 4 to 2 */}
 
 
                 {/* Notifications */}
@@ -45,7 +54,7 @@ export function Header({ title = '통합 대시보드', leftContent }: HeaderPro
                 </button>
 
                 {/* Users Profile */}
-                <div className="flex items-center gap-3 pl-2 ml-2 border-l border-border/50">
+                <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border/50"> {/* Reduced gap/margin */}
                     <div className="hidden md:flex flex-col items-end">
                         <span className="text-xs font-bold text-foreground">김관리</span>
                         <span className="text-[10px] text-muted-foreground/60 font-mono tracking-tight">admin@peopleon.com</span>

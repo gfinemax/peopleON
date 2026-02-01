@@ -1,5 +1,6 @@
 'use client';
 
+import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -38,18 +39,8 @@ export function MobileFinanceView({ summary, rounds }: MobileFinanceViewProps) {
 
     return (
         <div className="flex flex-col min-h-screen bg-background pb-24">
-            {/* Header */}
-            <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm transition-colors border-b border-border/40 pt-[calc(env(safe-area-inset-top)+5px)]">
-                <div className="flex items-center px-4 pb-3 pt-2 justify-between h-auto min-h-12">
-                    <button className="flex items-center justify-center size-10 rounded-full hover:bg-muted/10 transition-colors">
-                        <MaterialIcon name="arrow_back_ios_new" size="sm" />
-                    </button>
-                    <h2 className="text-lg font-bold leading-tight tracking-tight flex-1 text-center">자금 관리 현황</h2>
-                    <button className="flex items-center justify-center size-10 rounded-full hover:bg-muted/10 transition-colors">
-                        <MaterialIcon name="filter_list" size="sm" />
-                    </button>
-                </div>
-            </header>
+            {/* Shared Header for consistency */}
+            <Header title="자금 관리 현황" iconName="account_balance" />
 
             <main className="flex-1 flex flex-col gap-6 p-4 w-full max-w-md mx-auto">
                 {/* Summary Section */}

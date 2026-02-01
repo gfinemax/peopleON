@@ -159,6 +159,7 @@ export default async function MembersPage({
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
             <Header
                 title="조합원 관리"
+                iconName="person"
                 leftContent={
                     <div className="flex items-baseline gap-1.5 whitespace-nowrap">
                         <span className="text-lg font-bold text-foreground">조합원 {displayTotalCount}</span>
