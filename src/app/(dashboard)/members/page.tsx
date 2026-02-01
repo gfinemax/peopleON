@@ -149,29 +149,6 @@ export default async function MembersPage({
             <Header title="조합원 관리" />
 
             <div className="flex flex-col shrink-0 gap-0.5 px-4 lg:px-6 pt-2 lg:pt-4 pb-0 max-w-[1600px] mx-auto w-full">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-extrabold tracking-tight text-white">
-                            조합원명부 관리
-                        </h2>
-                        <p className="text-muted-foreground/60 font-medium text-xs tracking-tight opacity-70">
-                            조합원의 상세 정보 조회 및 관리, 문자 발송 및 라벨 출력이 가능합니다.
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button className="flex items-center gap-2 rounded-lg border border-border bg-card/40 px-3 py-2 text-xs font-bold text-white hover:bg-card transition-all shadow-sm h-9">
-                            <MaterialIcon name="upload_file" size="sm" />
-                            엑셀 일괄 등록
-                        </button>
-                        <Link
-                            href="/members?action=new"
-                            className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all h-9"
-                        >
-                            <MaterialIcon name="add" size="sm" />
-                            신규 조합원 등록
-                        </Link>
-                    </div>
-                </div>
 
                 <MembersFilter />
 

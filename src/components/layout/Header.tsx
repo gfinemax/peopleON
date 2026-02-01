@@ -43,7 +43,7 @@ export function Header({ title = '통합 대시보드' }: HeaderProps) {
                         <span className="text-xs font-bold text-foreground">김관리</span>
                         <span className="text-[10px] text-muted-foreground/60 font-mono tracking-tight">admin@peopleon.com</span>
                     </div>
-                    <div className="size-8 rounded-full bg-muted/50 border border-border flex items-center justify-center">
+                    <div className="hidden md:flex size-8 rounded-full bg-muted/50 border border-border items-center justify-center">
                         <MaterialIcon name="person" size="sm" className="text-muted-foreground" />
                     </div>
                     <form action={signOut}>
