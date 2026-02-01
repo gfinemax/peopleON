@@ -39,8 +39,8 @@ export function MobileFinanceView({ summary, rounds }: MobileFinanceViewProps) {
     return (
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* Header */}
-            <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm transition-colors border-b border-border/40">
-                <div className="flex items-center p-4 justify-between h-14">
+            <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm transition-colors border-b border-border/40 pt-[calc(env(safe-area-inset-top)+5px)]">
+                <div className="flex items-center px-4 pb-3 pt-2 justify-between h-auto min-h-12">
                     <button className="flex items-center justify-center size-10 rounded-full hover:bg-muted/10 transition-colors">
                         <MaterialIcon name="arrow_back_ios_new" size="sm" />
                     </button>
