@@ -190,10 +190,10 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                         <div
                             key={member.id}
                             onClick={() => handleRowClick(member.id)}
-                            className={`flex flex-col gap-2 p-3 mx-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm relative overflow-hidden pl-4`}
+                            className={`flex flex-col gap-2 p-3 mx-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm relative overflow-hidden pr-4`}
                         >
                             {/* Vertical Status Bar */}
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusBorderClass.replace('border-l-', 'bg-')}`} />
+                            <div className={`absolute right-0 top-0 bottom-0 w-1 ${statusBorderClass.replace('border-l-', 'bg-')}`} />
 
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-3 items-center">
