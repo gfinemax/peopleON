@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,58 @@ export default function TimelinePage() {
     const [newLogText, setNewLogText] = useState('');
     const [newLogType, setNewLogType] = useState('call');
     const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+
+    // Refs
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Voice Input Handler
+    const toggleListening = () => {
+        if (isListening) {
+            setIsListening(false);
+            // In a real app, we would stop the recognition here
+        } else {
+            setIsListening(true);
+
+            // Text to Speech Logic (Browser Support Check)
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ko-KR';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onresult = (event: SpeechRecognitionEvent) => {
+                    const transcript = event.results[0][0].transcript;
+                    setNewLogText((prev) => prev + (prev ? ' ' : '') + transcript);
+                    setIsListening(false);
+                };
+
+                recognition.onerror = (event: any) => {
+                    console.error('Speech recognition error', event.error);
+                    setIsListening(false);
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognition.start();
+            } else {
+                alert('음성 인식을 지원하지 않는 브라우저입니다.');
+                setIsListening(false);
+            }
+        }
+    };
+
+    // Image Input Handler
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAttachedFile(file);
+        }
+    };
 
     // Sample timeline data
     const activities: Activity[] = [
@@ -142,12 +194,35 @@ export default function TimelinePage() {
                                     <MaterialIcon name="close" size="sm" />
                                 </button>
                             </div>
-                            <textarea
-                                className="w-full h-24 bg-muted/30 rounded-lg border border-border p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none mb-3"
-                                placeholder="활동 내용을 입력하세요..."
-                                value={newLogText}
-                                onChange={(e) => setNewLogText(e.target.value)}
-                            />
+                            <div className="relative">
+                                <textarea
+                                    className={cn(
+                                        "w-full h-24 bg-muted/30 rounded-lg border p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none mb-3 transition-colors",
+                                        isListening ? "border-primary ring-1 ring-primary/50 bg-primary/5" : "border-border"
+                                    )}
+                                    placeholder={isListening ? "듣고 있습니다..." : "활동 내용을 입력하세요..."}
+                                    value={newLogText}
+                                    onChange={(e) => setNewLogText(e.target.value)}
+                                />
+                                {isListening && (
+                                    <div className="absolute right-3 top-3 animate-pulse">
+                                        <div className="size-2 rounded-full bg-red-500" />
+                                    </div>
+                                )}
+                            </div>
+
+                            {attachedFile && (
+                                <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-muted/50 border border-border w-fit">
+                                    <MaterialIcon name="image" size="sm" className="text-primary" />
+                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">{attachedFile.name}</span>
+                                    <button
+                                        onClick={() => setAttachedFile(null)}
+                                        className="ml-2 hover:text-destructive"
+                                    >
+                                        <MaterialIcon name="close" size="xs" />
+                                    </button>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between">
                                 {/* Left Side: Type Selector */}
                                 <div className="relative">
@@ -192,10 +267,28 @@ export default function TimelinePage() {
 
                                 {/* Right Side: Actions */}
                                 <div className="flex items-center gap-2">
-                                    <button className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" title="음성 입력">
-                                        <MaterialIcon name="mic" size="sm" />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        ref={fileInputRef}
+                                        onChange={handleImageSelect}
+                                    />
+                                    <button
+                                        onClick={toggleListening}
+                                        className={cn(
+                                            "p-2 rounded-full transition-all",
+                                            isListening ? "bg-red-500/10 text-red-500 animate-pulse" : "hover:bg-muted text-muted-foreground"
+                                        )}
+                                        title="음성 입력"
+                                    >
+                                        <MaterialIcon name={isListening ? "mic_off" : "mic"} size="sm" />
                                     </button>
-                                    <button className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" title="사진 첨부">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                                        title="사진 첨부"
+                                    >
                                         <MaterialIcon name="image" size="sm" />
                                     </button>
                                     <button className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors ml-2">
