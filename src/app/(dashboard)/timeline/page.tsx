@@ -22,6 +22,8 @@ export default function TimelinePage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isWriteMode, setIsWriteMode] = useState(false);
     const [newLogText, setNewLogText] = useState('');
+    const [newLogType, setNewLogType] = useState('call');
+    const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
 
     // Sample timeline data
     const activities: Activity[] = [
@@ -96,6 +98,9 @@ export default function TimelinePage() {
         { label: '문서', value: 'document', icon: 'description' },
     ];
 
+    // Options for creating a new log (exclude 'all')
+    const createOptions = filterOptions.filter(opt => opt.value !== 'all');
+
     const filteredActivities = activities.filter(activity => {
         const matchesSearch =
             activity.title.includes(searchQuery) ||
@@ -143,16 +148,60 @@ export default function TimelinePage() {
                                 value={newLogText}
                                 onChange={(e) => setNewLogText(e.target.value)}
                             />
-                            <div className="flex justify-end gap-2">
-                                <button className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
-                                    <MaterialIcon name="mic" size="sm" />
-                                </button>
-                                <button className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
-                                    <MaterialIcon name="image" size="sm" />
-                                </button>
-                                <button className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors ml-2">
-                                    저장
-                                </button>
+                            <div className="flex items-center justify-between">
+                                {/* Left Side: Type Selector */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/50 border border-border text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                                    >
+                                        <MaterialIcon
+                                            name={createOptions.find(opt => opt.value === newLogType)?.icon || 'edit'}
+                                            size="xs"
+                                            className="text-primary"
+                                        />
+                                        {createOptions.find(opt => opt.value === newLogType)?.label}
+                                        <MaterialIcon name="arrow_drop_down" size="xs" className="text-muted-foreground" />
+                                    </button>
+
+                                    {/* Type Dropdown */}
+                                    {isTypeDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setIsTypeDropdownOpen(false)} />
+                                            <div className="absolute left-0 top-full mt-2 w-32 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+                                                {createOptions.map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        onClick={() => {
+                                                            setNewLogType(option.value);
+                                                            setIsTypeDropdownOpen(false);
+                                                        }}
+                                                        className={cn(
+                                                            "w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-muted transition-colors",
+                                                            newLogType === option.value ? "font-bold text-primary bg-primary/5" : "text-foreground"
+                                                        )}
+                                                    >
+                                                        <MaterialIcon name={option.icon} size="xs" className={newLogType === option.value ? "text-primary" : "text-muted-foreground"} />
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Right Side: Actions */}
+                                <div className="flex items-center gap-2">
+                                    <button className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" title="음성 입력">
+                                        <MaterialIcon name="mic" size="sm" />
+                                    </button>
+                                    <button className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" title="사진 첨부">
+                                        <MaterialIcon name="image" size="sm" />
+                                    </button>
+                                    <button className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors ml-2">
+                                        저장
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
