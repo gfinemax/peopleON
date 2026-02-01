@@ -24,6 +24,7 @@ export default async function MembersPage({
 
     let members: any[] | null = [];
     let totalCount = 0;
+    let absoluteTotalCount = 0;
 
     // Debug variable kept just in case of future issues, but UI will focus on data
     let fetchError: any = null;
@@ -51,6 +52,13 @@ export default async function MembersPage({
         tag = params?.tag;
 
         const { from, to } = getRange(page, pageSize);
+
+        // Fetch absolute total count ignoring filters
+        const { count: absoluteCount } = await supabase
+            .from('members')
+            .select('*', { count: 'exact', head: true });
+
+        absoluteTotalCount = absoluteCount || 0;
 
         let queryBuilder = supabase
             .from('members')
@@ -144,13 +152,16 @@ export default async function MembersPage({
         return pages;
     };
 
+    // Calculate derived total count (use local count if not fetched separately successfully, but logic above handles it)
+    const displayTotalCount = (typeof absoluteTotalCount !== 'undefined') ? absoluteTotalCount : totalCount;
+
     return (
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
             <Header
                 title="조합원 관리"
                 leftContent={
                     <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                        <span className="text-sm font-black text-foreground">전체 {totalCount}</span>
+                        <span className="text-lg font-bold text-foreground">전체 {displayTotalCount}</span>
                         <span className="text-[10px] font-bold text-muted-foreground">· 검색 <span className="text-primary">{totalCount}</span></span>
                     </div>
                 }
