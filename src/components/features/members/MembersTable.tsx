@@ -221,7 +221,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                             <div className="h-px w-full bg-white/[0.04]" />
 
                             <div className="flex justify-between items-center px-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                     <a
                                         href={member.phone ? `tel:${member.phone}` : undefined}
                                         onClick={(e) => {
@@ -233,7 +233,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         }}
                                         className={`flex items-center gap-2 text-[14px] py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
                                     >
-                                        <MaterialIcon name="call" size="xs" className={`${member.phone ? "text-blue-400" : "opacity-30"} text-[10px]`} />
+                                        <MaterialIcon name="call" size="xs" className={`${member.phone ? "text-blue-400" : "opacity-30"} text-[8px]`} />
                                         <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
                                     </a>
 
@@ -244,7 +244,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                             onClick={(e) => e.stopPropagation()}
                                             className="flex items-center gap-1.5 text-[14px] py-1 px-2 rounded hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors text-orange-400"
                                         >
-                                            <MaterialIcon name="supervisor_account" size="xs" className="text-[10px]" />
+                                            <MaterialIcon name="supervisor_account" size="xs" className="text-[8px]" />
                                             <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
                                         </a>
                                     )}
