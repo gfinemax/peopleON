@@ -177,12 +177,12 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
             </div>
 
             {/* Mobile Card View */}
-            <div className="block md:hidden w-full h-full overflow-y-auto overflow-x-hidden p-4 space-y-2 pb-20 scrollbar-hide">
+            <div className="block md:hidden w-full h-full overflow-y-auto overflow-x-hidden px-0 py-2 space-y-3 pb-24 scrollbar-hide">
                 {members.map((member, index) => (
                     <div
                         key={member.id}
                         onClick={() => handleRowClick(member.id)}
-                        className="flex flex-col gap-2 p-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm"
+                        className="flex flex-col gap-2 p-3 mx-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm"
                     >
                         <div className="flex justify-between items-start">
                             <div className="flex gap-3 items-center">
