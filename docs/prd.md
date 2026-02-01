@@ -6,7 +6,7 @@
 | **버전** | **v2.1 (Schema Integrated)** |
 | **작성/관리** | Antigravity (PM: 파인맥스) |
 | **핵심 컨셉** | **"재무(ERP)와 관계(CRM)의 통합"**<br>현재 구축된 조합원 DB를 기반으로, 자금 흐름과 상담 이력을 연결하는 시스템 |
-| **플랫폼** | **Adaptive Web UI** (Desktop Admin + Smartphone optimized view) |
+| **플랫폼** | **Adaptive Web UI** + **Native App** (Android/iOS via Capacitor) |
 
 ---
 
@@ -48,7 +48,7 @@
 * **라벨 출력:** 등기/실거주 주소 선택 후 라벨지(폼텍 등) 규격 PDF 자동 생성.
 
 ### 2.5 [Interface] 하이브리드 입력 시스템
-* **📱 Mobile (현장 최적화):**
+* **📱 Mobile (현장 최적화 + Native App):**
     *   **Dashboard:** 전체 조합원 수, 납부율 등 ERP/CRM 핵심 지표 실시간 연동.
     *   **Finance View:** 개인별/회차별 납부 현황 및 미납 내역 실시간 조회 (진행률 그래프 포함).
     *   **Finance View:** 개인별/회차별 납부 현황 및 미납 내역 실시간 조회 (진행률 그래프 포함).
