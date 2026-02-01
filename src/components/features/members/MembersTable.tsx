@@ -178,55 +178,67 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
 
             {/* Mobile Card View */}
             <div className="block md:hidden w-full h-full overflow-y-auto overflow-x-hidden px-0 py-2 space-y-3 pb-24 scrollbar-hide">
-                {members.map((member, index) => (
-                    <div
-                        key={member.id}
-                        onClick={() => handleRowClick(member.id)}
-                        className="flex flex-col gap-2 p-3 mx-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div className="flex gap-3 items-center">
-                                <span className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary font-bold text-xs ring-1 ring-primary/20">
-                                    {startIndex + index + 1}
-                                </span>
-                                <div className="flex flex-col gap-0.5">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-white">{member.name}</span>
-                                        <span className="text-[10px] text-muted-foreground/60 font-mono">{member.member_number}</span>
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        {member.tier || '차수미정'} / {member.unit_group || '동호수미정'}
+                {members.map((member, index) => {
+                    // Determine status color
+                    let statusBorderClass = 'border-l-muted'; // Default
+                    if (member.status === '정상') statusBorderClass = 'border-l-emerald-500';
+                    else if (member.status === '탈퇴예정') statusBorderClass = 'border-l-rose-500';
+                    else if (member.status === '소송중') statusBorderClass = 'border-l-orange-500';
+                    else if (member.status) statusBorderClass = 'border-l-blue-500'; // Other status
+
+                    return (
+                        <div
+                            key={member.id}
+                            onClick={() => handleRowClick(member.id)}
+                            className={`flex flex-col gap-2 p-3 mx-3 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm relative overflow-hidden pl-4`}
+                        >
+                            {/* Vertical Status Bar */}
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusBorderClass.replace('border-l-', 'bg-')}`} />
+
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3 items-center">
+                                    <span className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary font-bold text-xs ring-1 ring-primary/20">
+                                        {startIndex + index + 1}
+                                    </span>
+                                    <div className="flex flex-col gap-0.5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-white">{member.name}</span>
+                                            <span className="text-[10px] text-muted-foreground/60 font-mono">{member.member_number}</span>
+                                        </div>
+                                        <div className="text-[11px] text-muted-foreground">
+                                            {member.tier || '차수미정'} / {member.unit_group || '동호수미정'}
+                                        </div>
                                     </div>
                                 </div>
+                                {getStatusBadge(member.status)}
                             </div>
-                            {getStatusBadge(member.status)}
-                        </div>
 
-                        <div className="h-px w-full bg-white/[0.04]" />
+                            <div className="h-px w-full bg-white/[0.04]" />
 
-                        <div className="flex justify-between items-center px-1">
-                            <a
-                                href={member.phone ? `tel:${member.phone}` : undefined}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!member.phone) {
-                                        e.preventDefault();
-                                        alert('전화번호가 없습니다.');
-                                    }
-                                }}
-                                className={`flex items-center gap-2 text-xs py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
-                            >
-                                <MaterialIcon name="call" size="xs" className={member.phone ? "text-blue-400" : "opacity-30"} />
-                                <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
-                            </a>
-                            {/* Simple Tag Summary if needed */}
-                            <div className="flex gap-1.5">
-                                {member.status === '탈퇴예정' && <span className="size-1.5 rounded-full bg-red-500" />}
-                                {member.tier === '지주' && <span className="size-1.5 rounded-full bg-blue-500" />}
+                            <div className="flex justify-between items-center px-1">
+                                <a
+                                    href={member.phone ? `tel:${member.phone}` : undefined}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!member.phone) {
+                                            e.preventDefault();
+                                            alert('전화번호가 없습니다.');
+                                        }
+                                    }}
+                                    className={`flex items-center gap-2 text-xs py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
+                                >
+                                    <MaterialIcon name="call" size="xs" className={member.phone ? "text-blue-400" : "opacity-30"} />
+                                    <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
+                                </a>
+                                {/* Simple Tag Summary if needed */}
+                                <div className="flex gap-1.5">
+                                    {member.status === '탈퇴예정' && <span className="size-1.5 rounded-full bg-red-500" />}
+                                    {member.tier === '지주' && <span className="size-1.5 rounded-full bg-blue-500" />}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <MemberDetailDialog
