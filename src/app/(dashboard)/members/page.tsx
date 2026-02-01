@@ -16,7 +16,7 @@ export default async function MembersPage({
     let params: any = {};
     let query = '';
     let sortField = 'name';
-    let sortOrder = 'desc';
+    let sortOrder = 'asc';
     let page = 1;
     let tier: string | undefined;
     let status: string | undefined;
@@ -45,7 +45,7 @@ export default async function MembersPage({
         params = await searchParams || {};
         query = params?.q || '';
         sortField = params?.sort || 'name';
-        sortOrder = params?.order || 'desc';
+        sortOrder = params?.order || 'asc';
         page = Number(params?.page) || 1;
         tier = params?.tier;
         status = params?.status;

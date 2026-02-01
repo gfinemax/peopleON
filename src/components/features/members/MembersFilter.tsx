@@ -22,7 +22,7 @@ export function MembersFilter() {
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const [tag, setTag] = useState(searchParams.get('tag') || '');
     const [sort, setSort] = useState(searchParams.get('sort') || 'name');
-    const [order, setOrder] = useState(searchParams.get('order') || 'desc');
+    const [order, setOrder] = useState(searchParams.get('order') || 'asc');
 
     // Sync with URL changes
     useEffect(() => {
@@ -31,7 +31,7 @@ export function MembersFilter() {
         setStatus(searchParams.get('status') || 'all');
         setTag(searchParams.get('tag') || '');
         setSort(searchParams.get('sort') || 'name');
-        setOrder(searchParams.get('order') || 'desc');
+        setOrder(searchParams.get('order') || 'asc');
     }, [searchParams]);
 
     // Update URL helper
