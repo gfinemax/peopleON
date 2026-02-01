@@ -90,7 +90,8 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
 
     return (
         <>
-            <div className="w-full h-full overflow-auto scrollbar-thin scrollbar-thumb-border/30">
+            {/* Desktop Table View */}
+            <div className="hidden md:block w-full h-full overflow-auto scrollbar-thin scrollbar-thumb-border/30">
                 <table className="w-full text-center bg-card mt-0 text-sm whitespace-nowrap" key={tableKey}>
                     <thead className="sticky top-0 z-10 bg-[#161B22] text-gray-400 font-medium border-b border-white/[0.08]">
                         <tr>
@@ -173,6 +174,49 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="block md:hidden w-full h-full overflow-y-auto overflow-x-hidden p-4 space-y-3 pb-20 scrollbar-hide">
+                {members.map((member, index) => (
+                    <div
+                        key={member.id}
+                        onClick={() => handleRowClick(member.id)}
+                        className="flex flex-col gap-3 p-4 rounded-xl border border-white/[0.08] bg-[#161B22]/50 hover:bg-[#161B22] active:scale-[0.98] transition-all shadow-sm"
+                    >
+                        <div className="flex justify-between items-start">
+                            <div className="flex gap-3 items-center">
+                                <span className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary font-bold text-xs ring-1 ring-primary/20">
+                                    {startIndex + index + 1}
+                                </span>
+                                <div className="flex flex-col gap-0.5">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-white">{member.name}</span>
+                                        <span className="text-[10px] text-muted-foreground/60 font-mono">{member.member_number}</span>
+                                    </div>
+                                    <div className="text-[11px] text-muted-foreground">
+                                        {member.tier || '차수미정'} / {member.unit_group || '동호수미정'}
+                                    </div>
+                                </div>
+                            </div>
+                            {getStatusBadge(member.status)}
+                        </div>
+
+                        <div className="h-px w-full bg-white/[0.04]" />
+
+                        <div className="flex justify-between items-center px-1">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                <MaterialIcon name="phone" size="xs" className="opacity-50" />
+                                <span className="font-mono tracking-tight">{member.phone || '-'}</span>
+                            </div>
+                            {/* Simple Tag Summary if needed */}
+                            <div className="flex gap-1.5">
+                                {member.status === '탈퇴예정' && <span className="size-1.5 rounded-full bg-red-500" />}
+                                {member.tier === '지주' && <span className="size-1.5 rounded-full bg-blue-500" />}
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <MemberDetailDialog

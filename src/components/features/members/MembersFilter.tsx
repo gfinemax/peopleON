@@ -76,77 +76,88 @@ export function MembersFilter() {
     const activeStatus = searchParams.get('status');
     const activeTag = searchParams.get('tag');
 
+    const [isExpanded, setIsExpanded] = useState(false);
+
     return (
         <div className="flex flex-col rounded-xl border border-border/40 bg-card/20 backdrop-blur-sm p-2 space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 items-end">
-                <div className="col-span-2 lg:col-span-4 space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">통합 검색</label>
-                    <div className="relative group">
-                        <MaterialIcon
-                            name="search"
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors font-bold"
-                            size="sm"
-                        />
+            {/* Top Row: Search + Actions */}
+            <div className="flex gap-2 items-center">
+                <div className="relative flex-1 group">
+                    <MaterialIcon
+                        name="search"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors font-bold"
+                        size="sm"
+                    />
+                    <input
+                        type="text"
+                        placeholder="이름, 동호수, 전화번호 검색"
+                        className="h-9 w-full rounded-lg border border-border bg-card/60 pl-9 pr-4 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                    />
+                </div>
+                <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className={`h-9 px-3 rounded-lg border border-border bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card hover:border-primary/50 transition-all flex items-center justify-center gap-1.5 ${isExpanded ? 'text-primary border-primary/50' : ''}`}
+                    title="상세 필터"
+                >
+                    <MaterialIcon name="tune" size="sm" />
+                </button>
+                <button
+                    onClick={handleSearch}
+                    className="h-9 px-4 rounded-lg bg-primary text-white font-black text-xs hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all whitespace-nowrap"
+                >
+                    검색
+                </button>
+            </div>
+
+            {/* Collapsible Advanced Filters */}
+            {isExpanded && (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="col-span-1 lg:col-span-2 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">차수</label>
+                        <Select value={tier} onValueChange={(val) => updateSearch('tier', val)}>
+                            <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
+                                <SelectValue placeholder="전체" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">전체</SelectItem>
+                                <SelectItem value="1차">1차</SelectItem>
+                                <SelectItem value="2차">2차</SelectItem>
+                                <SelectItem value="3차">3차</SelectItem>
+                                <SelectItem value="지주">지주</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="col-span-1 lg:col-span-2 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">상태</label>
+                        <Select value={status} onValueChange={(val) => updateSearch('status', val)}>
+                            <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
+                                <SelectValue placeholder="전체" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">전체</SelectItem>
+                                <SelectItem value="정상">정상</SelectItem>
+                                <SelectItem value="탈퇴예정">탈퇴예정</SelectItem>
+                                <SelectItem value="소송중">소송중</SelectItem>
+                                <SelectItem value="자격상실">자격상실</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="col-span-2 md:col-span-2 lg:col-span-3 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">태그</label>
                         <input
                             type="text"
-                            placeholder="이름, 조합원번호(동호수), 전화번호 검색"
-                            className="h-9 w-full rounded-lg border border-border bg-card/60 pl-9 pr-4 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={handleKeyDown}
+                            placeholder="#태그 입력"
+                            className="h-9 w-full rounded-lg border border-border bg-card/60 px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all font-mono"
+                            value={tag}
+                            onChange={(e) => setTag(e.target.value)}
+                            onKeyDown={handleTagKeyDown}
                         />
                     </div>
                 </div>
-                <div className="col-span-1 lg:col-span-2 space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">차수 (TIER)</label>
-                    <Select value={tier} onValueChange={(val) => updateSearch('tier', val)}>
-                        <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
-                            <SelectValue placeholder="전체" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">전체</SelectItem>
-                            <SelectItem value="1차">1차</SelectItem>
-                            <SelectItem value="2차">2차</SelectItem>
-                            <SelectItem value="3차">3차</SelectItem>
-                            <SelectItem value="지주">지주</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="col-span-1 lg:col-span-2 space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">상태 (STATUS)</label>
-                    <Select value={status} onValueChange={(val) => updateSearch('status', val)}>
-                        <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
-                            <SelectValue placeholder="전체" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">전체</SelectItem>
-                            <SelectItem value="정상">정상</SelectItem>
-                            <SelectItem value="탈퇴예정">탈퇴예정</SelectItem>
-                            <SelectItem value="소송중">소송중</SelectItem>
-                            <SelectItem value="자격상실">자격상실</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="col-span-2 lg:col-span-3 space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">태그 (TAGS)</label>
-                    <input
-                        type="text"
-                        placeholder="#태그 입력 (Enter)"
-                        className="h-9 w-full rounded-lg border border-border bg-card/60 px-3 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all font-mono"
-                        value={tag}
-                        onChange={(e) => setTag(e.target.value)}
-                        onKeyDown={handleTagKeyDown}
-                    />
-                </div>
-                <div className="col-span-2 lg:col-span-1">
-                    <button
-                        onClick={handleSearch}
-                        className="h-9 w-full rounded-lg bg-primary text-white font-black text-xs hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all"
-                    >
-                        검색
-                    </button>
-                </div>
-            </div>
+            )}
 
             <div className="h-px bg-border/20 w-full" />
 
