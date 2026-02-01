@@ -95,7 +95,7 @@ export function MembersFilter() {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <div className="flex flex-col rounded-xl border border-border/40 bg-card/20 backdrop-blur-sm p-2 space-y-2">
+        <div className="flex flex-col space-y-1">
             {/* Top Row: Search + Actions */}
             <div className="flex gap-2 items-center">
                 <div className="relative flex-1 group">

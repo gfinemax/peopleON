@@ -169,7 +169,7 @@ export default async function MembersPage({
                 }
             />
 
-            <div className="flex flex-col shrink-0 gap-0.5 px-4 lg:px-6 pt-1 lg:pt-4 pb-0 max-w-[1600px] mx-auto w-full">
+            <div className="flex flex-col shrink-0 gap-0.5 px-3 lg:px-6 pt-0.5 lg:pt-4 pb-0 max-w-[1600px] mx-auto w-full">
 
                 <MembersFilter />
 
