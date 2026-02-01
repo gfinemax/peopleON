@@ -49,6 +49,18 @@ export function MembersFilter() {
         router.push(`${pathname}?${params.toString()}`);
     }, [pathname, router, searchParams]);
 
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const currentQ = searchParams.get('q') || '';
+            if (query !== currentQ) {
+                updateSearch('q', query);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [query, searchParams, updateSearch]);
+
     const handleSearch = () => {
         updateSearch('q', query);
     };
