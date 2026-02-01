@@ -21,6 +21,8 @@ export function MembersFilter() {
     const [tier, setTier] = useState(searchParams.get('tier') || 'all');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const [tag, setTag] = useState(searchParams.get('tag') || '');
+    const [sort, setSort] = useState(searchParams.get('sort') || 'member_number');
+    const [order, setOrder] = useState(searchParams.get('order') || 'asc');
 
     // Sync with URL changes
     useEffect(() => {
@@ -28,6 +30,8 @@ export function MembersFilter() {
         setTier(searchParams.get('tier') || 'all');
         setStatus(searchParams.get('status') || 'all');
         setTag(searchParams.get('tag') || '');
+        setSort(searchParams.get('sort') || 'member_number');
+        setOrder(searchParams.get('order') || 'asc');
     }, [searchParams]);
 
     // Update URL helper
@@ -145,7 +149,38 @@ export function MembersFilter() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="col-span-2 md:col-span-2 lg:col-span-3 space-y-1.5">
+                    {/* Sort Filter */}
+                    <div className="col-span-1 lg:col-span-2 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">정렬 기준</label>
+                        <Select value={sort} onValueChange={(val) => updateSearch('sort', val)}>
+                            <SelectTrigger className="h-9 rounded-lg bg-card/60 border-border w-full text-xs">
+                                <SelectValue placeholder="번호순" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="member_number">번호순</SelectItem>
+                                <SelectItem value="name">이름순</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="col-span-1 lg:col-span-2 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">정렬 순서</label>
+                        <div className="flex h-9 rounded-lg bg-card/60 border border-border p-1">
+                            <button
+                                onClick={() => updateSearch('order', 'asc')}
+                                className={`flex-1 flex items-center justify-center rounded text-[10px] font-bold transition-all ${order === 'asc' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:bg-white/5'}`}
+                            >
+                                오름차순
+                            </button>
+                            <button
+                                onClick={() => updateSearch('order', 'desc')}
+                                className={`flex-1 flex items-center justify-center rounded text-[10px] font-bold transition-all ${order === 'desc' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:bg-white/5'}`}
+                            >
+                                내림차순
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="col-span-2 md:col-span-2 lg:col-span-4 space-y-1.5">
                         <label className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider ml-0.5">태그</label>
                         <input
                             type="text"
