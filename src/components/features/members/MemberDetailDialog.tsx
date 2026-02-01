@@ -145,9 +145,9 @@ export function MemberDetailDialog({
     };
 
     const tabs = [
-        { id: 'info' as TabType, label: '기본 정보', icon: 'person' },
-        { id: 'timeline' as TabType, label: '관리 이력', icon: 'history' },
-        { id: 'payment' as TabType, label: '납부 현황', icon: 'payments' },
+        { id: 'info' as TabType, label: '기본', icon: 'person' },
+        { id: 'timeline' as TabType, label: '이력', icon: 'history' },
+        { id: 'payment' as TabType, label: '납부', icon: 'payments' },
     ];
 
     if (!member && !loading) {
