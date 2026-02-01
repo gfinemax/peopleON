@@ -21,8 +21,8 @@ export function MembersFilter() {
     const [tier, setTier] = useState(searchParams.get('tier') || 'all');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const [tag, setTag] = useState(searchParams.get('tag') || '');
-    const [sort, setSort] = useState(searchParams.get('sort') || 'member_number');
-    const [order, setOrder] = useState(searchParams.get('order') || 'asc');
+    const [sort, setSort] = useState(searchParams.get('sort') || 'name');
+    const [order, setOrder] = useState(searchParams.get('order') || 'desc');
 
     // Sync with URL changes
     useEffect(() => {
@@ -30,8 +30,8 @@ export function MembersFilter() {
         setTier(searchParams.get('tier') || 'all');
         setStatus(searchParams.get('status') || 'all');
         setTag(searchParams.get('tag') || '');
-        setSort(searchParams.get('sort') || 'member_number');
-        setOrder(searchParams.get('order') || 'asc');
+        setSort(searchParams.get('sort') || 'name');
+        setOrder(searchParams.get('order') || 'desc');
     }, [searchParams]);
 
     // Update URL helper

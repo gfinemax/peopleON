@@ -15,8 +15,8 @@ export default async function MembersPage({
     // Safe defaults
     let params: any = {};
     let query = '';
-    let sortField = 'member_number';
-    let sortOrder = 'asc';
+    let sortField = 'name';
+    let sortOrder = 'desc';
     let page = 1;
     let tier: string | undefined;
     let status: string | undefined;
@@ -44,8 +44,8 @@ export default async function MembersPage({
         // In Next.js 16, searchParams is a Promise
         params = await searchParams || {};
         query = params?.q || '';
-        sortField = params?.sort || 'member_number';
-        sortOrder = params?.order || 'asc';
+        sortField = params?.sort || 'name';
+        sortOrder = params?.order || 'desc';
         page = Number(params?.page) || 1;
         tier = params?.tier;
         status = params?.status;
