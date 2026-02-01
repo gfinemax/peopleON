@@ -44,9 +44,7 @@ export function Header({ title = '통합 대시보드', iconName, leftContent }:
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2"> {/* Reduced gap from 4 to 2 */}
-
-
+            <div className="flex items-center gap-1">
                 {/* Notifications */}
                 <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
                     <MaterialIcon name="notifications" size="sm" filled />
@@ -54,7 +52,7 @@ export function Header({ title = '통합 대시보드', iconName, leftContent }:
                 </button>
 
                 {/* Users Profile */}
-                <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border/50"> {/* Reduced gap/margin */}
+                <div className="flex items-center gap-1 pl-1 ml-0 border-l border-border/50">
                     <div className="hidden md:flex flex-col items-end">
                         <span className="text-xs font-bold text-foreground">김관리</span>
                         <span className="text-[10px] text-muted-foreground/60 font-mono tracking-tight">admin@peopleon.com</span>
