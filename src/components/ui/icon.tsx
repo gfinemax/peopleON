@@ -16,14 +16,14 @@ const sizeMap = {
     '2xl': 'text-[32px]',
 };
 
-export function MaterialIcon({ 
-    name, 
-    className, 
+export function MaterialIcon({
+    name,
+    className,
     filled = false,
-    size = 'md' 
+    size = 'md'
 }: MaterialIconProps) {
     return (
-        <span 
+        <span
             className={cn(
                 'material-symbols-outlined select-none',
                 sizeMap[size],
@@ -50,7 +50,7 @@ export const Icons = {
     chevronRight: 'chevron_right',
     chevronDown: 'expand_more',
     chevronUp: 'expand_less',
-    
+
     // Actions
     add: 'add',
     edit: 'edit',
@@ -65,7 +65,7 @@ export const Icons = {
     print: 'print',
     share: 'share',
     copy: 'content_copy',
-    
+
     // User & Auth
     person: 'person',
     people: 'people',
@@ -76,7 +76,7 @@ export const Icons = {
     visibilityOff: 'visibility_off',
     login: 'login',
     logout: 'logout',
-    
+
     // Communication
     phone: 'phone',
     email: 'email',
@@ -85,7 +85,8 @@ export const Icons = {
     chat: 'chat',
     sms: 'sms',
     call: 'call',
-    
+    contactPage: 'contact_page',
+
     // Business
     apartment: 'apartment',
     domain: 'domain',
@@ -95,7 +96,7 @@ export const Icons = {
     creditCard: 'credit_card',
     receipt: 'receipt',
     invoice: 'receipt_long',
-    
+
     // Status
     check: 'check',
     checkCircle: 'check_circle',
@@ -103,38 +104,38 @@ export const Icons = {
     warning: 'warning',
     info: 'info',
     help: 'help',
-    
+
     // Calendar & Time
     calendar: 'calendar_today',
     calendarMonth: 'calendar_month',
     schedule: 'schedule',
     event: 'event',
-    
+
     // Files & Documents
     folder: 'folder',
     file: 'description',
     attachment: 'attachment',
     pdf: 'picture_as_pdf',
-    
+
     // Charts & Analytics
     chart: 'bar_chart',
     pieChart: 'pie_chart',
     trending: 'trending_up',
     trendingDown: 'trending_down',
     analytics: 'analytics',
-    
+
     // Settings
     settings: 'settings',
     tune: 'tune',
-    
+
     // Theme
     lightMode: 'light_mode',
     darkMode: 'dark_mode',
-    
+
     // Notifications
     notifications: 'notifications',
     notificationsActive: 'notifications_active',
-    
+
     // Misc
     star: 'star',
     favorite: 'favorite',
