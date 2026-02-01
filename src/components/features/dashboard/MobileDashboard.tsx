@@ -76,7 +76,7 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
                 <div className="flex items-center justify-between px-1">
                     <div>
                         <span className="text-[10px] font-bold tracking-wider text-primary uppercase mb-0.5 block">현재 사업장</span>
-                        <h3 className="text-xl font-extrabold tracking-tight text-foreground">그린밸리 조합</h3>
+                        <h3 className="text-xl font-extrabold tracking-tight text-foreground">오학동 지역주택조합</h3>
                     </div>
                     <button
                         onClick={() => alert('🚧 다중 사업장 관리 기능은 준비 중입니다.\n(추후 업데이트 예정)')}
