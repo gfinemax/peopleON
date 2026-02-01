@@ -208,14 +208,15 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         <div className="text-[13px] text-muted-foreground">
                                             {member.tier || '차수미정'} / {member.unit_group || '동호수미정'}
                                             {member.relationships && member.relationships.length > 0 && (
-                                                <span className="ml-2 text-orange-400 font-bold">
+                                                <span className="ml-2 text-[#EAD09D] font-bold">
                                                     {member.relationships[0].name} ({member.relationships[0].relation})
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
-                                {getStatusBadge(member.status)}
+
+                                {/* Status Badge Removed */}
                             </div>
 
                             <div className="h-px w-full bg-white/[0.04]" />
@@ -242,7 +243,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         <a
                                             href={`tel:${member.relationships[0].phone}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-0.5 text-[14px] py-1 px-2 rounded hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors text-orange-500"
+                                            className="flex items-center gap-0.5 text-[14px] py-1 px-2 rounded hover:bg-[#EAD09D]/10 active:bg-[#EAD09D]/20 transition-colors text-[#EAD09D]"
                                         >
                                             <MaterialIcon name="contacts" size="xs" className="text-[10px]" />
                                             <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
@@ -258,7 +259,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                         </div>
                     );
                 })}
-            </div>
+            </div >
 
             <MemberDetailDialog
                 memberId={selectedMemberId}
