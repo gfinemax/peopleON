@@ -80,9 +80,31 @@ export default function TimelinePage() {
             />
 
             <main className="flex-1 overflow-y-auto bg-background">
-                <div className="p-4 w-full max-w-md mx-auto flex flex-col gap-6">
-                    {/* Page Header Removed as per user request */}
+                <div className="p-4 w-full max-w-md mx-auto flex flex-col gap-4">
+                    {/* Search & Actions Row */}
+                    <div className="flex items-center gap-2">
+                        {/* Search Bar */}
+                        <div className="flex-1 relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                <MaterialIcon name="search" size="sm" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="이름, 동호수, 전화번호 검색"
+                                className="w-full h-10 pl-10 pr-4 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                            />
+                        </div>
 
+                        {/* Filter Button */}
+                        <button className="flex items-center justify-center size-10 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                            <MaterialIcon name="tune" size="md" />
+                        </button>
+
+                        {/* Write Button */}
+                        <button className="flex items-center justify-center size-10 rounded-lg bg-primary text-white hover:bg-primary/90 shadow-md transition-colors">
+                            <MaterialIcon name="edit" size="md" />
+                        </button>
+                    </div>
 
                     {/* Timeline */}
                     <div className="relative flex flex-col gap-6 pl-2">
