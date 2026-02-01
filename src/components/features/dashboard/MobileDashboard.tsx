@@ -78,7 +78,10 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
                         <span className="text-[10px] font-bold tracking-wider text-primary uppercase mb-0.5 block">현재 사업장</span>
                         <h3 className="text-xl font-extrabold tracking-tight text-foreground">그린밸리 조합</h3>
                     </div>
-                    <button className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors">
+                    <button
+                        onClick={() => alert('🚧 다중 사업장 관리 기능은 준비 중입니다.\n(추후 업데이트 예정)')}
+                        className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors"
+                    >
                         변경
                     </button>
                 </div>

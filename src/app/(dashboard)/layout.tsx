@@ -16,7 +16,7 @@ export default function DashboardLayout({
 
             <div className="flex-1 flex flex-col h-screen relative overflow-hidden">
                 {/* Main Content Area */}
-                <main className="flex-1 flex flex-col min-h-0 pb-20 md:pb-0 overflow-hidden">
+                <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden md:pb-0">
                     {children}
                 </main>
 
