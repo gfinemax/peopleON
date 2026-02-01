@@ -205,7 +205,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                             <span className="text-sm font-bold text-white">{member.name}</span>
                                             <span className="text-[10px] text-muted-foreground/60 font-mono">{member.member_number}</span>
                                         </div>
-                                        <div className="text-[11px] text-muted-foreground">
+                                        <div className="text-[12px] text-muted-foreground">
                                             {member.tier || '차수미정'} / {member.unit_group || '동호수미정'}
                                             {member.relationships && member.relationships.length > 0 && (
                                                 <span className="ml-2 text-orange-400 font-bold">
@@ -231,7 +231,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                                 alert('전화번호가 없습니다.');
                                             }
                                         }}
-                                        className={`flex items-center gap-2 text-xs py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
+                                        className={`flex items-center gap-2 text-[13px] py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
                                     >
                                         <MaterialIcon name="call" size="xs" className={member.phone ? "text-blue-400" : "opacity-30"} />
                                         <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
@@ -242,7 +242,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         <a
                                             href={`tel:${member.relationships[0].phone}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1.5 text-xs py-1 px-2 rounded hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors text-orange-400"
+                                            className="flex items-center gap-1.5 text-[13px] py-1 px-2 rounded hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors text-orange-400"
                                         >
                                             <MaterialIcon name="supervisor_account" size="xs" />
                                             <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
