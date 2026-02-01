@@ -173,7 +173,8 @@ export default async function MembersPage({
 
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-white/[0.08] bg-card overflow-hidden shadow-sm mx-4 lg:mx-6 mb-4">
+            {/* Desktop: Boxed, Mobile: Transparent & Fluid */}
+            <div className="flex-1 flex flex-col min-h-0 lg:rounded-xl lg:border lg:border-white/[0.08] lg:bg-card overflow-hidden lg:shadow-sm lg:mx-6 mb-4 lg:mb-6">
                 <div className="flex-1 min-h-0 overflow-hidden">
                     {members && members.length > 0 ? (
                         <MembersTable
@@ -203,7 +204,8 @@ export default async function MembersPage({
                     )}
                 </div>
 
-                <div className="shrink-0 z-20 bg-[#161B22] border-t border-white/[0.08]">
+                {/* Footer: Sticky on Mobile? Or just normal block. Adjusting for transparency */}
+                <div className="shrink-0 z-20 lg:bg-[#161B22] lg:border-t lg:border-white/[0.08] bg-transparent">
                     <div className="px-6 py-3 flex items-center justify-between">
                         <p className="text-xs text-gray-400">
                             총 <span className="font-bold text-white">{totalCount.toLocaleString()}개</span> 결과 중 <span className="text-white">{startRange}-{endRange}</span> 표시
@@ -228,6 +230,6 @@ export default async function MembersPage({
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
