@@ -40,7 +40,16 @@ export function MobileFinanceView({ summary, rounds }: MobileFinanceViewProps) {
     return (
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* Shared Header for consistency */}
-            <Header title="자금 관리 현황" iconName="account_balance" />
+            <Header
+                title="자금 관리 현황"
+                iconName="account_balance"
+                leftContent={
+                    <div className="flex items-center gap-2">
+                        <MaterialIcon name="account_balance" className="text-[19px] text-muted-foreground" />
+                        <span className="text-[19px] font-bold tracking-tight text-foreground">자금 관리 현황</span>
+                    </div>
+                }
+            />
 
             <main className="flex-1 flex flex-col gap-6 p-4 w-full max-w-md mx-auto">
                 {/* Summary Section */}
