@@ -161,7 +161,7 @@ export default async function MembersPage({
                 title="조합원 관리"
                 leftContent={
                     <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                        <span className="text-lg font-bold text-foreground">전체 {displayTotalCount}</span>
+                        <span className="text-lg font-bold text-foreground">조합원 {displayTotalCount}</span>
                         <span className="text-[10px] font-bold text-muted-foreground">· 검색 <span className="text-primary">{totalCount}</span></span>
                     </div>
                 }
