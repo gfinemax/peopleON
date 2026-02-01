@@ -17,7 +17,7 @@ export function Header({ title = '통합 대시보드', iconName, leftContent }:
     // useRouter and state removed as GlobalSearch handles it
 
     return (
-        <header className="sticky top-0 z-10 flex h-auto min-h-14 w-full items-center justify-between border-b border-border bg-background px-4 pt-[calc(env(safe-area-inset-top)+5px)] pb-3 md:pt-0 md:pb-0 md:h-14">
+        <header className="sticky top-0 z-10 flex h-auto min-h-14 w-full items-center justify-between border-b border-border bg-background px-4 pt-[calc(env(safe-area-inset-top)+5px)] pb-1.5 md:pt-0 md:pb-0 md:h-14">
             {/* Left: icon + Title (Mobile/Desktop consistent) */}
             <div className="flex items-center gap-4">
                 {/* Mobile Menu Toggle or Custom Content */}
