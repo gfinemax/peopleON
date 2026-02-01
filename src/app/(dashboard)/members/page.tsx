@@ -163,7 +163,7 @@ export default async function MembersPage({
                 leftContent={
                     <div className="flex items-center gap-2 whitespace-nowrap">
                         <MaterialIcon name="groups" size="md" className="text-muted-foreground mr-[-2px]" />
-                        <span className="text-lg font-bold text-foreground">조합원 {displayTotalCount}</span>
+                        <span className="text-[19px] font-bold text-foreground">조합원 {displayTotalCount}</span>
                         <span className="text-[10px] font-bold text-muted-foreground">· 검색 <span className="text-primary">{totalCount}</span></span>
                     </div>
                 }
