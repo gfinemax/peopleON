@@ -31,7 +31,7 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* 1. Header & Search - Sticky */}
             <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm transition-colors border-b border-border/40">
-                <div className="flex items-center justify-between px-4 pt-14 pb-2">
+                <div className="flex items-center justify-between px-4 pt-[10px] pb-2">
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <div className="size-10 rounded-full bg-muted/20 border-2 border-primary/20 overflow-hidden">
