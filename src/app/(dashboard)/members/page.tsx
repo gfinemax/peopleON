@@ -62,7 +62,7 @@ export default async function MembersPage({
 
         let queryBuilder = supabase
             .from('members')
-            .select('id, name, member_number, phone, tier, status, is_registered, unit_group, relationships(name, relation)', { count: 'exact' });
+            .select('id, name, member_number, phone, tier, status, is_registered, unit_group, relationships(name, relation, phone)', { count: 'exact' });
 
         if (query) {
             queryBuilder = queryBuilder.or(`name.ilike.%${query}%,member_number.ilike.%${query}%,phone.ilike.%${query}%`);

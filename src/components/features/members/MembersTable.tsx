@@ -16,7 +16,7 @@ interface Member {
     status: string | null;
     is_registered: boolean;
     unit_group: string | null;
-    relationships?: { name: string; relation: string }[] | null;
+    relationships?: { name: string; relation: string; phone?: string }[] | null;
 }
 
 interface MembersTableProps {
@@ -216,20 +216,34 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                             <div className="h-px w-full bg-white/[0.04]" />
 
                             <div className="flex justify-between items-center px-1">
-                                <a
-                                    href={member.phone ? `tel:${member.phone}` : undefined}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!member.phone) {
-                                            e.preventDefault();
-                                            alert('전화번호가 없습니다.');
-                                        }
-                                    }}
-                                    className={`flex items-center gap-2 text-xs py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
-                                >
-                                    <MaterialIcon name="call" size="xs" className={member.phone ? "text-blue-400" : "opacity-30"} />
-                                    <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
-                                </a>
+                                <div className="flex items-center gap-4">
+                                    <a
+                                        href={member.phone ? `tel:${member.phone}` : undefined}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!member.phone) {
+                                                e.preventDefault();
+                                                alert('전화번호가 없습니다.');
+                                            }
+                                        }}
+                                        className={`flex items-center gap-2 text-xs py-1 px-2 rounded -ml-2 transition-colors ${member.phone ? 'text-blue-400 hover:bg-blue-500/10 active:bg-blue-500/20' : 'text-gray-600 cursor-not-allowed'}`}
+                                    >
+                                        <MaterialIcon name="call" size="xs" className={member.phone ? "text-blue-400" : "opacity-30"} />
+                                        <span className="font-mono tracking-tight font-bold">{member.phone || '전화번호 없음'}</span>
+                                    </a>
+
+                                    {/* Representative Info */}
+                                    {member.relationships && member.relationships.length > 0 && member.relationships[0].phone && (
+                                        <a
+                                            href={`tel:${member.relationships[0].phone}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex items-center gap-1.5 text-xs py-1 px-2 rounded hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors text-orange-400"
+                                        >
+                                            <MaterialIcon name="supervisor_account" size="xs" />
+                                            <span className="font-mono tracking-tight font-bold">{member.relationships[0].phone}</span>
+                                        </a>
+                                    )}
+                                </div>
                                 {/* Simple Tag Summary if needed */}
                                 <div className="flex gap-1.5">
                                     {member.status === '탈퇴예정' && <span className="size-1.5 rounded-full bg-red-500" />}
