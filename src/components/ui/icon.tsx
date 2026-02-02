@@ -4,7 +4,7 @@ interface MaterialIconProps {
     name: string;
     className?: string;
     filled?: boolean;
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 }
 
 const sizeMap = {
@@ -14,6 +14,7 @@ const sizeMap = {
     lg: 'text-[24px]',
     xl: 'text-[28px]',
     '2xl': 'text-[32px]',
+    '3xl': 'text-[36px]',
 };
 
 export function MaterialIcon({
