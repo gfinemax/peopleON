@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,10 @@ export function MemberDetailDialog({
     const [saving, setSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Member>>({});
+    const [saveFeedback, setSaveFeedback] = useState<{
+        tone: 'success' | 'warn' | 'error';
+        message: string;
+    } | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('info');
 
     // Draggable Logic
@@ -87,27 +91,27 @@ export function MemberDetailDialog({
         });
     };
 
-    useEffect(() => {
-        if (open && memberId) {
-            setPosition({ x: 0, y: 0 });
-            fetchMember(memberId);
-            // Default to 'info' as typically desired, or keep 'timeline' if debugging is done.
-            // Returning to 'info' for standard behavior, 'timeline' update            // Returning to default behavior
-            setActiveTab('info');
-        }
-    }, [open, memberId]);
-
     const handleClose = () => {
-        onOpenChange(false);
+        handleDialogOpenChange(false);
     };
 
-    const fetchMember = async (id: string) => {
+    const handleDialogOpenChange = (nextOpen: boolean) => {
+        onOpenChange(nextOpen);
+        if (nextOpen) {
+            setPosition({ x: 0, y: 0 });
+            setActiveTab('info');
+            setSaveFeedback(null);
+        }
+    };
+
+    async function fetchMember(id: string) {
         setLoading(true);
         setIsEditing(false);
+        setSaveFeedback(null);
         const supabase = createClient();
 
         const { data, error } = await supabase
-            .from('members')
+            .from('account_entities')
             .select('*')
             .eq('id', id)
             .single();
@@ -117,30 +121,72 @@ export function MemberDetailDialog({
             setFormData(data);
         }
         setLoading(false);
-    };
+    }
+
+    useEffect(() => {
+        if (open && memberId) {
+            const timer = window.setTimeout(() => {
+                void fetchMember(memberId);
+            }, 0);
+            return () => window.clearTimeout(timer);
+        }
+    }, [open, memberId]);
 
     const handleSave = async () => {
         if (!memberId) return;
 
         setSaving(true);
-        const supabase = createClient();
+        setSaveFeedback(null);
 
-        const { error } = await supabase
-            .from('members')
-            .update({
+        const response = await fetch('/api/members/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: memberId,
                 name: formData.name,
                 phone: formData.phone,
                 email: formData.email,
                 address_legal: formData.address_legal,
                 memo: formData.memo,
-            })
-            .eq('id', memberId);
+            }),
+        }).catch(() => null);
 
-        if (!error) {
-            setMember(prev => prev ? { ...prev, ...formData } : null);
-            setIsEditing(false);
-            onSaved?.();
+        const payload = response
+            ? await response.json().catch(() => null)
+            : null;
+
+        if (!response || !response.ok || !payload?.success) {
+            setSaveFeedback({
+                tone: 'error',
+                message: payload?.error || '저장에 실패했습니다.',
+            });
+            setSaving(false);
+            return;
         }
+
+        setMember((prev) => prev ? {
+            ...prev,
+            name: payload.member?.name ?? prev.name,
+            phone: payload.member?.phone ?? prev.phone,
+            email: payload.member?.email ?? prev.email,
+            address_legal: payload.member?.address_legal ?? prev.address_legal,
+            memo: payload.member?.memo ?? prev.memo,
+        } : null);
+        setIsEditing(false);
+        onSaved?.();
+
+        if (payload.sync?.status === 'ok') {
+            setSaveFeedback({
+                tone: 'success',
+                message: payload.sync?.message || '회계 도메인 동기화 완료',
+            });
+        } else {
+            setSaveFeedback({
+                tone: 'warn',
+                message: payload.sync?.message || '저장은 완료됐지만 회계 동기화 확인이 필요합니다.',
+            });
+        }
+
         setSaving(false);
     };
 
@@ -152,7 +198,7 @@ export function MemberDetailDialog({
 
     if (!member && !loading) {
         return (
-            <Dialog open={open} onOpenChange={onOpenChange}>
+            <Dialog open={open} onOpenChange={handleDialogOpenChange}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogTitle className="sr-only">정보 없음</DialogTitle>
                     <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
@@ -165,7 +211,7 @@ export function MemberDetailDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             {/* Added overflow-hidden to contain everything nicely */}
             <DialogContent
                 className="w-full h-full max-w-none max-h-none h-screen sm:h-auto sm:max-h-[85vh] sm:max-w-2xl p-0 border-0 sm:border sm:border-white/[0.1] bg-[#0F151B] rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 backdrop-blur-xl sm:top-[12vh] sm:translate-y-0"
@@ -366,22 +412,50 @@ export function MemberDetailDialog({
                                             {/* Action Buttons */}
                                             <div className="shrink-0 flex items-center justify-between gap-3 pt-4">
                                                 {isEditing ? (
-                                                    <div className="flex gap-2 w-full justify-end">
-                                                        <Button variant="ghost" onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-white">취소</Button>
-                                                        <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20">
-                                                            {saving ? '저장 중...' : '저장 완료'}
-                                                        </Button>
+                                                    <div className="flex flex-col gap-2 w-full">
+                                                        {saveFeedback && (
+                                                            <p
+                                                                className={cn(
+                                                                    "rounded-lg border px-3 py-2 text-xs font-semibold",
+                                                                    saveFeedback.tone === 'success' && 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200',
+                                                                    saveFeedback.tone === 'warn' && 'border-amber-400/20 bg-amber-500/10 text-amber-200',
+                                                                    saveFeedback.tone === 'error' && 'border-rose-400/20 bg-rose-500/10 text-rose-200',
+                                                                )}
+                                                            >
+                                                                {saveFeedback.message}
+                                                            </p>
+                                                        )}
+                                                        <div className="flex gap-2 w-full justify-end">
+                                                            <Button variant="ghost" onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-white">취소</Button>
+                                                            <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20">
+                                                                {saving ? '저장 중...' : '저장 완료'}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 ) : (
-                                                    <Button
-                                                        onClick={() => setIsEditing(true)}
-                                                        className="w-full py-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 font-bold text-sm"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <MaterialIcon name="edit" size="sm" />
-                                                            정보 수정
-                                                        </div>
-                                                    </Button>
+                                                    <div className="w-full space-y-2">
+                                                        {saveFeedback && (
+                                                            <p
+                                                                className={cn(
+                                                                    "rounded-lg border px-3 py-2 text-xs font-semibold",
+                                                                    saveFeedback.tone === 'success' && 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200',
+                                                                    saveFeedback.tone === 'warn' && 'border-amber-400/20 bg-amber-500/10 text-amber-200',
+                                                                    saveFeedback.tone === 'error' && 'border-rose-400/20 bg-rose-500/10 text-rose-200',
+                                                                )}
+                                                            >
+                                                                {saveFeedback.message}
+                                                            </p>
+                                                        )}
+                                                        <Button
+                                                            onClick={() => setIsEditing(true)}
+                                                            className="w-full py-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 font-bold text-sm"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <MaterialIcon name="edit" size="sm" />
+                                                                정보 수정
+                                                            </div>
+                                                        </Button>
+                                                    </div>
                                                 )}
                                             </div>
 
@@ -409,7 +483,19 @@ export function MemberDetailDialog({
     );
 }
 
-function InfoRow({ icon, label, value, isEditing, editElement }: any) {
+function InfoRow({
+    icon,
+    label,
+    value,
+    isEditing,
+    editElement,
+}: {
+    icon: string;
+    label: string;
+    value: string;
+    isEditing: boolean;
+    editElement: ReactNode;
+}) {
     return (
         <div className="grid grid-cols-[100px_1fr] items-center gap-4 border-b border-white/5 py-4 last:border-0">
             <div className="flex items-center gap-2">

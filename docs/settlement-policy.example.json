@@ -1,0 +1,121 @@
+{
+  "policy_id": "REFUND_2026_BASELINE",
+  "version": 1,
+  "description": "출자금/차입금/권리증환불 및 프리미엄 인정 기준",
+  "effective_from": "2026-01-01",
+  "effective_to": null,
+  "fund_nature_rules": [
+    {
+      "name": "조합/신탁 입금은 기본 출자금",
+      "priority": 10,
+      "fund_nature": "capital",
+      "conditions": [
+        {
+          "field": "destination_account_category",
+          "operator": "in",
+          "value": [
+            "union",
+            "trustee"
+          ]
+        },
+        {
+          "field": "has_subscription_contract",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "required_documents": [
+        "member_subscription_contract",
+        "bank_transfer_receipt"
+      ],
+      "default_action": "classify"
+    },
+    {
+      "name": "차입금 분류",
+      "priority": 20,
+      "fund_nature": "debt",
+      "conditions": [
+        {
+          "field": "has_loan_contract",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "required_documents": [
+        "loan_contract",
+        "bank_transfer_receipt"
+      ],
+      "default_action": "classify"
+    },
+    {
+      "name": "비정상/불명확 입금",
+      "priority": 999,
+      "fund_nature": "suspense",
+      "conditions": [
+        {
+          "field": "is_abnormal_deposit",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "required_documents": [
+        "bank_transfer_receipt"
+      ],
+      "default_action": "manual_review"
+    }
+  ],
+  "certificate_refund": {
+    "base_amount": 30000000,
+    "currency": "KRW",
+    "eligibility_roles": [
+      "certificate_holder",
+      "refund_applicant"
+    ],
+    "include_real_estate_payments": true,
+    "liability_pool_code": "RIGHTS_30M_POOL"
+  },
+  "premium_policy": {
+    "enabled": true,
+    "decision_mode": "manual",
+    "minimum": 20000000,
+    "maximum": 30000000,
+    "rules": []
+  },
+  "loss_policy": {
+    "recognition_mode": "ratio",
+    "allocation_basis": "capital_ratio",
+    "cap_percentage": 100,
+    "allow_negative_refund": false
+  },
+  "allocation_policy": {
+    "partial_allocation": true,
+    "priority_order": [
+      "capital",
+      "prepayment",
+      "debt",
+      "suspense"
+    ],
+    "unmatched_treatment": "manual_review"
+  },
+  "approval_policy": {
+    "steps": [
+      {
+        "step_order": 1,
+        "step_name": "담당자 검토",
+        "required_role": "ops_manager",
+        "need_comment": true
+      },
+      {
+        "step_order": 2,
+        "step_name": "재무 승인",
+        "required_role": "finance_manager",
+        "need_comment": true
+      }
+    ]
+  },
+  "reclassification_policy": {
+    "allow_batch": true,
+    "require_reason": true,
+    "require_audit_attachment": true
+  }
+}

@@ -1,0 +1,427 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://peopleon.local/schemas/settlement-policy.schema.json",
+  "title": "peopleON Settlement Policy Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policy_id",
+    "version",
+    "effective_from",
+    "fund_nature_rules",
+    "certificate_refund",
+    "premium_policy",
+    "loss_policy",
+    "allocation_policy",
+    "approval_policy",
+    "reclassification_policy"
+  ],
+  "properties": {
+    "policy_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 5000
+    },
+    "effective_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "effective_to": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fund_nature_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/fundNatureRule"
+      }
+    },
+    "certificate_refund": {
+      "$ref": "#/$defs/certificateRefund"
+    },
+    "premium_policy": {
+      "$ref": "#/$defs/premiumPolicy"
+    },
+    "loss_policy": {
+      "$ref": "#/$defs/lossPolicy"
+    },
+    "allocation_policy": {
+      "$ref": "#/$defs/allocationPolicy"
+    },
+    "approval_policy": {
+      "$ref": "#/$defs/approvalPolicy"
+    },
+    "reclassification_policy": {
+      "$ref": "#/$defs/reclassificationPolicy"
+    }
+  },
+  "$defs": {
+    "fundNature": {
+      "type": "string",
+      "enum": [
+        "provisional",
+        "capital",
+        "debt",
+        "suspense",
+        "prepayment"
+      ]
+    },
+    "documentType": {
+      "type": "string",
+      "enum": [
+        "member_subscription_contract",
+        "rights_certificate",
+        "deposit_confirmation_notarized",
+        "loan_contract",
+        "bank_transfer_receipt",
+        "id_document",
+        "other"
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "source_account_category",
+            "destination_account_category",
+            "has_loan_contract",
+            "has_subscription_contract",
+            "issuer_type",
+            "payer_role",
+            "is_abnormal_deposit",
+            "maturity_months",
+            "amount"
+          ]
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "neq",
+            "in",
+            "not_in",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "exists"
+          ]
+        },
+        "value": {}
+      }
+    },
+    "fundNatureRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "priority",
+        "fund_nature",
+        "conditions",
+        "required_documents",
+        "default_action"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fund_nature": {
+          "$ref": "#/$defs/fundNature"
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "required_documents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/documentType"
+          },
+          "uniqueItems": true
+        },
+        "default_action": {
+          "type": "string",
+          "enum": [
+            "classify",
+            "manual_review",
+            "reject",
+            "keep_provisional"
+          ]
+        }
+      }
+    },
+    "certificateRefund": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_amount",
+        "currency",
+        "eligibility_roles",
+        "liability_pool_code"
+      ],
+      "properties": {
+        "base_amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "KRW"
+          ]
+        },
+        "eligibility_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "member",
+              "certificate_holder",
+              "related_party",
+              "refund_applicant"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "include_real_estate_payments": {
+          "type": "boolean",
+          "default": true
+        },
+        "liability_pool_code": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "premiumPolicyRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_name",
+        "conditions",
+        "recognized_amount"
+      ],
+      "properties": {
+        "rule_name": {
+          "type": "string",
+          "minLength": 2
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "recognized_amount": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "premiumPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "decision_mode",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "decision_mode": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "rule_based"
+          ]
+        },
+        "minimum": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximum": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/premiumPolicyRule"
+          }
+        }
+      }
+    },
+    "lossPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recognition_mode",
+        "allocation_basis",
+        "allow_negative_refund"
+      ],
+      "properties": {
+        "recognition_mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "ratio",
+            "fixed",
+            "case_by_case"
+          ]
+        },
+        "allocation_basis": {
+          "type": "string",
+          "enum": [
+            "capital_ratio",
+            "certificate_count",
+            "manual"
+          ]
+        },
+        "cap_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "allow_negative_refund": {
+          "type": "boolean"
+        }
+      }
+    },
+    "allocationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partial_allocation",
+        "priority_order",
+        "unmatched_treatment"
+      ],
+      "properties": {
+        "partial_allocation": {
+          "type": "boolean"
+        },
+        "priority_order": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "capital",
+              "prepayment",
+              "debt",
+              "suspense"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "unmatched_treatment": {
+          "type": "string",
+          "enum": [
+            "suspense",
+            "manual_review",
+            "reject"
+          ]
+        }
+      }
+    },
+    "approvalStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step_order",
+        "step_name",
+        "required_role"
+      ],
+      "properties": {
+        "step_order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "step_name": {
+          "type": "string",
+          "minLength": 2
+        },
+        "required_role": {
+          "type": "string",
+          "minLength": 2
+        },
+        "need_comment": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "approvalPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "steps"
+      ],
+      "properties": {
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/approvalStep"
+          }
+        }
+      }
+    },
+    "reclassificationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allow_batch",
+        "require_reason",
+        "require_audit_attachment"
+      ],
+      "properties": {
+        "allow_batch": {
+          "type": "boolean"
+        },
+        "require_reason": {
+          "type": "boolean"
+        },
+        "require_audit_attachment": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
+

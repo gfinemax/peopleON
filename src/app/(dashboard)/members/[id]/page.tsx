@@ -3,8 +3,68 @@ import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { InteractionLog } from '@/components/features/timeline/TimelineItem';
-import { LegacyHistoryCard } from '@/components/features/members/LegacyHistoryCard';
 import { MemberDetailRightPanel } from '@/components/features/members/MemberDetailRightPanel';
+
+type SettlementLineType =
+    | 'capital'
+    | 'debt'
+    | 'loss'
+    | 'certificate_base_refund'
+    | 'premium_recognition'
+    | 'already_paid'
+    | 'adjustment'
+    | 'final_refund';
+
+type SettlementCaseStatus = 'draft' | 'review' | 'approved' | 'paid' | 'rejected';
+
+interface PartyProfileRow {
+    id: string;
+    display_name: string;
+}
+
+interface SettlementCaseRow {
+    id: string;
+    case_status: SettlementCaseStatus;
+    created_at: string;
+}
+
+interface SettlementLineRow {
+    line_type: SettlementLineType;
+    amount: number | string;
+}
+
+interface RefundPaymentRow {
+    paid_amount: number | string;
+    payment_status: 'requested' | 'paid' | 'failed' | 'cancelled';
+}
+
+const caseStatusLabel: Record<SettlementCaseStatus, string> = {
+    draft: '작성중',
+    review: '검토중',
+    approved: '승인됨',
+    paid: '지급완료',
+    rejected: '반려',
+};
+
+const krwFormatter = new Intl.NumberFormat('ko-KR');
+
+function parseMoney(value: number | string | null | undefined): number {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+}
+
+function formatKRW(value: number): string {
+    return `₩${krwFormatter.format(Math.round(value))}`;
+}
+
+function formatDate(value?: string | null): string {
+    if (!value) return '-';
+    return new Date(value).toLocaleDateString('ko-KR');
+}
 
 export default async function MemberDetailPage({
     params,
@@ -14,17 +74,10 @@ export default async function MemberDetailPage({
     const supabase = await createClient();
     const { id } = await params;
 
-    // Fetch Member
+    // Fetch Entity
     const { data: member, error: memberError } = await supabase
-        .from('members')
-        .select(`
-            *,
-            relationships (
-                name,
-                relation,
-                phone
-            )
-        `)
+        .from('account_entities')
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -32,32 +85,21 @@ export default async function MemberDetailPage({
         return <div className="p-20 text-center font-bold text-muted-foreground">존재하지 않는 조합원입니다.</div>;
     }
 
-    console.log('Member Data:', JSON.stringify(member, null, 2));
+    // Get membership role
+    const { data: roleData } = await supabase
+        .from('membership_roles')
+        .select('role_code, role_status, is_registered')
+        .eq('entity_id', id)
+        .maybeSingle();
 
-    const representative = member.relationships?.[0];
+    const memberTier = roleData?.role_code || '';
+    const memberStatus = roleData?.role_status === 'inactive' ? '탈퇴' : '정상';
 
-    // ... existing code ...
+    // Extract agent from meta
+    const meta = member.meta as Record<string, unknown> | null;
+    const agents = (meta?.agents as Array<{ name: string; relation: string; phone?: string }>) || [];
+    const representative = agents[0] || null;
 
-    <div className="mt-10 pt-10 border-t border-border/30">
-        <h3 className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider mb-6 px-1">세대 구성원</h3>
-        {representative ? (
-            <div className="flex items-center gap-4 rounded-lg bg-muted/10 p-4 border border-border/20 group/member hover:bg-muted/20 transition-all">
-                <div className="size-11 rounded-lg overflow-hidden shadow-sm">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${representative.name}`} alt="member" className="w-full h-full" />
-                </div>
-                <div className="flex flex-col">
-                    <p className="text-sm font-black text-foreground">
-                        {representative.name} <span className="text-muted-foreground font-medium">({representative.relation || '관계 미지정'})</span>
-                    </p>
-                    <p className="text-[10px] font-bold text-muted-foreground/60 mt-0.5">대리인</p>
-                </div>
-            </div>
-        ) : (
-            <div className="flex items-center justify-center p-4 rounded-lg bg-muted/5 border border-dashed border-border/30 text-xs text-muted-foreground">
-                등록된 세대 구성원이 없습니다.
-            </div>
-        )}
-    </div>
     // Fetch Interaction Logs
     const { data: logsData } = await supabase
         .from('interaction_logs')
@@ -70,9 +112,84 @@ export default async function MemberDetailPage({
         .from('legacy_records')
         .select('*')
         .eq('member_id', id)
-        .order('created_at', { ascending: false });
+        .order('contract_date', { ascending: false });
 
     const logs = (logsData || []) as InteractionLog[];
+
+    // Settlement Summary — directly by entity_id
+    let settlementCase: SettlementCaseRow | null = null;
+    let settlementLines: SettlementLineRow[] = [];
+    let refundPayments: RefundPaymentRow[] = [];
+
+    const caseRes = await supabase
+        .from('settlement_cases')
+        .select('id, case_status, created_at')
+        .eq('entity_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (!caseRes.error && caseRes.data) {
+        settlementCase = caseRes.data as SettlementCaseRow;
+
+        const [lineRes, paymentRes] = await Promise.all([
+            supabase
+                .from('settlement_lines')
+                .select('line_type, amount')
+                .eq('case_id', settlementCase.id),
+            supabase
+                .from('refund_payments')
+                .select('paid_amount, payment_status')
+                .eq('case_id', settlementCase.id),
+        ]);
+
+        if (!lineRes.error && lineRes.data) {
+            settlementLines = lineRes.data as SettlementLineRow[];
+        }
+        if (!paymentRes.error && paymentRes.data) {
+            refundPayments = paymentRes.data as RefundPaymentRow[];
+        }
+    }
+
+    const totalsByType = settlementLines.reduce<Record<string, number>>((acc, line) => {
+        const key = line.line_type;
+        const amount = parseMoney(line.amount);
+        acc[key] = (acc[key] || 0) + amount;
+        return acc;
+    }, {});
+
+    const capitalAmount = totalsByType.capital || 0;
+    const debtAmount = totalsByType.debt || 0;
+    const certBaseAmount = totalsByType.certificate_base_refund || 0;
+    const premiumAmount = totalsByType.premium_recognition || 0;
+    const rawLossAmount = totalsByType.loss || 0;
+    const rawAlreadyPaidAmount = totalsByType.already_paid || 0;
+    const adjustmentAmount = totalsByType.adjustment || 0;
+
+    const finalRefundAmount =
+        totalsByType.final_refund ??
+        (capitalAmount +
+            debtAmount +
+            certBaseAmount +
+            premiumAmount +
+            rawLossAmount +
+            rawAlreadyPaidAmount +
+            adjustmentAmount);
+    const normalizedFinalRefundAmount = Math.max(finalRefundAmount, 0);
+
+    const paidPaymentAmount = refundPayments
+        .filter((payment) => payment.payment_status === 'paid')
+        .reduce((sum, payment) => sum + parseMoney(payment.paid_amount), 0);
+
+    const requestedPaymentAmount = refundPayments
+        .filter((payment) => payment.payment_status === 'requested')
+        .reduce((sum, payment) => sum + parseMoney(payment.paid_amount), 0);
+
+    const remainingAmount = Math.max(normalizedFinalRefundAmount - paidPaymentAmount, 0);
+    const payoutRate =
+        normalizedFinalRefundAmount > 0
+            ? Math.min((paidPaymentAmount / normalizedFinalRefundAmount) * 100, 100)
+            : 0;
 
     return (
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden font-sans">
@@ -94,7 +211,7 @@ export default async function MemberDetailPage({
                             <div className="absolute top-0 right-0 p-4">
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-[11px] font-bold text-success border border-success/30 uppercase tracking-wider badge-glow-success">
                                     <span className="size-1.5 rounded-full bg-success" />
-                                    {member.status} (Active)
+                                    {memberStatus} (Active)
                                 </span>
                             </div>
 
@@ -102,8 +219,8 @@ export default async function MemberDetailPage({
                                 <div className="relative mb-6">
                                     <div className="size-32 rounded-full overflow-hidden border-4 border-border/30 shadow-2xl transition-transform group-hover:scale-105 duration-500">
                                         <img
-                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
-                                            alt={member.name}
+                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.display_name}`}
+                                            alt={member.display_name}
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -112,10 +229,10 @@ export default async function MemberDetailPage({
                                     </div>
                                 </div>
                                 <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                                    {member.name}
+                                    {member.display_name}
                                 </h2>
                                 <p className="text-sm font-medium text-muted-foreground/60 mt-1">
-                                    {member.tier} 조합원 | 가입일 2009년 7월 13일
+                                    {memberTier} 조합원 | 가입일 2009년 7월 13일
                                 </p>
                             </div>
 
@@ -164,23 +281,81 @@ export default async function MemberDetailPage({
 
                         {/* 3. Financial Summary Card */}
                         <div className="flex flex-col rounded-lg border border-border/50 bg-card p-8 shadow-sm">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-sm font-black text-foreground">납부 요약</h3>
-                                <button className="text-[10px] font-black text-primary hover:underline underline-offset-4 uppercase tracking-widest">상세보기</button>
+                            <div className="flex items-start justify-between mb-6">
+                                <div>
+                                    <h3 className="text-sm font-black text-foreground">정산 요약</h3>
+                                    <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
+                                        {settlementCase ? `정산 데이터` : '정산 프로필 미연결'}
+                                    </p>
+                                </div>
+                                {settlementCase && (
+                                    <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-black text-primary uppercase tracking-wider">
+                                        {caseStatusLabel[settlementCase.case_status]}
+                                    </span>
+                                )}
                             </div>
-                            <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">총 납부액</p>
-                                    <p className="text-2xl font-black text-foreground tracking-widest font-mono">₩10,000,000</p>
-                                    <div className="h-2 w-full rounded-full bg-muted/20 overflow-hidden">
-                                        <div className="h-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.3)]" style={{ width: '80%' }} />
+
+                            {!settlementCase ? (
+                                <div className="rounded-lg border border-dashed border-border/40 bg-muted/5 p-4 text-xs font-medium text-muted-foreground">
+                                    생성된 정산 케이스가 없습니다.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <SettlementSummaryRow
+                                        label="최종 환불 예정"
+                                        value={formatKRW(normalizedFinalRefundAmount)}
+                                        emphasis
+                                    />
+                                    <SettlementSummaryRow
+                                        label="권리증 기준 환불"
+                                        value={formatKRW(certBaseAmount)}
+                                    />
+                                    <SettlementSummaryRow
+                                        label="인정 프리미엄"
+                                        value={formatKRW(premiumAmount)}
+                                    />
+                                    <SettlementSummaryRow
+                                        label="출자금 + 차입금"
+                                        value={formatKRW(capitalAmount + debtAmount)}
+                                    />
+                                    <SettlementSummaryRow
+                                        label="매몰비용 차감"
+                                        value={formatKRW(Math.abs(rawLossAmount))}
+                                        muted
+                                    />
+                                    <SettlementSummaryRow
+                                        label="기지급 차감"
+                                        value={formatKRW(Math.abs(rawAlreadyPaidAmount))}
+                                        muted
+                                    />
+                                    <SettlementSummaryRow
+                                        label="요청 지급액"
+                                        value={formatKRW(requestedPaymentAmount)}
+                                        muted
+                                    />
+
+                                    <div className="pt-3 border-t border-border/30 space-y-2">
+                                        <div className="flex items-center justify-between text-[11px] font-bold">
+                                            <span className="text-muted-foreground uppercase tracking-wider">지급 진행률</span>
+                                            <span className="text-foreground font-mono">{payoutRate.toFixed(0)}%</span>
+                                        </div>
+                                        <div className="h-2 w-full rounded-full bg-muted/20 overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-all"
+                                                style={{ width: `${payoutRate}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between text-[11px] font-semibold">
+                                            <span className="text-muted-foreground">지급완료 {formatKRW(paidPaymentAmount)}</span>
+                                            <span className="text-muted-foreground">잔여 {formatKRW(remainingAmount)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-border/30 text-[11px] text-muted-foreground font-semibold">
+                                        최근 케이스 생성일: {formatDate(settlementCase.created_at)}
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between pt-4 border-t border-border/30">
-                                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">미납금</span>
-                                    <span className="text-lg font-black text-destructive tracking-widest font-mono">₩2,500,000</span>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -192,7 +367,44 @@ export default async function MemberDetailPage({
     );
 }
 
-function ProfileInfoItem({ icon, label, value, isMono = false }: any) {
+function SettlementSummaryRow({
+    label,
+    value,
+    emphasis = false,
+    muted = false,
+}: {
+    label: string;
+    value: string;
+    emphasis?: boolean;
+    muted?: boolean;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] font-black text-muted-foreground uppercase tracking-wider">{label}</span>
+            <span
+                className={cn(
+                    "text-sm font-black tracking-wide font-mono text-foreground",
+                    emphasis && "text-xl",
+                    muted && "text-muted-foreground"
+                )}
+            >
+                {value}
+            </span>
+        </div>
+    );
+}
+
+function ProfileInfoItem({
+    icon,
+    label,
+    value,
+    isMono = false,
+}: {
+    icon: string;
+    label: string;
+    value: string;
+    isMono?: boolean;
+}) {
     return (
         <div className="flex items-center gap-4 group/item">
             <div className="text-muted-foreground/40 group-hover/item:text-primary transition-colors">

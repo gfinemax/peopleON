@@ -4,31 +4,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { MaterialIcon } from '@/components/ui/icon';
-import { signOut } from '@/app/actions/auth';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const menuItems = [
     { name: '대시보드', href: '/', icon: 'dashboard' },
     { name: '조합원 관리', href: '/members', icon: 'group' },
     { name: '분담금 관리', href: '/payments', icon: 'payments' },
-    { name: '과거 권리증', href: '/finance', icon: 'account_balance' },
+    { name: '자금흐름', href: '/finance', icon: 'account_balance' },
+    { name: '정산/환불', href: '/settlements', icon: 'currency_exchange' },
     { name: '활동 타임라인', href: '/timeline', icon: 'history' },
     { name: '부가관리기능', href: '/sms', icon: 'send' },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Auto-collapse on member detail page
-    useEffect(() => {
-        const isDetailPage = pathname.startsWith('/members/') && pathname !== '/members';
-        if (isDetailPage) {
-            setIsCollapsed(true);
-        } else {
-            setIsCollapsed(false);
-        }
-    }, [pathname]);
+    const [manualCollapsed, setManualCollapsed] = useState(false);
+    const isDetailPage = pathname.startsWith('/members/') && pathname !== '/members';
+    const isCollapsed = isDetailPage || manualCollapsed;
 
     return (
         <aside
@@ -59,7 +51,7 @@ export function Sidebar() {
 
                         {/* Collapse Toggle Button */}
                         <button
-                            onClick={() => setIsCollapsed(!isCollapsed)}
+                            onClick={() => setManualCollapsed((prev) => !prev)}
                             className="flex items-center justify-center p-1.5 rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-muted-foreground hover:text-foreground transition-all hover:bg-sidebar-accent mx-1"
                             title={isCollapsed ? "펼치기" : "접기"}
                         >

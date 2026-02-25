@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
+import { extractCertificateNumbers } from '@/lib/legacy/certificateNumbers';
 
 interface LegacyRecord {
     id: string;
@@ -20,6 +19,7 @@ interface LegacyRecord {
     is_refunded: boolean;
     created_at: string;
     legacy_name?: string;
+    certificates?: unknown;
 }
 
 interface LegacyRecordDetailDialogProps {
@@ -76,15 +76,7 @@ export function LegacyRecordDetailDialog({
         });
     };
 
-    useEffect(() => {
-        if (open && recordId) {
-            setPosition({ x: 0, y: 0 });
-            fetchRecord(recordId);
-            setActiveTab('info');
-        }
-    }, [open, recordId]);
-
-    const fetchRecord = async (id: string) => {
+    async function fetchRecord(id: string) {
         setLoading(true);
         const supabase = createClient();
 
@@ -98,7 +90,15 @@ export function LegacyRecordDetailDialog({
             setRecord(data);
         }
         setLoading(false);
-    };
+    }
+
+    useEffect(() => {
+        if (open && recordId) {
+            setPosition({ x: 0, y: 0 });
+            fetchRecord(recordId);
+            setActiveTab('info');
+        }
+    }, [open, recordId]);
 
     const formatRawData = (data: Record<string, unknown>): { key: string; value: string }[] => {
         return Object.entries(data).map(([key, value]) => ({
@@ -113,6 +113,10 @@ export function LegacyRecordDetailDialog({
     ];
 
     if (!record && !loading) return null;
+
+    const certificateNumbers = record
+        ? extractCertificateNumbers(record.raw_data, record.certificates)
+        : [];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,7 +156,7 @@ export function LegacyRecordDetailDialog({
                     <div className="flex items-center gap-2">
                         <div className="flex flex-col items-end mr-2">
                             <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">보유 권리증</span>
-                            <span className="text-xl font-black text-blue-400 font-mono tracking-tight">{record?.rights_count || 0}개</span>
+                            <span className="text-xl font-black text-blue-400 font-mono tracking-tight">{certificateNumbers.length}개</span>
                         </div>
                         <button
                             onClick={() => onOpenChange(false)}
@@ -261,8 +265,31 @@ export function LegacyRecordDetailDialog({
                                                 <div className="flex flex-col gap-0">
                                                     <InfoRow icon="person" label="원장 명부 이름" value={record.legacy_name || record.original_name} />
                                                     <InfoRow icon="link" label="조합원 매칭" value={record.member_id ? "매칭 완료 (회원 ID 연동됨)" : "매칭되지 않음 (미가입/탈퇴)"} />
+                                                    <InfoRow icon="confirmation_number" label="권리증 번호 기준 보유 수" value={`${certificateNumbers.length}개`} />
+                                                    <InfoRow icon="database" label="DB 저장 보유 수(rights_count)" value={`${record.rights_count || 0}개`} />
                                                     <InfoRow icon="schedule" label="데이터 생성일" value={new Date(record.created_at).toLocaleString()} />
                                                 </div>
+                                            </div>
+
+                                            <div className="bg-[#233040] rounded-xl shadow-sm border border-white/5 p-6">
+                                                <h3 className="text-white text-base font-bold mb-5 flex items-center gap-2">
+                                                    <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
+                                                    권리증 번호 목록
+                                                </h3>
+                                                {certificateNumbers.length === 0 ? (
+                                                    <p className="text-sm text-gray-400">인식된 권리증 번호가 없습니다.</p>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {certificateNumbers.map((number) => (
+                                                            <span
+                                                                key={number}
+                                                                className="rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs font-mono font-bold text-blue-300"
+                                                            >
+                                                                {number}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -295,7 +322,13 @@ export function LegacyRecordDetailDialog({
     );
 }
 
-function InfoRow({ icon, label, value }: any) {
+interface InfoRowProps {
+    icon: string;
+    label: string;
+    value: string;
+}
+
+function InfoRow({ icon, label, value }: InfoRowProps) {
     return (
         <div className="grid grid-cols-[120px_1fr] items-center gap-4 border-b border-white/5 py-3 last:border-0">
             <div className="flex items-center gap-2">

@@ -22,16 +22,16 @@ export function MobileNav() {
             activeIcon: 'person'
         },
         {
-            name: '재무',
+            name: '자금',
             href: '/finance',
             icon: 'account_balance',
             activeIcon: 'account_balance'
         },
         {
-            name: '타임라인',
-            href: '/timeline',
-            icon: 'history', // Changed from 'build' (Maintenance) to 'history' (Timeline) to match web structure better, but can revert if maintenance is specific
-            activeIcon: 'history'
+            name: '정산',
+            href: '/settlements',
+            icon: 'currency_exchange',
+            activeIcon: 'currency_exchange'
         },
         {
             name: '프로필',

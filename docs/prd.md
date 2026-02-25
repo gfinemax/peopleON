@@ -1,9 +1,9 @@
-# 📑 [PRD v2.1] 지역주택조합 올인원 CRM & ERP "People On"
+# 📑 [PRD v2.2] 지역주택조합 올인원 CRM & ERP "People On"
 
 | 프로젝트 정보 | 내용 |
 | :--- | :--- |
 | **프로젝트명** | People On (피플 온) |
-| **버전** | **v2.1 (Schema Integrated)** |
+| **버전** | **v2.2 (Settlement Integrated)** |
 | **작성/관리** | Antigravity (PM: 파인맥스) |
 | **핵심 컨셉** | **"재무(ERP)와 관계(CRM)의 통합"**<br>현재 구축된 조합원 DB를 기반으로, 자금 흐름과 상담 이력을 연결하는 시스템 |
 | **플랫폼** | **Adaptive Web UI** + **Native App** (Android/iOS via Capacitor) |
@@ -115,8 +115,8 @@
 
 ---
 
-## 2. 구현 예정 테이블 (Planned Schema)
-> **상태:** 🚧 구현 대기 (Step 3 자금관리, Step 4 CRM 단계에서 사용)
+## 2. 구현 완료 테이블 (Implemented Schema - Continued)
+> **상태:** ✅ 구현 완료 (Step 3 자금관리 연동)
 
 ### ④ `interaction_logs` (CRM 활동 로그)
 통화, 문자, 미팅 등 조합원과의 모든 접점을 기록하여 '살아있는 히스토리'를 만듭니다.
@@ -157,6 +157,16 @@
 | `amount_paid` | `numeric` | **실납부액** | 은행 입금 매칭 금액 |
 | `paid_date` | `date` | 수납 확인일 | |
 | `is_paid` | `boolean` | 완납 여부 | `Paid >= Due` 조건 충족 시 `true` |
+
+### ⑦ `settlement_cases` (정산 케이스)
+환불 및 정산 프로세스를 관리하는 핵심 테이블입니다.
+
+| 컬럼명 | 데이터 타입 | 설명 | 비고 |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` | 고유 식별자 | |
+| `party_id` | `uuid` | 대상자 ID | |
+| `case_status` | `text` | 상태 | `draft`, `review`, `approved`, `paid`, `rejected` |
+| `created_at` | `timestamptz` | 생성일시 | |
 
 ---
 

@@ -55,27 +55,20 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
         }
     };
 
-    // Reset state when closed // Changed logic: Don't reset query immediately to allow re-opening with context
-    // But for now let's keep it simple.
-
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                {trigger ? (
-                    trigger
-                ) : (
-                    <div className="relative hidden w-64 md:block cursor-pointer group">
-                        <MaterialIcon
-                            name="search"
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-hover:text-primary transition-colors"
-                            size="md"
-                        />
-                        <div className="h-8 w-full rounded-md border border-border bg-card/50 pl-9 pr-3 text-sm text-muted-foreground flex items-center group-hover:bg-card/80 group-hover:border-primary/50 transition-all">
-                            회원 이름 검색...
-                        </div>
-                    </div>
-                )}
-            </DialogTrigger>
+            {trigger ? (
+                <DialogTrigger asChild>{trigger}</DialogTrigger>
+            ) : (
+                <DialogTrigger className="group relative hidden h-8 w-64 items-center rounded-md border border-border bg-card/50 pl-9 pr-3 text-left text-sm text-muted-foreground transition-all hover:border-primary/50 hover:bg-card/80 md:flex">
+                    <MaterialIcon
+                        name="search"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-hover:text-primary"
+                        size="md"
+                    />
+                    <span className="line-clamp-1">회원 이름 검색...</span>
+                </DialogTrigger>
+            )}
             <DialogContent className="p-0 gap-0 overflow-hidden max-w-lg bg-card border-border shadow-2xl">
                 <DialogHeader className="px-4 py-3 border-b border-border/50">
                     <DialogTitle className="sr-only">전체 회원 검색</DialogTitle>

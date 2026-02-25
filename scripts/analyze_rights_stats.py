@@ -1,5 +1,12 @@
 import os
+import sys
 from supabase import create_client
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.append(CURRENT_DIR)
+
+from recalculate_rights_count_from_cert_numbers import extract_certificate_numbers
 
 SUPABASE_URL = "https://qhmgtqihwvysfrcxelnn.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFobWd0cWlod3Z5c2ZyY3hlbG5uIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODk4NzExNSwiZXhwIjoyMDg0NTYzMTE1fQ.jZHOXepwS4tNoLaJHA4V_v5efisIlPDYmPzxdGXaTbU"
@@ -11,13 +18,27 @@ def analyze_rights():
     
     # 1. 환불자(is_refunded=True) 전체 조회
     # 1000명까지 조회 (전체 276명이므로 충분)
-    res = supabase.table("legacy_records").select("original_name, rights_count").eq("is_refunded", True).execute()
+    res = (
+        supabase.table("legacy_records")
+        .select("original_name, rights_count, raw_data, certificates")
+        .eq("is_refunded", True)
+        .execute()
+    )
     
     refunded_records = res.data
     total_refunded = len(refunded_records)
     
-    # 2. 권리증 보유자 필터링
-    holders = [r for r in refunded_records if r.get("rights_count", 0) > 0]
+    # 2. 권리증 번호 기반 보유자 필터링
+    holders = []
+    for r in refunded_records:
+        cert_numbers = extract_certificate_numbers(r.get("raw_data"), r.get("certificates"))
+        if len(cert_numbers) > 0:
+            holders.append(
+                {
+                    "original_name": r.get("original_name"),
+                    "rights_count": len(cert_numbers),
+                }
+            )
     total_holders = len(holders)
     
     # 3. 권리증 개수별 통계

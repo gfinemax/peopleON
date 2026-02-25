@@ -23,14 +23,16 @@ export default async function DashboardPage() {
     let tier1Percent = 0;
     let landOwnerPercent = 0;
     let totalMembers = 0;
+    let favoriteList: any[] = [];
+    let actionList: any[] = [];
 
     try {
         const supabase = await createClient();
 
         // Fetch real data
-        const { count: memberCount } = await supabase.from('members').select('*', { count: 'exact', head: true });
-        const { count: tier1CountVal } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '1차');
-        const { count: landOwnerCountVal } = await supabase.from('members').select('*', { count: 'exact', head: true }).eq('tier', '지주');
+        const { count: memberCount } = await supabase.from('account_entities').select('*', { count: 'exact', head: true });
+        const { count: tier1CountVal } = await supabase.from('membership_roles').select('*', { count: 'exact', head: true }).eq('role_code', '등기조합원').eq('role_status', 'active');
+        const { count: landOwnerCountVal } = await supabase.from('membership_roles').select('*', { count: 'exact', head: true }).eq('role_code', '지주').eq('role_status', 'active');
 
         // Calculate percentages
         totalMembers = memberCount ?? 0;
@@ -55,22 +57,48 @@ export default async function DashboardPage() {
         // Fetch events
         const { data: recentPayments } = await supabase
             .from('payments')
-            .select('*, members(name)')
+            .select('*, account_entities(display_name)')
             .not('paid_date', 'is', null)
             .order('paid_date', { ascending: false })
             .limit(3);
 
         const { data: newMembers } = await supabase
-            .from('members')
-            .select('id, name, created_at, unit_group')
+            .from('account_entities')
+            .select('id, display_name, created_at, unit_group')
             .order('created_at', { ascending: false })
             .limit(3);
+
+        // Fetch Favorites
+        const { data: favs } = await supabase
+            .from('account_entities')
+            .select('*')
+            .eq('is_favorite', true)
+            .order('display_name', { ascending: true })
+            .limit(10);
+
+        favoriteList = favs || [];
+
+        // Fetch Action Required (withdrawn members)
+        const { data: withdrawnRoles } = await supabase
+            .from('membership_roles')
+            .select('entity_id')
+            .eq('role_status', 'inactive')
+            .limit(5);
+
+        if (withdrawnRoles && withdrawnRoles.length > 0) {
+            const entityIds = withdrawnRoles.map((r: { entity_id: string }) => r.entity_id);
+            const { data: actions } = await supabase
+                .from('account_entities')
+                .select('*')
+                .in('id', entityIds);
+            actionList = actions || [];
+        }
 
         // Process Events
         const rawEvents: any[] = [];
 
         recentPayments?.forEach((p: any) => {
-            const memberName = Array.isArray(p.members) ? p.members[0]?.name : p.members?.name;
+            const memberName = Array.isArray(p.account_entities) ? p.account_entities[0]?.display_name : p.account_entities?.display_name;
             rawEvents.push({
                 id: `pay-${p.id}`,
                 dateVal: new Date(p.paid_date || Date.now()).getTime(),
@@ -85,7 +113,7 @@ export default async function DashboardPage() {
             rawEvents.push({
                 id: `new-${m.id}`,
                 dateVal: new Date(m.created_at || Date.now()).getTime(),
-                title: `신규 가입: ${m.name || '이름 미정'}`,
+                title: `신규 가입: ${m.display_name || '이름 미정'}`,
                 time: typeof m.created_at === 'string' ? m.created_at.substring(5, 10) : '-',
                 desc: `${m.unit_group || '동호수 미정'} 조합원 등록`,
                 type: 'member'
@@ -229,6 +257,51 @@ export default async function DashboardPage() {
                             </div>
                         </div>
 
+                        {/* Favorite Members Section */}
+                        {favoriteList && favoriteList.length > 0 && (
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-center gap-2 px-1">
+                                    <MaterialIcon name="star" size="md" className="text-yellow-400" filled />
+                                    <h3 className="text-lg font-extrabold text-foreground">즐겨찾기 조합원</h3>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                    {favoriteList.map((member: any) => (
+                                        <Link
+                                            key={member.id}
+                                            href={`/members?q=${member.name}`}
+                                            className="group relative flex flex-col p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-all hover:shadow-md hover:border-primary/30"
+                                        >
+                                            <div className="absolute top-3 right-3 text-yellow-400">
+                                                <MaterialIcon name="star" size="sm" filled />
+                                            </div>
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="size-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold text-sm border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
+                                                    {member.name.slice(0, 1)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-foreground">{member.name}</p>
+                                                    <p className="text-[11px] font-mono text-muted-foreground">{member.member_number}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <span className="px-2 py-0.5 rounded bg-muted text-[10px] font-bold text-muted-foreground border border-border">
+                                                    {member.tier || '차수미정'}
+                                                </span>
+                                                <span className={cn(
+                                                    "px-2 py-0.5 rounded text-[10px] font-bold border",
+                                                    member.status === '정상' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                                                        member.status === '탈퇴예정' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
+                                                            "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                                                )}>
+                                                    {member.status || '상태미정'}
+                                                </span>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Content Section: Action Required & Recent Activity */}
                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                             {/* Table (8/12 col span) */}
@@ -257,52 +330,39 @@ export default async function DashboardPage() {
                                     <table className="w-full text-left">
                                         <thead className="text-muted-foreground/50 border-b border-border/30">
                                             <tr>
-                                                <th className="pl-6 pr-4 py-3 font-black text-[10px] uppercase tracking-[0.2em]">이름 / 조합원 번로</th>
+                                                <th className="pl-6 pr-4 py-3 font-black text-[10px] uppercase tracking-[0.2em]">이름 / 조합원 번호</th>
                                                 <th className="px-4 py-3 font-black text-[10px] uppercase tracking-[0.2em]">구분</th>
                                                 <th className="px-4 py-3 font-black text-[10px] uppercase tracking-[0.2em]">상태</th>
-                                                <th className="px-4 py-3 font-black text-[10px] uppercase tracking-[0.2em] text-right">미납액</th>
+                                                <th className="px-4 py-3 font-black text-[10px] uppercase tracking-[0.2em] text-right">전화번호</th>
                                                 <th className="pl-4 pr-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] text-center">조치</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border/20">
-                                            <ActionRequiredRow
-                                                name="홍길동"
-                                                memberId="Mem-2023-089"
-                                                tier="1차"
-                                                status="장기 미납"
-                                                statusColor="bg-red-500/10 text-red-500 border-red-500/20"
-                                                amount={3500000}
-                                                actionLabel="납부 요청"
-                                                isPrimaryAction
-                                            />
-                                            <ActionRequiredRow
-                                                name="이영희"
-                                                memberId="Mem-2023-102"
-                                                tier="지주"
-                                                status="서류 미비"
-                                                statusColor="bg-orange-500/10 text-orange-500 border-orange-500/20"
-                                                amount={null}
-                                                actionLabel="문자 발송"
-                                            />
-                                            <ActionRequiredRow
-                                                name="박철수"
-                                                memberId="Mem-2024-005"
-                                                tier="2차"
-                                                status="미납"
-                                                statusColor="bg-red-500/10 text-red-500 border-red-500/20"
-                                                amount={1200000}
-                                                actionLabel="납부 요청"
-                                                isPrimaryAction
-                                            />
-                                            <ActionRequiredRow
-                                                name="최민수"
-                                                memberId="Mem-2023-311"
-                                                tier="1차"
-                                                status="계약 확인"
-                                                statusColor="bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                                amount={null}
-                                                actionLabel="확인 하기"
-                                            />
+                                            {actionList && actionList.length > 0 ? (
+                                                actionList.map((member: any) => (
+                                                    <ActionRequiredRow
+                                                        key={member.id}
+                                                        name={member.name}
+                                                        memberId={member.member_number}
+                                                        tier={member.tier || '-'}
+                                                        status={member.status || '미확인'}
+                                                        statusColor={
+                                                            member.status === '탈퇴예정' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
+                                                                member.status === '소송중' ? "bg-orange-500/10 text-orange-500 border-orange-500/20" :
+                                                                    "bg-gray-500/10 text-gray-500 border-gray-500/20"
+                                                        }
+                                                        amount={member.phone || '-'}
+                                                        actionLabel="상세 보기"
+                                                        isPrimaryAction={true}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={5} className="py-8 text-center text-muted-foreground text-sm font-bold">
+                                                        조치가 필요한 조합원이 없습니다.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

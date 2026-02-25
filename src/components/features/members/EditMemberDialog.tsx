@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -22,36 +22,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Loader2 } from 'lucide-react';
-import { updateMember } from '@/app/actions/member';
+import { updateMember, type MemberActionState } from '@/app/actions/member';
+import { ActionToast } from '@/components/features/settlements/ActionToast';
 
-export function EditMemberDialog({ member }: { member: any }) {
+type EditableMember = {
+    id: string;
+    name: string;
+    member_number?: string | null;
+    phone?: string | null;
+    unit_group?: string | null;
+    tier?: string | null;
+    status?: string | null;
+    memo?: string | null;
+};
+
+export function EditMemberDialog({ member }: { member: EditableMember }) {
     const [open, setOpen] = useState(false);
-    const [state, formAction, isPending] = useActionState(updateMember, { success: false });
-
-    useEffect(() => {
-        if (state.success) {
-            setOpen(false);
-        }
-    }, [state.success]);
+    const [state, formAction, isPending] = useActionState<MemberActionState, FormData>(
+        updateMember,
+        { success: false },
+    );
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                    <Edit2 className="w-3.5 h-3.5" />
-                    정보 수정
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>조합원 정보 수정</DialogTitle>
-                    <DialogDescription>
-                        조합원의 인적사항 및 가입 상태를 변경합니다.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                        <Edit2 className="w-3.5 h-3.5" />
+                        정보 수정
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>조합원 정보 수정</DialogTitle>
+                        <DialogDescription>
+                            조합원의 인적사항 및 가입 상태를 변경합니다.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <form action={formAction} className="grid gap-4 py-4">
-                    <input type="hidden" name="id" value={member.id} />
+                    <form action={formAction} className="grid gap-4 py-4">
+                        <input type="hidden" name="id" value={member.id} />
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -60,25 +70,25 @@ export function EditMemberDialog({ member }: { member: any }) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="member_number">권리증NO</Label>
-                            <Input id="member_number" name="member_number" defaultValue={member.member_number} />
+                            <Input id="member_number" name="member_number" defaultValue={member.member_number ?? ''} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phone">전화번호</Label>
-                            <Input id="phone" name="phone" defaultValue={member.phone} />
+                            <Input id="phone" name="phone" defaultValue={member.phone ?? ''} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="unit_group">평형 타입</Label>
-                            <Input id="unit_group" name="unit_group" defaultValue={member.unit_group} />
+                            <Input id="unit_group" name="unit_group" defaultValue={member.unit_group ?? ''} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>등급(Tier)</Label>
-                            <Select name="tier" defaultValue={member.tier}>
+                            <Select name="tier" defaultValue={member.tier ?? undefined}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="등급 선택" />
                                 </SelectTrigger>
@@ -92,7 +102,7 @@ export function EditMemberDialog({ member }: { member: any }) {
                         </div>
                         <div className="space-y-2">
                             <Label>상태</Label>
-                            <Select name="status" defaultValue={member.status}>
+                            <Select name="status" defaultValue={member.status ?? undefined}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="상태 선택" />
                                 </SelectTrigger>
@@ -111,26 +121,45 @@ export function EditMemberDialog({ member }: { member: any }) {
                         <Textarea
                             id="memo"
                             name="memo"
-                            defaultValue={member.memo}
+                            defaultValue={member.memo ?? ''}
                             className="h-20 resize-none"
                         />
                     </div>
 
-                    {state.error && (
-                        <p className="text-sm text-red-500 font-medium">{state.error}</p>
-                    )}
+                        {state.error && (
+                            <p className="text-sm text-red-500 font-medium">{state.error}</p>
+                        )}
+                        {state.success && state.syncStatus && (
+                            <p
+                                className={`text-xs font-semibold rounded border px-2.5 py-1.5 ${
+                                    state.syncStatus === 'ok'
+                                        ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
+                                        : state.syncStatus === 'failed'
+                                            ? 'border-amber-400/20 bg-amber-500/10 text-amber-200'
+                                            : 'border-slate-400/20 bg-slate-500/10 text-slate-300'
+                                }`}
+                            >
+                                회계동기화: {state.syncStatus === 'ok' ? '정상' : state.syncStatus === 'failed' ? '주의' : '대기'} · {state.syncMessage || '-'}
+                            </p>
+                        )}
 
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                            취소
-                        </Button>
-                        <Button type="submit" disabled={isPending}>
-                            {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            저장하기
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                                취소
+                            </Button>
+                            <Button type="submit" disabled={isPending}>
+                                {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                저장하기
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+            <ActionToast
+                open={Boolean(state.success && state.syncMessage)}
+                message={state.syncMessage || ''}
+                tone={state.syncStatus === 'ok' ? 'success' : state.syncStatus === 'failed' ? 'error' : 'info'}
+            />
+        </>
     );
 }

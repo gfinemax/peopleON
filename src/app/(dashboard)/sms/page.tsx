@@ -8,7 +8,7 @@ export default async function SmsPage() {
     const supabase = await createClient();
 
     // Fetch member count for stats
-    const { count: memberCount } = await supabase.from('members').select('*', { count: 'exact', head: true });
+    const { count: memberCount } = await supabase.from('account_entities').select('*', { count: 'exact', head: true });
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
