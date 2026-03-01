@@ -107,10 +107,10 @@ export async function fetchCertificateCompatRows(
     try {
         let assetQuery = supabase
             .from('asset_rights')
-            .select('certificate_number, status, entity_id');
+            .select('right_number, status, entity_id');
 
         if (certificateNumbers.length > 0) {
-            assetQuery = assetQuery.in('certificate_number', certificateNumbers);
+            assetQuery = assetQuery.in('right_number', certificateNumbers);
         }
 
         const { data: assetRowsRaw, error: assetError } = await assetQuery;
@@ -119,10 +119,10 @@ export async function fetchCertificateCompatRows(
             return [];
         }
 
-        const assetRows = (assetRowsRaw as Array<{ certificate_number: string; status: string; entity_id: string }> | null) || [];
+        const assetRows = (assetRowsRaw as Array<{ right_number: string; status: string; entity_id: string }> | null) || [];
         if (assetRows.length === 0) return [];
 
-        // Map entity_id → source_party_id
+        // Map entity_id → source_party_id (if available)
         const entityIds = uniqueStrings(assetRows.map((row) => row.entity_id));
         const { data: entityRowsRaw } = entityIds.length > 0
             ? await supabase
@@ -133,13 +133,12 @@ export async function fetchCertificateCompatRows(
 
         const entityMap = new Map<string, string>(
             ((entityRowsRaw as EntityRow[] | null) || [])
-                .filter((row) => Boolean(row.source_party_id))
-                .map((row) => [row.id, row.source_party_id as string]),
+                .map((row) => [row.id, row.source_party_id || row.id]), // Use entity_id as fallback for party_id
         );
 
         const results = assetRows
             .map((row) => ({
-                certificate_number: row.certificate_number,
+                certificate_number: row.right_number,
                 status: row.status,
                 holder_party_id: entityMap.get(row.entity_id) || '',
             }))

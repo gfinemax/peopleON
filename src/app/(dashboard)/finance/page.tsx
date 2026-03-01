@@ -106,6 +106,7 @@ const SEGMENT_ORDER: LegacyMemberSegment[] = [
     'landlord_member',
     'general_sale',
     'refunded',
+    'investor'
 ];
 
 const PHONE_PATTERN = /01[016789][-\s]?\d{3,4}[-\s]?\d{4}/;
@@ -201,147 +202,150 @@ export default async function FinancePage({
             : 'all';
 
     const supabase = await createClient();
-    const { data: rawRecords, error } = await supabase
-        .from('legacy_records')
-        .select(`
-            id,
-            original_name,
-            source_file,
-            raw_data,
-            certificates,
-            member_id,
-            is_refunded,
-            members (
-                id,
-                name,
-                phone,
-                tier,
-                is_registered
-            )
-        `);
-    const { data: registeredProxyMembers } = await supabase
-        .from('account_entities')
-        .select('id, display_name, member_number')
-        .eq('is_registered', true);
-    const registeredMembers = ((registeredProxyMembers as Array<{ id: string; display_name: string; member_number: string | null }> | null) || []).map(m => ({
+
+    const [rightsRes, rolesRes, registeredEntitiesRes] = await Promise.all([
+        supabase
+            .from('asset_rights')
+            .select(`
+                *,
+                account_entities (
+                    id,
+                    display_name,
+                    phone,
+                    member_number
+                )
+            `),
+        supabase
+            .from('membership_roles')
+            .select('entity_id, role_code, is_registered'),
+        supabase
+            .from('account_entities')
+            .select('id, display_name, member_number, phone')
+            .eq('entity_type', 'person')
+    ]);
+
+    const allRights = (rightsRes.data || []) as any[];
+    const rightsError = rightsRes.error;
+    const allRoles = (rolesRes.data || []) as any[];
+
+    if (rightsError) {
+        console.error('Error fetching asset_rights:', rightsError.message);
+    }
+
+    // Role mapping: entity_id -> roles
+    const rolesMap = new Map<string, any[]>();
+    for (const role of allRoles) {
+        const existing = rolesMap.get(role.entity_id) || [];
+        existing.push(role);
+        rolesMap.set(role.entity_id, existing);
+    }
+
+    // 2. Fetch all registered members for KPI comparison (A)
+    const registeredEntityIds = new Set(
+        allRoles.filter(r => r.is_registered).map(r => r.entity_id)
+    );
+    const registeredMembersRaw = (registeredEntitiesRes.data || []).filter(e => registeredEntityIds.has(e.id));
+
+    const registeredMembers = registeredMembersRaw.map(m => ({
         id: m.id,
         name: m.display_name,
         member_number: m.member_number,
         relationships: [],
     })) as RegisteredMemberRow[];
-    const registeredProxyIndex = buildRegisteredProxyIndex(
-        registeredMembers,
-    );
 
-    const baseRecords = (rawRecords as LegacyRawRecord[] | null || []).map((record) => {
-        const member = normalizeMemberRef(record.members);
-        const contact = resolveContact(record, member);
-        const certificateNumbers = extractCertificateNumbers(record.raw_data || {}, record.certificates);
-        const segment = resolveSegment(
-            record,
-            member,
-            isRegisteredProxyMatch(record.original_name, contact, registeredProxyIndex),
-        );
+    const registeredProxyIndex = buildRegisteredProxyIndex(registeredMembers);
+
+    // Robustly sanitize legacy birthday data (Starts with 19 or matches YYYY.MM.DD)
+    const sanitizeNumber = (val: string | null | undefined) => {
+        if (!val) return null;
+        const v = val.trim();
+        if (v.startsWith('19')) return null;
+        if (/^\d{4}\.\d{2}\.\d{2}$/.test(v)) return null;
+        return v;
+    };
+
+    // 3. Process base records from asset_rights
+    const entitiesProcessed = new Set<string>();
+    const baseRecords = (allRights || []).map((right) => {
+        const entity = right.account_entities as any;
+        if (entity) entitiesProcessed.add(entity.id);
+        const contact = entity?.phone || right.meta?.contact || '-';
+
+        // Use normalized and sanitized right_number
+        const rawCertNo = normalizeCertificateNumber(right.right_number) || right.right_number;
+        const certNo = sanitizeNumber(rawCertNo);
+        const certNumbers = certNo ? [certNo] : [];
+
+        // Resolve segment logic
+        const entityRoles = entity ? (rolesMap.get(entity.id) || []) : [];
+        const isRegistered = entityRoles.some(r => r.is_registered);
+        const activeRoleCode = entityRoles[0]?.role_code || '';
+
+        let segment: LegacyMemberSegment = 'reserve_member';
+        if (isRegistered) segment = 'registered_116';
+        else if (right.status === 'refunded') segment = 'refunded';
+        else if (activeRoleCode === '권리증보유자') segment = 'investor';
+        else if (activeRoleCode.includes('2차')) segment = 'second_member';
+        else if (activeRoleCode.includes('지주')) segment = 'landlord_member';
+        else if (activeRoleCode.includes('일반')) segment = 'general_sale';
 
         return {
-            id: record.id,
-            original_name: record.original_name || '-',
-            source_file: record.source_file || '-',
-            raw_data: record.raw_data || {},
-            member_id: record.member_id,
+            id: right.id,
+            original_name: right.meta?.cert_name || entity?.display_name || '-',
+            source_file: right.meta?.source || '-',
+            raw_data: right.meta || {},
+            member_id: right.entity_id,
             member_segment: segment,
-            certificate_numbers: certificateNumbers,
-            certificate_count: certificateNumbers.length,
+            certificate_numbers: certNumbers,
+            certificate_count: certNumbers.length,
             contact,
-            member_name: member?.name || null,
+            member_name: entity?.display_name || null,
+        };
+    });
+
+    // 3.5 Inject "missing" registered members (those without asset_rights records)
+    // This ensures the "registered_116" segment count reflects all 116 members.
+    for (const member of registeredMembers) {
+        if (entitiesProcessed.has(member.id)) continue;
+
+        const rawVal = member.member_number || '';
+        const sanitizedNo = sanitizeNumber(rawVal);
+        const certNumbers = sanitizedNo ? [sanitizedNo] : [];
+
+        baseRecords.push({
+            id: `v-${member.id}`,
+            original_name: member.name || '-',
+            source_file: 'RegisteredDB',
+            raw_data: {},
+            member_id: member.id,
+            member_segment: 'registered_116',
+            certificate_numbers: certNumbers,
+            certificate_count: certNumbers.length,
+            contact: '-',
+            member_name: member.name,
+        });
+    }
+
+    // 4. Enrich records for UI (maintaining EnrichedLegacyRecord structure)
+    const enrichedRecords: EnrichedLegacyRecord[] = baseRecords.map((record) => {
+        return {
+            id: record.id,
+            original_name: record.original_name,
+            source_file: record.source_file,
+            raw_data: record.raw_data as Record<string, unknown>,
+            member_id: record.member_id,
+            member_segment: record.member_segment,
+            certificate_numbers: record.certificate_numbers,
+            certificate_count: record.certificate_count,
+            contact: record.contact,
+            owner_name: record.member_name || record.original_name,
+            owner_type: record.member_id ? 'member_linked' : 'legacy_only',
         };
     });
 
     const allCertificateNumbers = Array.from(
         new Set(baseRecords.flatMap((record) => record.certificate_numbers)),
     );
-
-    const certificateOwnerMap = new Map<string, CertificateOwnerRow>();
-    const statusPriority = (status: string) => {
-        const normalized = (status || '').toLowerCase();
-        if (normalized === 'active') return 2;
-        if (normalized === 'merged') return 1;
-        return 0;
-    };
-
-    if (allCertificateNumbers.length > 0) {
-        const certificateOwners = (await fetchCertificateCompatRows(supabase, {
-            certificateNumbers: allCertificateNumbers,
-        })) as CertificateOwnerRow[];
-        for (const owner of certificateOwners) {
-            const existing = certificateOwnerMap.get(owner.certificate_number);
-            if (!existing || statusPriority(owner.status) > statusPriority(existing.status)) {
-                certificateOwnerMap.set(owner.certificate_number, owner);
-            }
-        }
-    }
-
-    const holderPartyIds = Array.from(
-        new Set(Array.from(certificateOwnerMap.values()).map((item) => item.holder_party_id)),
-    );
-    const { data: ownerPartyProfilesRaw } = holderPartyIds.length > 0
-        ? await supabase
-            .from('party_profiles')
-            .select('id, display_name, member_id')
-            .in('id', holderPartyIds)
-        : { data: [] as PartyOwnerProfileRow[] };
-    const ownerPartyProfiles = (ownerPartyProfilesRaw as PartyOwnerProfileRow[] | null) || [];
-    const ownerPartyMap = new Map(ownerPartyProfiles.map((row) => [row.id, row]));
-
-    const memberIdsForOwner = new Set<string>();
-    for (const row of baseRecords) {
-        if (row.member_id) memberIdsForOwner.add(row.member_id);
-    }
-    for (const row of ownerPartyProfiles) {
-        if (row.member_id) memberIdsForOwner.add(row.member_id);
-    }
-
-    const { data: ownerMembersRaw } = memberIdsForOwner.size > 0
-        ? await supabase
-            .from('account_entities')
-            .select('id, display_name')
-            .in('id', Array.from(memberIdsForOwner))
-        : { data: [] as Array<{ id: string; display_name: string }> };
-    const ownerMembers = ((ownerMembersRaw as Array<{ id: string; display_name: string }> | null) || []).map(m => ({ id: m.id, name: m.display_name }));
-    const ownerMemberNameMap = new Map(ownerMembers.map((member) => [member.id, member.name || '-']));
-
-    const enrichedRecords: EnrichedLegacyRecord[] = baseRecords.map((record) => {
-        const linkedMemberName = record.member_id
-            ? ownerMemberNameMap.get(record.member_id) || record.member_name || null
-            : null;
-
-        let ownerName = linkedMemberName || record.original_name;
-        let ownerType: EnrichedLegacyRecord['owner_type'] = linkedMemberName ? 'member_linked' : 'legacy_only';
-
-        for (const number of record.certificate_numbers) {
-            const certOwner = certificateOwnerMap.get(number);
-            if (!certOwner) continue;
-            const party = ownerPartyMap.get(certOwner.holder_party_id);
-            const partyMemberName = party?.member_id ? ownerMemberNameMap.get(party.member_id) : null;
-            ownerName = partyMemberName || party?.display_name || ownerName;
-            ownerType = partyMemberName ? 'member_linked' : 'certificate_holder_linked';
-            break;
-        }
-
-        return {
-            id: record.id,
-            original_name: record.original_name,
-            source_file: record.source_file,
-            raw_data: record.raw_data,
-            member_id: record.member_id,
-            member_segment: record.member_segment,
-            certificate_numbers: record.certificate_numbers,
-            certificate_count: record.certificate_count,
-            contact: record.contact,
-            owner_name: ownerName,
-            owner_type: ownerType,
-        };
-    });
 
     const lowerQuery = query.toLowerCase();
     const searchScopedRecords = lowerQuery
@@ -643,9 +647,9 @@ export default async function FinancePage({
                             <p className="text-xs lg:text-sm text-muted-foreground">
                                 권리증번호 기준 보유 현황과 중복/환불 상태를 자금흐름 관점으로 집계합니다.
                             </p>
-                            {error && (
+                            {rightsError && (
                                 <p className="text-xs text-destructive font-bold">
-                                    데이터 조회 오류: {error.message}
+                                    데이터 조회 오류: {rightsError.message}
                                 </p>
                             )}
                         </div>

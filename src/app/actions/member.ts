@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createAuditLog } from '@/app/actions/audit';
 
 export interface MemberActionState {
     success?: boolean;
@@ -61,6 +62,21 @@ export async function updateMember(
                 .update(roleUpdate)
                 .eq('entity_id', id);
         }
+
+        // Add Audit Log
+        await createAuditLog(
+            'MEMBER_UPDATE',
+            id,
+            {
+                name,
+                member_number,
+                phone,
+                tier,
+                status,
+                unit_group,
+                memo
+            }
+        );
 
         revalidatePath(`/members/${id}`);
         revalidatePath('/members');

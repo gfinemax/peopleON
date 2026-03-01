@@ -25,9 +25,13 @@ export default async function DashboardPage() {
     let totalMembers = 0;
     let favoriteList: any[] = [];
     let actionList: any[] = [];
+    let currentUser: any = null;
 
     try {
         const supabase = await createClient();
+
+        const { data: { user } } = await supabase.auth.getUser();
+        currentUser = user;
 
         // Fetch real data
         const { count: memberCount } = await supabase.from('account_entities').select('*', { count: 'exact', head: true });
@@ -144,7 +148,11 @@ export default async function DashboardPage() {
                 />
             </div>
             <div className="hidden lg:flex flex-1 flex-col h-full overflow-hidden bg-background">
-                <Header title="통합 대시보드" />
+                <Header
+                    title="통합 대시보드"
+                    userEmail={currentUser?.email}
+                    userName={currentUser?.user_metadata?.name || '관리자'}
+                />
 
                 <main className="flex flex-1 flex-col overflow-y-auto">
                     <div className="flex flex-col gap-6 p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
@@ -290,7 +298,7 @@ export default async function DashboardPage() {
                                                 <span className={cn(
                                                     "px-2 py-0.5 rounded text-[10px] font-bold border",
                                                     member.status === '정상' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                                        member.status === '탈퇴예정' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
+                                                        member.status === '탈퇴' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
                                                             "bg-orange-500/10 text-orange-500 border-orange-500/20"
                                                 )}>
                                                     {member.status || '상태미정'}
@@ -347,7 +355,7 @@ export default async function DashboardPage() {
                                                         tier={member.tier || '-'}
                                                         status={member.status || '미확인'}
                                                         statusColor={
-                                                            member.status === '탈퇴예정' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
+                                                            member.status === '탈퇴' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
                                                                 member.status === '소송중' ? "bg-orange-500/10 text-orange-500 border-orange-500/20" :
                                                                     "bg-gray-500/10 text-gray-500 border-gray-500/20"
                                                         }

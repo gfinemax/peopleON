@@ -9,42 +9,51 @@
 
 -- ===================
 -- Phase 1: 모든 데이터 삭제 (FK 순서 고려)
+-- 테이블이 존재하는 경우에만 실행
 -- ===================
-TRUNCATE TABLE refund_payments CASCADE;
-TRUNCATE TABLE settlement_lines CASCADE;
-TRUNCATE TABLE settlement_cases CASCADE;
-TRUNCATE TABLE payments CASCADE;
-TRUNCATE TABLE interaction_logs CASCADE;
-TRUNCATE TABLE transaction_classification_events CASCADE;
-TRUNCATE TABLE transaction_documents CASCADE;
-TRUNCATE TABLE audit_logs CASCADE;
-TRUNCATE TABLE membership_roles CASCADE;
-TRUNCATE TABLE asset_rights CASCADE;
-TRUNCATE TABLE account_entities CASCADE;
+DO $$ 
+DECLARE
+    t text;
+BEGIN
+    FOR t IN 
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name IN (
+            'refund_payments', 'settlement_lines', 'settlement_cases', 
+            'payments', 'interaction_logs', 'transaction_classification_events', 
+            'transaction_documents', 'audit_logs', 'membership_roles', 
+            'asset_rights', 'account_entities'
+        )
+    LOOP
+        EXECUTE format('TRUNCATE TABLE %I CASCADE', t);
+    END LOOP;
+END $$;
 
 -- ===================
 -- Phase 2: 레거시 테이블 삭제
 -- ===================
 
--- 2-1. members 의존 테이블
 DROP TABLE IF EXISTS interaction_logs CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
-
--- 2-2. party_profiles 의존 테이블
 DROP TABLE IF EXISTS party_roles CASCADE;
 DROP TABLE IF EXISTS party_relationships CASCADE;
 DROP TABLE IF EXISTS right_certificates CASCADE;
 
 -- 2-3. settlement FK 제약 제거 (party_profiles, settlement_policy_versions 참조)
-ALTER TABLE settlement_cases DROP CONSTRAINT IF EXISTS settlement_cases_party_id_fkey;
-ALTER TABLE settlement_cases DROP CONSTRAINT IF EXISTS settlement_cases_policy_version_id_fkey;
+DO $$ BEGIN
+    ALTER TABLE settlement_cases DROP CONSTRAINT IF EXISTS settlement_cases_party_id_fkey;
+EXCEPTION WHEN undefined_object OR undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE settlement_cases DROP CONSTRAINT IF EXISTS settlement_cases_policy_version_id_fkey;
+EXCEPTION WHEN undefined_object OR undefined_table THEN NULL;
+END $$;
 
 -- 2-4. 핵심 레거시 테이블 삭제
 DROP TABLE IF EXISTS party_profiles CASCADE;
 DROP TABLE IF EXISTS members CASCADE;
 DROP TABLE IF EXISTS legacy_records CASCADE;
-
--- 2-5. 참조 없는 독립 테이블
 DROP TABLE IF EXISTS transaction_classification_events CASCADE;
 DROP TABLE IF EXISTS transaction_documents CASCADE;
 
@@ -52,14 +61,34 @@ DROP TABLE IF EXISTS transaction_documents CASCADE;
 -- Phase 3: settlement_cases FK를 account_entities로 재연결
 -- ===================
 
--- party_id → entity_id (account_entities 참조)로 변경
-ALTER TABLE settlement_cases RENAME COLUMN party_id TO entity_id;
-ALTER TABLE settlement_cases
-    ADD CONSTRAINT settlement_cases_entity_id_fkey
-    FOREIGN KEY (entity_id) REFERENCES account_entities(id) ON DELETE RESTRICT;
+DO $$ BEGIN
+    -- party_id가 존재하면 entity_id로 변경
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'settlement_cases' AND column_name = 'party_id'
+    ) THEN
+        ALTER TABLE settlement_cases RENAME COLUMN party_id TO entity_id;
+    END IF;
 
--- policy_version_id 컬럼 삭제 (settlement_policy_versions 테이블 삭제됨)
-ALTER TABLE settlement_cases DROP COLUMN IF EXISTS policy_version_id;
+    -- entity_id 컬럼에 FK 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'settlement_cases_entity_id_fkey'
+    ) THEN
+        ALTER TABLE settlement_cases
+            ADD CONSTRAINT settlement_cases_entity_id_fkey
+            FOREIGN KEY (entity_id) REFERENCES account_entities(id) ON DELETE RESTRICT;
+    END IF;
+
+    -- policy_version_id 컬럼 삭제 (존재하는 경우만)
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'settlement_cases' AND column_name = 'policy_version_id'
+    ) THEN
+        ALTER TABLE settlement_cases DROP COLUMN policy_version_id;
+    END IF;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
 -- ===================
 -- Phase 4: payments 테이블 재생성 (account_entities 참조)

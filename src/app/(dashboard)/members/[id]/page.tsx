@@ -85,34 +85,49 @@ export default async function MemberDetailPage({
         return <div className="p-20 text-center font-bold text-muted-foreground">존재하지 않는 조합원입니다.</div>;
     }
 
-    // Get membership role
-    const { data: roleData } = await supabase
-        .from('membership_roles')
-        .select('role_code, role_status, is_registered')
-        .eq('entity_id', id)
-        .maybeSingle();
+    // Parallel Fetching
+    const [roleRes, logsRes, rightsRes, relsRes] = await Promise.all([
+        supabase
+            .from('membership_roles')
+            .select('role_code, role_status, is_registered')
+            .eq('entity_id', id)
+            .maybeSingle(),
+        supabase
+            .from('interaction_logs')
+            .select('*')
+            .eq('entity_id', id)
+            .order('created_at', { ascending: false }),
+        supabase
+            .from('asset_rights')
+            .select('*')
+            .eq('entity_id', id)
+            .order('created_at', { ascending: false }),
+        supabase
+            .from('entity_relationships')
+            .select('related_entity_id, relationship_type, is_active, related_entity:account_entities!related_entity_id(display_name, phone)')
+            .eq('entity_id', id)
+            .eq('is_active', true)
+    ]);
+
+    const roleData = roleRes.data;
+    const logsData = logsRes.data;
+    const assetRights = rightsRes.data || [];
+    const relationshipsData = relsRes.data || [];
 
     const memberTier = roleData?.role_code || '';
     const memberStatus = roleData?.role_status === 'inactive' ? '탈퇴' : '정상';
 
-    // Extract agent from meta
-    const meta = member.meta as Record<string, unknown> | null;
-    const agents = (meta?.agents as Array<{ name: string; relation: string; phone?: string }>) || [];
-    const representative = agents[0] || null;
+    // Get relationships (agents, family, etc.)
+    const relationships = relationshipsData.map((rel: any) => ({
+        name: rel.related_entity?.display_name || 'N/A',
+        relation: rel.relationship_type === 'agent' ? '대리인' :
+            rel.relationship_type === 'spouse' ? '배우자' :
+                rel.relationship_type === 'child' ? '자녀' : rel.relationship_type,
+        phone: rel.related_entity?.phone || null
+    }));
 
-    // Fetch Interaction Logs
-    const { data: logsData } = await supabase
-        .from('interaction_logs')
-        .select('*')
-        .eq('member_id', id)
-        .order('created_at', { ascending: false });
-
-    // Fetch Legacy Records
-    const { data: legacyRecords } = await supabase
-        .from('legacy_records')
-        .select('*')
-        .eq('member_id', id)
-        .order('contract_date', { ascending: false });
+    // Representative is typically the first agent
+    const representative = relationships.find(r => r.relation === '대리인') || relationships[0] || null;
 
     const logs = (logsData || []) as InteractionLog[];
 
@@ -360,7 +375,7 @@ export default async function MemberDetailPage({
                     </div>
 
                     {/* --- Right Content Area --- */}
-                    <MemberDetailRightPanel memberId={id} legacyRecords={legacyRecords || []} />
+                    <MemberDetailRightPanel memberId={id} assetRights={assetRights || []} />
                 </div>
             </main>
         </div>

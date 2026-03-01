@@ -2,9 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 type LegacyRecord = {
-    member_id: string;
-    original_name: string | null;
-    raw_data: unknown;
+    entity_id: string;
+    original_name?: string | null;
+    meta: unknown;
 };
 
 type MemberPatchPayload = {
@@ -34,20 +34,24 @@ export async function GET(request: Request) {
     const syncAccounting = searchParams.get('syncAccounting') !== 'false';
 
     try {
-        // 1. Fetch matched legacy records
+        // 1. Fetch matched legacy records from asset_rights
         const { data: records, error } = await supabase
-            .from('legacy_records')
-            .select('*')
-            .not('member_id', 'is', null)
-            .order('id', { ascending: true }); // Stable order for deterministic overwrite in Map
+            .from('asset_rights')
+            .select('id, entity_id, meta')
+            .not('entity_id', 'is', null)
+            .order('id', { ascending: true });
 
         if (error) throw error;
         if (!records) return NextResponse.json({ message: 'No records found', count: 0 });
 
-        // 2. Process records (Deduplicate by member_id)
+        // 2. Process records (Deduplicate by entity_id)
         const memberMap = new Map<string, LegacyRecord>();
-        for (const row of (records as LegacyRecord[] | null) || []) {
-            memberMap.set(row.member_id, row);
+        for (const row of (records as any[] | null) || []) {
+            memberMap.set(row.entity_id, {
+                entity_id: row.entity_id,
+                meta: row.meta,
+                original_name: row.meta?.cert_name || '-'
+            });
         }
 
         console.log(`[Migration] Found ${records.length} records, ${memberMap.size} unique members.`);
@@ -85,8 +89,8 @@ export async function GET(request: Request) {
 
         // 4. Prepare updates
         for (const [memberId, record] of memberMap.entries()) {
-            const address = findValue(record.raw_data, addressKeys);
-            const memo = findValue(record.raw_data, memoKeys);
+            const address = findValue(record.meta, addressKeys);
+            const memo = findValue(record.meta, memoKeys);
 
             if (address || memo) {
                 const payload: MemberPatchPayload = {};
@@ -98,7 +102,7 @@ export async function GET(request: Request) {
 
                 logs.push({
                     memberId,
-                    name: record.original_name,
+                    name: record.original_name ?? null,
                     found: { address, memo },
                     payload
                 });

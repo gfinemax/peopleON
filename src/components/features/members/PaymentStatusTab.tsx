@@ -14,11 +14,12 @@ interface PaymentRecord {
 }
 
 interface PaymentStatusTabProps {
-    memberId: string;
+    memberIds: string[];
     memberName: string;
+    unitGroup?: string | null;
 }
 
-export function PaymentStatusTab({ memberId, memberName }: PaymentStatusTabProps) {
+export function PaymentStatusTab({ memberIds, memberName, unitGroup }: PaymentStatusTabProps) {
     const [loading, setLoading] = useState(true);
     const [payments, setPayments] = useState<PaymentRecord[]>([]);
 
@@ -30,7 +31,7 @@ export function PaymentStatusTab({ memberId, memberName }: PaymentStatusTabProps
             const { data } = await supabase
                 .from('payments')
                 .select('step, amount_due, amount_paid, paid_date, is_paid')
-                .eq('member_id', memberId)
+                .in('member_id', memberIds)
                 .order('step', { ascending: true });
 
             // If no real data, use mock data for demo
@@ -52,7 +53,7 @@ export function PaymentStatusTab({ memberId, memberName }: PaymentStatusTabProps
         }
 
         fetchPayments();
-    }, [memberId]);
+    }, [memberIds]);
 
     // Calculate totals
     const totalDue = payments.reduce((sum, p) => sum + p.amount_due, 0);
@@ -77,6 +78,17 @@ export function PaymentStatusTab({ memberId, memberName }: PaymentStatusTabProps
 
             {!loading && (
                 <>
+                    {/* Unit Group Info */}
+                    {unitGroup && (
+                        <div className="rounded-lg bg-[#233040] p-4 border border-white/5 shadow-sm flex items-center gap-3">
+                            <MaterialIcon name="straighten" className="text-sky-400 text-[20px]" />
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">평형/그룹</p>
+                                <p className="text-sm font-bold text-white">{unitGroup}</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Summary Cards */}
                     <div className="grid grid-cols-3 gap-3">
                         <div className="rounded-lg bg-[#233040] p-4 border border-white/5 shadow-sm">

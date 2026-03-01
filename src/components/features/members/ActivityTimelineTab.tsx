@@ -18,51 +18,71 @@ interface InteractionLog {
 }
 
 interface ActivityTimelineTabProps {
-    memberId: string;
+    memberIds: string[];
 }
 
-export function ActivityTimelineTab({ memberId }: ActivityTimelineTabProps) {
+export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
     const [logs, setLogs] = useState<InteractionLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const itemsPerPage = 5;
 
     // New Log Input State
     const [newLogText, setNewLogText] = useState('');
 
     useEffect(() => {
-        // Mock Data to match the design image
-        const mockLogs: InteractionLog[] = [
-            {
-                id: '1',
-                type: 'CALL',
-                title: '관리비 문의 (Maintenance Fee)',
-                summary: '9월 관리비 내역 중 난방비 과다 청구에 대한 문의가 있었습니다. 계량기 점검 일정을 10월 27일 오후 2시로 예약하였습니다.',
-                staff_name: '박지성 매니저',
-                created_at: '2023-10-24 14:30',
-                attachment: null,
-            },
-            {
-                id: '2',
-                type: 'REPAIR',
-                title: '세대 내부 수리 건 (Renovation)',
-                summary: '욕실 누수 관련 방문 점검 완료. 윗집(1304호) 배관 문제로 확인되어 윗집 소유주와 통화 후 공사 일정 조율하기로 함.',
-                staff_name: '김민수 팀장',
-                created_at: '2023-10-15 10:00',
-                attachment: '현장사진_01.jpg',
-            },
-            {
-                id: '3',
-                type: 'SMS',
-                title: '미납 안내 발송 (Payment Reminder)',
-                summary: '[People On] 9월 관리비 미납 안내입니다. 10월 10일까지 납부 부탁드립니다.',
-                staff_name: '시스템 자동발송',
-                created_at: '2023-10-01 09:00',
-                attachment: null,
-            }
-        ];
+        async function fetchLogs() {
+            if (page === 1) setLoading(true);
+            const supabase = createClient();
 
-        setLogs(mockLogs);
-        setLoading(false);
-    }, [memberId]);
+            // Fetch total count first
+            if (page === 1) {
+                const { count } = await supabase
+                    .from('interaction_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .in('entity_id', memberIds);
+
+                setTotalCount(count || 0);
+            }
+
+            // Fetch paginated data
+            const from = (page - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            const { data, error } = await supabase
+                .from('interaction_logs')
+                .select('*')
+                .in('entity_id', memberIds)
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (!error && data) {
+                const formattedLogs: InteractionLog[] = data.map((d: any) => ({
+                    id: d.id,
+                    type: d.type || 'NOTE',
+                    title: d.type === 'CALL' ? '전화 상담' :
+                        d.type === 'MEET' ? '대면 상담' :
+                            d.type === 'SMS' ? '문자 발송' :
+                                d.type === 'DOC' ? '서류 기록' :
+                                    d.type === 'REPAIR' ? '수리 건' : '기타 메모',
+                    summary: d.summary || '',
+                    staff_name: d.staff_name,
+                    created_at: new Date(d.created_at).toLocaleString('ko-KR'),
+                    attachment: null
+                }));
+
+                if (page === 1) {
+                    setLogs(formattedLogs);
+                } else {
+                    setLogs(prev => [...prev, ...formattedLogs]);
+                }
+            }
+            setLoading(false);
+        }
+
+        fetchLogs();
+    }, [memberIds, page]);
 
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -83,6 +103,11 @@ export function ActivityTimelineTab({ memberId }: ActivityTimelineTabProps) {
                         <MaterialIcon name="edit_note" className="text-blue-400" size="sm" />
                     </div>
                     <h3 className="text-sm font-bold text-white">새로운 활동 기록</h3>
+                    {!loading && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#1A2633] text-gray-400 text-[10px] font-bold border border-white/5">
+                            총 {totalCount}건
+                        </span>
+                    )}
                     <div className="ml-auto">
                         <span className="text-[10px] font-bold text-gray-500 bg-[#151f2b] px-2 py-1 rounded border border-white/5">오늘, 10월 26일</span>
                     </div>
@@ -110,74 +135,85 @@ export function ActivityTimelineTab({ memberId }: ActivityTimelineTabProps) {
 
             {/* 2. Timeline List */}
             <div className="flex flex-col gap-4">
-                {logs.map((log) => {
-                    const style = getTypeIcon(log.type);
+                {!loading && logs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 my-4 text-muted-foreground opacity-50 gap-3 border border-dashed border-white/10 rounded-2xl">
+                        <MaterialIcon name="history_toggle_off" size="xl" className="text-gray-500" />
+                        <p className="text-sm font-bold text-gray-400">등록된 활동 기록이 없습니다.</p>
+                    </div>
+                ) : (
+                    logs.map((log) => {
+                        const style = getTypeIcon(log.type);
 
-                    return (
-                        <div key={log.id} className="flex gap-4 group">
-                            {/* Left Icon Column */}
-                            <div className="flex flex-col items-center shrink-0">
-                                <div className={cn(
-                                    "size-10 rounded-lg flex items-center justify-center border shadow-sm z-10",
-                                    "bg-[#1A2633] border-white/5"
-                                )}>
-                                    <MaterialIcon name={style.name} className={style.text} size="sm" />
-                                </div>
-                                {/* Connector Line */}
-                                <div className="w-[1px] h-full bg-gradient-to-b from-white/5 to-transparent my-2" />
-                            </div>
-
-                            {/* Right Content Card */}
-                            <div className="flex-1 bg-[#151f2b] rounded-xl border border-white/5 p-5 shadow-sm hover:border-white/10 transition-colors relative">
-                                {/* Header */}
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="text-sm font-bold text-white tracking-tight">
-                                            {log.title}
-                                        </h4>
-                                        {log.staff_name && (
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#1A2633] text-gray-400 border border-white/5">
-                                                {log.staff_name}
-                                            </span>
-                                        )}
+                        return (
+                            <div key={log.id} className="flex gap-4 group">
+                                {/* Left Icon Column */}
+                                <div className="flex flex-col items-center shrink-0">
+                                    <div className={cn(
+                                        "size-10 rounded-lg flex items-center justify-center border shadow-sm z-10",
+                                        "bg-[#1A2633] border-white/5"
+                                    )}>
+                                        <MaterialIcon name={style.name} className={style.text} size="sm" />
                                     </div>
-                                    <span className="text-[11px] font-mono text-gray-600">
-                                        {log.created_at}
-                                    </span>
+                                    {/* Connector Line */}
+                                    <div className="w-[1px] h-full bg-gradient-to-b from-white/5 to-transparent my-2" />
                                 </div>
 
-                                {/* Body */}
-                                <p className="text-sm text-gray-400 leading-relaxed font-normal mb-4 whitespace-pre-wrap">
-                                    {log.summary}
-                                </p>
-
-                                {/* Attachment */}
-                                {log.attachment && (
-                                    <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0F151B] border border-white/5 w-fit group/file cursor-pointer hover:border-white/10 transition-colors">
-                                        <div className="size-8 rounded bg-red-500/10 flex items-center justify-center text-red-400">
-                                            <MaterialIcon name="image" size="sm" />
+                                {/* Right Content Card */}
+                                <div className="flex-1 bg-[#151f2b] rounded-xl border border-white/5 p-5 shadow-sm hover:border-white/10 transition-colors relative">
+                                    {/* Header */}
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-sm font-bold text-white tracking-tight">
+                                                {log.title}
+                                            </h4>
+                                            {log.staff_name && (
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#1A2633] text-gray-400 border border-white/5">
+                                                    {log.staff_name}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-gray-300 group-hover/file:text-white transition-colors">
-                                                {log.attachment}
-                                            </span>
-                                        </div>
+                                        <span className="text-[11px] font-mono text-gray-600">
+                                            {log.created_at}
+                                        </span>
                                     </div>
-                                )}
+
+                                    {/* Body */}
+                                    <p className="text-sm text-gray-400 leading-relaxed font-normal mb-4 whitespace-pre-wrap">
+                                        {log.summary}
+                                    </p>
+
+                                    {/* Attachment */}
+                                    {log.attachment && (
+                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0F151B] border border-white/5 w-fit group/file cursor-pointer hover:border-white/10 transition-colors">
+                                            <div className="size-8 rounded bg-red-500/10 flex items-center justify-center text-red-400">
+                                                <MaterialIcon name="image" size="sm" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-gray-300 group-hover/file:text-white transition-colors">
+                                                    {log.attachment}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                )}
             </div>
 
             {/* 3. Load More */}
-            <div className="flex justify-center pt-4">
-                <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#151f2b] border border-white/5 text-xs font-bold text-gray-500 hover:text-white hover:bg-[#1A2633] transition-all">
-                    <MaterialIcon name="history" size="xs" />
-                    이전 기록 3건 더 보기...
-                </button>
-            </div>
-
+            {logs.length < totalCount && (
+                <div className="flex justify-center pt-4">
+                    <button
+                        onClick={() => setPage(p => p + 1)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#151f2b] border border-white/5 text-xs font-bold text-gray-500 hover:text-white hover:bg-[#1A2633] transition-all"
+                    >
+                        <MaterialIcon name="history" size="xs" />
+                        이전 기록 {Math.min(itemsPerPage, totalCount - logs.length)}건 더 보기...
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

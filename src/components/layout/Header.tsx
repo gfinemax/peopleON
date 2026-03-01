@@ -10,9 +10,12 @@ interface HeaderProps {
     iconName?: string; // New prop for icon
     showBreadcrumb?: boolean;
     leftContent?: React.ReactNode;
+    rightContent?: React.ReactNode;
+    userEmail?: string;
+    userName?: string;
 }
 
-export function Header({ title = '통합 대시보드', iconName, leftContent }: HeaderProps) {
+export function Header({ title = '통합 대시보드', iconName, leftContent, rightContent, userEmail, userName }: HeaderProps) {
     const { theme, setTheme } = useTheme();
     // useRouter and state removed as GlobalSearch handles it
 
@@ -44,7 +47,9 @@ export function Header({ title = '통합 대시보드', iconName, leftContent }:
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-2">
+                {rightContent}
+
                 {/* Notifications */}
                 <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
                     <MaterialIcon name="notifications" size="sm" filled />
@@ -54,8 +59,8 @@ export function Header({ title = '통합 대시보드', iconName, leftContent }:
                 {/* Users Profile */}
                 <div className="flex items-center gap-1 pl-0.5 ml-0 border-l border-border/50">
                     <div className="hidden md:flex flex-col items-end">
-                        <span className="text-xs font-bold text-foreground">김관리</span>
-                        <span className="text-[10px] text-muted-foreground/60 font-mono tracking-tight">admin@peopleon.com</span>
+                        <span className="text-xs font-bold text-foreground">{userName || '사용자'}</span>
+                        <span className="text-[10px] text-muted-foreground/60 font-mono tracking-tight">{userEmail || '로그인 필요'}</span>
                     </div>
                     <div className="hidden md:flex size-8 rounded-full bg-muted/50 border border-border items-center justify-center">
                         <MaterialIcon name="person" size="sm" className="text-muted-foreground" />

@@ -4,16 +4,16 @@ import { useState } from 'react';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { ActivityTimelineTab } from './ActivityTimelineTab';
-import { LegacyHistoryCard } from './LegacyHistoryCard';
+import { AssetRightsCard } from './AssetRightsCard';
 
 interface MemberDetailRightPanelProps {
     memberId: string;
-    legacyRecords: any[];
+    assetRights: any[];
 }
 
 type TabType = 'activity' | 'financials' | 'documents';
 
-export function MemberDetailRightPanel({ memberId, legacyRecords }: MemberDetailRightPanelProps) {
+export function MemberDetailRightPanel({ memberId, assetRights }: MemberDetailRightPanelProps) {
     const [activeTab, setActiveTab] = useState<TabType>('activity');
 
     const tabs = [
@@ -101,11 +101,11 @@ export function MemberDetailRightPanel({ memberId, legacyRecords }: MemberDetail
 
                     {activeTab === 'activity' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {/* Legacy History Card */}
-                            <LegacyHistoryCard records={legacyRecords || []} />
+                            {/* Asset Rights Card */}
+                            <AssetRightsCard rights={assetRights || []} />
 
                             {/* Activity Timeline */}
-                            <ActivityTimelineTab memberId={memberId} />
+                            <ActivityTimelineTab memberIds={[memberId]} />
                         </div>
                     )}
 

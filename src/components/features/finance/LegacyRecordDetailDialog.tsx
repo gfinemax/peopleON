@@ -81,13 +81,26 @@ export function LegacyRecordDetailDialog({
         const supabase = createClient();
 
         const { data, error } = await supabase
-            .from('legacy_records')
+            .from('asset_rights')
             .select('*')
             .eq('id', id)
             .single();
 
         if (!error && data) {
-            setRecord(data);
+            const mappedRecord: LegacyRecord = {
+                id: data.id,
+                original_name: (data.meta as any)?.cert_name || '-',
+                rights_count: 1,
+                source_file: (data.meta as any)?.source || '-',
+                amount_paid: data.principal_amount || 0,
+                contract_date: data.issued_at || '-',
+                raw_data: (data.meta || {}) as Record<string, unknown>,
+                member_id: data.entity_id,
+                is_refunded: data.status === 'refunded',
+                created_at: data.created_at,
+                certificates: data.right_number
+            };
+            setRecord(mappedRecord);
         }
         setLoading(false);
     }

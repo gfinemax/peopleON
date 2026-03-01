@@ -113,58 +113,78 @@ function escapeCsvCell(value: string | number): string {
 export async function GET() {
     const supabase = await createClient();
 
-    const { data: rawRecords, error } = await supabase
-        .from('legacy_records')
-        .select(`
-            id,
-            original_name,
-            source_file,
-            raw_data,
-            certificates,
-            member_id,
-            is_refunded,
-            members (
+    const [rightsRes, rolesRes] = await Promise.all([
+        supabase
+            .from('asset_rights')
+            .select(`
                 id,
-                name,
-                phone,
-                tier,
-                is_registered
-            )
-        `);
-    const { data: registeredProxyMembers } = await supabase
-        .from('account_entities')
-        .select('id, display_name, member_number')
-        .eq('is_registered', true);
+                right_number,
+                status,
+                meta,
+                entity_id,
+                account_entities (
+                    id,
+                    display_name,
+                    phone
+                )
+            `),
+        supabase
+            .from('membership_roles')
+            .select('entity_id, role_code, is_registered')
+    ]);
 
-    if (error) {
+    if (rightsRes.error) {
         return Response.json(
-            { error: `Failed to load records: ${error.message}` },
+            { error: `Failed to load records: ${rightsRes.error.message}` },
             { status: 500 },
         );
     }
 
+    const allRights = rightsRes.data || [];
+    const allRoles = rolesRes.data || [];
+    const rolesMap = new Map<string, any[]>();
+    for (const role of allRoles) {
+        const existing = rolesMap.get(role.entity_id) || [];
+        existing.push(role);
+        rolesMap.set(role.entity_id, existing);
+    }
+
+    const { data: registeredProxyMembers } = await supabase
+        .from('account_entities')
+        .select('id, display_name, member_number')
+        .in('id', allRoles.filter(r => r.is_registered).map(r => r.entity_id));
+
     const registeredMembers = (registeredProxyMembers as RegisteredMemberRow[] | null) || [];
     const registeredProxyIndex = buildRegisteredProxyIndex(registeredMembers);
 
-    const enrichedRecords: EnrichedLegacyRecord[] = (rawRecords as LegacyRawRecord[] | null || []).map((record) => {
-        const member = normalizeMemberRef(record.members);
-        const contact = resolveContact(record, member);
-        const certificateNumbers = extractCertificateNumbers(record.raw_data || {}, record.certificates);
-        const segment = resolveSegment(
-            record,
-            member,
-            isRegisteredProxyMatch(record.original_name, contact, registeredProxyIndex),
-        );
+    const enrichedRecords: EnrichedLegacyRecord[] = (allRights || []).map((right) => {
+        const entity = (right as any).account_entities as any;
+        const meta = (right.meta || {}) as any;
+        const contact = entity?.phone || meta.contact || '-';
+
+        const entityRoles = entity ? (rolesMap.get(entity.id) || []) : [];
+        const isRegistered = entityRoles.some(r => r.is_registered);
+        const activeRoleCode = entityRoles[0]?.role_code || '';
+
+        // Resolve segment
+        let segment: LegacyMemberSegment = 'reserve_member';
+        if (isRegistered) segment = 'registered_116';
+        else if (right.status === 'refunded') segment = 'refunded';
+        else if (activeRoleCode.includes('2차')) segment = 'second_member';
+        else if (activeRoleCode.includes('지주')) segment = 'landlord_member';
+        else if (activeRoleCode.includes('일반')) segment = 'general_sale';
+
+        const certNumbers = [right.right_number].filter(Boolean);
 
         return {
-            id: record.id,
-            original_name: record.original_name || '-',
-            source_file: record.source_file || '-',
-            raw_data: record.raw_data || {},
-            member_id: record.member_id,
+            id: right.id,
+            original_name: meta.cert_name || entity?.display_name || '-',
+            source_file: meta.source || '-',
+            raw_data: meta,
+            member_id: right.entity_id,
             member_segment: segment,
-            certificate_numbers: certificateNumbers,
-            certificate_count: certificateNumbers.length,
+            certificate_numbers: certNumbers,
+            certificate_count: certNumbers.length,
             contact,
         };
     });
