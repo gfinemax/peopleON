@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { MaterialIcon } from '@/components/ui/icon';
 import {
     Select,
@@ -49,7 +50,7 @@ const roleMemoMap: Record<string, string> = {
 };
 
 const tierGroupsByRole: Record<string, string[]> = {
-    member: ['등기조합원', '1차', '지주조합원', '예비조합원', '일반분양'],
+    member: ['등기조합원', '지주조합원', '2차', '일반분양', '예비조합원'],
     landowner: ['지주'],
     investor: ['권리증보유자', '권리증번호있음', '권리증번호없음', '권리증환불'],
     party: ['대리인', '관계인'],
@@ -57,7 +58,7 @@ const tierGroupsByRole: Record<string, string[]> = {
 
 const normalizeTierQuery = (raw: string | null) => {
     if (!raw || raw === 'all') return 'all';
-    if (raw === '1차') return '등기조합원';
+    if (raw === '1차') return '2차';
     if (raw === '일반') return '일반분양';
     if (raw === '예비') return '예비조합원';
     if (raw === '3차') return '일반분양';
@@ -98,6 +99,8 @@ export function MembersFilter({
 
     // Local state for Option C Layout
     const [query, setQuery] = useState(searchParams.get('q') || '');
+    const debouncedQuery = useDebounce(query, 400);
+
     const [tagInput, setTagInput] = useState(searchParams.get('tag') || '');
 
     const roleTabs = useMemo<RoleTab[]>(() => {
@@ -134,6 +137,13 @@ export function MembersFilter({
     const handleSearch = () => {
         updateSearch('q', query);
     };
+
+    useEffect(() => {
+        const currentQ = searchParams.get('q') || '';
+        if (debouncedQuery !== currentQ) {
+            updateSearch('q', debouncedQuery);
+        }
+    }, [debouncedQuery, searchParams, updateSearch]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -215,16 +225,11 @@ export function MembersFilter({
                             className="h-9 w-full rounded-md border border-[#324764] bg-[#0d182b] pl-9 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-400 focus:outline-none transition-all"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={handleKeyDown}
+                        // Removed onKeyDown because it's automatic now
                         />
                     </div>
 
-                    <button
-                        onClick={handleSearch}
-                        className="h-9 px-3 rounded-md bg-sky-600 text-white font-bold text-sm hover:bg-sky-500 transition-all flex-shrink-0"
-                    >
-                        조회
-                    </button>
+                    {/* '조회' button removed for auto-search */}
 
                     <button
                         type="button"
@@ -255,11 +260,20 @@ export function MembersFilter({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">분류 전체 ({activeTab.count.toLocaleString()})</SelectItem>
-                            {tierGroupsByRole[activeRole].map((tierName) => (
-                                <SelectItem key={tierName} value={tierName}>
-                                    {tierName} ({tierCounts[tierName] || 0})
-                                </SelectItem>
-                            ))}
+                            {tierGroupsByRole[activeRole].map((tierName) => {
+                                let display = tierName === '등기조합원' ? '등기' : tierName === '예비조합원' ? '예비' : tierName === '지주조합원' ? '지주' : tierName === '2차' ? '2차' : tierName;
+                                if (tierName === '권리증보유자') display = '권리증보유';
+                                if (activeRole === 'member') {
+                                    display = `조합원(${display})`;
+                                } else if (activeRole === 'landowner') {
+                                    display = `원지주(${display})`;
+                                }
+                                return (
+                                    <SelectItem key={tierName} value={tierName}>
+                                        {display} ({tierCounts[tierName] || 0})
+                                    </SelectItem>
+                                );
+                            })}
                         </SelectContent>
                     </Select>
                 )}

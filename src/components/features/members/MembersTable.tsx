@@ -48,7 +48,7 @@ interface MembersTableProps {
 
 const roleLabel: Record<RoleType, string> = {
     member: '조합원',
-    certificate_holder: '권리증',
+    certificate_holder: '권리증보유',
     related_party: '관계인',
     refund_applicant: '환불신청',
     agent: '대리인',
@@ -192,9 +192,9 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                         <tr>
                             <th className="px-2 py-2 w-[50px] text-center"><MaterialIcon name="star" size="sm" className="text-gray-500" /></th>
                             <th className="px-2 py-2 w-[40px] text-center">No.</th>
+                            <th className="px-2 py-2">구분</th>
                             <th className="px-2 py-2"><SortableHeader label="성명" field="name" className="justify-center" /></th>
                             <th className="px-2 py-2"><SortableHeader label="권리증번호" field="member_number" className="justify-center" /></th>
-                            <th className="px-2 py-2">구분</th>
                             <th className="px-2 py-2">관계</th>
                             <th className="px-2 py-2"><SortableHeader label="상태" field="status" className="justify-center" /></th>
                             <th className="px-2 py-2"><SortableHeader label="연락처" field="phone" className="justify-center" /></th>
@@ -232,6 +232,88 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                     )}
                                 </td>
                                 <td className="px-2 py-1.5 text-center text-gray-500 font-mono text-xs">{startIndex + index + 1}</td>
+                                <td className="px-2 py-1.5">
+                                    <InlineCellDropdown
+                                        options={[
+                                            { label: '조합원(등기)', value: '등기조합원' },
+                                            { label: '조합원(지주)', value: '지주조합원' },
+                                            { label: '조합원(2차)', value: '2차' },
+                                            { label: '조합원(일반분양)', value: '일반분양' },
+                                            { label: '조합원(예비)', value: '예비조합원' },
+                                            { label: '권리증보유', value: '권리증보유자' },
+                                            { label: '원지주', value: '지주' },
+                                            { label: '대리인', value: '대리인' },
+                                            { label: '관계인', value: '관계인' }
+                                        ]}
+                                        currentValue={member.tiers || (member.tier ? [member.tier] : [])}
+                                        multiple={true}
+                                        onSelect={(val) => {
+                                            const currentTiers = member.tiers || (member.tier ? [member.tier] : []);
+                                            const isSelected = currentTiers.includes(val);
+                                            return handleInlineUpdate(member.id, 'role', {
+                                                action: isSelected ? 'remove' : 'add',
+                                                role_code: val
+                                            }, member.entity_ids || [member.id]);
+                                        }}
+                                        disabled={!member.id}
+                                    >
+                                        <div className="flex flex-wrap items-center justify-center gap-1 min-h-[32px]">
+                                            {(member.role_types || []).length > 0 ? (
+                                                (member.role_types || [])
+                                                    .map(role => {
+                                                        const primaryTier = (member.tiers || []).find(t =>
+                                                            (role === 'member' && (t.includes('차') || t.includes('조합원') || t === '지주' || t === '일반분양')) ||
+                                                            (role === 'certificate_holder' && t.includes('권리증')) ||
+                                                            (role === 'related_party' && t === '관계인') ||
+                                                            (role === 'agent' && t === '대리인')
+                                                        ) || member.tier;
+
+                                                        const priorityMap: Record<string, number> = {
+                                                            '등기조합원': 1,
+                                                            '지주조합원': 2,
+                                                            '2차': 3,
+                                                            '일반분양': 4,
+                                                            '예비조합원': 5,
+                                                            '권리증보유자': 6,
+                                                            '지주': 7,
+                                                            '대리인': 8,
+                                                            '관계인': 9,
+                                                        };
+
+                                                        let p = 99;
+                                                        if (role === 'certificate_holder') p = 6;
+                                                        else if (role === 'agent') p = 8;
+                                                        else if (role === 'related_party') p = 9;
+                                                        else if (role === 'member' && primaryTier) p = priorityMap[primaryTier] || 10;
+
+                                                        return { role, primaryTier, p };
+                                                    })
+                                                    .sort((a, b) => a.p - b.p)
+                                                    .map(({ role, primaryTier }) => {
+                                                        let displayLabel = roleLabel[role];
+                                                        if (role === 'member' && primaryTier) {
+                                                            if (primaryTier === '등기조합원') displayLabel = '조합원(등기)';
+                                                            else if (primaryTier === '지주조합원') displayLabel = '조합원(지주)';
+                                                            else if (primaryTier === '2차') displayLabel = '조합원(2차)';
+                                                            else if (primaryTier === '일반분양') displayLabel = '조합원(일반분양)';
+                                                            else if (primaryTier === '예비조합원') displayLabel = '조합원(예비)';
+                                                            else if (primaryTier === '지주') displayLabel = '원지주';
+                                                        } else if (role === 'certificate_holder') {
+                                                            displayLabel = '권리증보유';
+                                                        }
+
+                                                        return (
+                                                            <span key={`${member.id}-d-${role}`} className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors', roleStyle[role])}>
+                                                                {displayLabel}
+                                                            </span>
+                                                        );
+                                                    })
+                                            ) : (
+                                                <span className="text-slate-600">-</span>
+                                            )}
+                                        </div>
+                                    </InlineCellDropdown>
+                                </td>
                                 <td className="px-2 py-1.5 text-white font-bold" suppressHydrationWarning>
                                     <div className="flex flex-col items-center">
                                         <div className="flex items-center gap-1.5">
@@ -263,54 +345,6 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                     </div>
                                 </td>
                                 <td className="px-2 py-1.5 font-medium text-gray-200">{member.member_number || '-'}</td>
-                                <td className="px-2 py-1.5">
-                                    <InlineCellDropdown
-                                        options={[
-                                            { label: '조합원(등기)', value: '등기조합원' },
-                                            { label: '조합원(지주)', value: '지주조합원' },
-                                            { label: '조합원(2차)', value: '2차' },
-                                            { label: '일반분양(3차)', value: '일반분양' },
-                                            { label: '예비조합원', value: '예비조합원' },
-                                            { label: '권리증보유자', value: '권리증보유자' },
-                                            { label: '대리인', value: '대리인' },
-                                            { label: '관계인', value: '관계인' }
-                                        ]}
-                                        currentValue={member.tiers || (member.tier ? [member.tier] : [])}
-                                        multiple={true}
-                                        onSelect={(val) => {
-                                            const currentTiers = member.tiers || (member.tier ? [member.tier] : []);
-                                            const isSelected = currentTiers.includes(val);
-                                            return handleInlineUpdate(member.id, 'role', {
-                                                action: isSelected ? 'remove' : 'add',
-                                                role_code: val
-                                            }, member.entity_ids || [member.id]);
-                                        }}
-                                        disabled={!member.id}
-                                    >
-                                        <div className="flex flex-wrap items-center justify-center gap-1 min-h-[32px]">
-                                            {(member.role_types || []).length > 0 ? (
-                                                (member.role_types || []).map((role) => {
-                                                    const primaryTier = (member.tiers || []).find(t =>
-                                                        (role === 'member' && (t.includes('차') || t.includes('조합원'))) ||
-                                                        (role === 'certificate_holder' && t.includes('권리증'))
-                                                    ) || member.tier;
-
-                                                    const displayLabel = (role === 'member' && primaryTier && !primaryTier.includes('대리') && !primaryTier.includes('관계'))
-                                                        ? `${roleLabel[role]}(${primaryTier})`
-                                                        : roleLabel[role];
-
-                                                    return (
-                                                        <span key={`${member.id}-d-${role}`} className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors', roleStyle[role])}>
-                                                            {displayLabel}
-                                                        </span>
-                                                    );
-                                                })
-                                            ) : (
-                                                <span className="text-slate-600">-</span>
-                                            )}
-                                        </div>
-                                    </InlineCellDropdown>
-                                </td>
                                 <td className="px-2 py-1.5 text-gray-400">{getRepresentativeDisplay(member.relationships)}</td>
                                 <td className="px-2 py-1.5 flex justify-center items-center h-[46px]">
                                     <InlineCellDropdown

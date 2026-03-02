@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAuditLog } from '@/app/actions/audit';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
 
             if (error) throw error;
 
+            await createAuditLog('UPDATE_MEMBER_ROLE', id, { new_role: value });
+
             // Optional: If value changes to '대리인' or something specific, we could handle it here.
         } else if (field === 'status') {
             // Update status in account_entities
@@ -38,6 +41,8 @@ export async function POST(request: Request) {
                 .eq('id', id);
 
             if (entityError) throw entityError;
+
+            await createAuditLog('UPDATE_MEMBER_STATUS', id, { new_status: value });
         } else if (field === 'role') {
             // Not a direct table field but modifying membership_roles structure
             // e.g. toggle role
@@ -92,6 +97,8 @@ export async function POST(request: Request) {
                             is_registered: insertCode === '1차' || insertCode === '등기조합원'
                         })));
                 }
+
+                await Promise.all(roleEntityIds.map(eid => createAuditLog('UPDATE_MEMBER_ROLE', eid, { role_removed: role_code, target_code: insertCode })));
             } else if (action === 'add') {
                 const { data: updated } = await supabase
                     .from('membership_roles')
@@ -110,6 +117,8 @@ export async function POST(request: Request) {
                             is_registered: insertCode === '1차' || insertCode === '등기조합원'
                         })));
                 }
+
+                await Promise.all(roleEntityIds.map(eid => createAuditLog('UPDATE_MEMBER_ROLE', eid, { role_added: role_code, insert_code: insertCode })));
             }
         } else {
             return NextResponse.json({ success: false, error: 'Invalid field' }, { status: 400 });

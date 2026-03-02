@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 });
     }
 
-    const { name, phone, member_number, right_number, tier, unit_group, address_legal, memo } = body;
+    const { name, phone, member_number, right_number, tier, unit_group, address_legal, memo, birth_date } = body;
 
     try {
         // 1. Create account_entity
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
                 unit_group: unit_group || null,
                 address_legal: address_legal || null,
                 memo: memo || null,
+                birth_date: birth_date || null,
                 entity_type: 'person',
                 status: '정상'
             })
@@ -59,6 +60,18 @@ export async function POST(request: Request) {
                 });
 
             if (roleError) throw roleError;
+        }
+
+        // 4. Create entity_private_info if resident_registration_number is provided
+        if (body.resident_registration_number) {
+            const { error: privateError } = await supabase
+                .from('entity_private_info')
+                .insert({
+                    entity_id: entity.id,
+                    resident_registration_number: body.resident_registration_number.trim()
+                });
+
+            if (privateError) console.error('Error creating private info:', privateError);
         }
 
         return NextResponse.json({ success: true, id: entity.id });

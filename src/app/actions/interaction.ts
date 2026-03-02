@@ -140,15 +140,16 @@ export async function checkAndLogAssetRightConflicts(
             // Log for current user(s)
             for (const currentId of currentIds) {
                 const summaryMsg = `[시스템 알림] 다른 회원(${otherNames})과 동일한 권리증 번호(${conflictNum})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
-                const { error: ins1 } = await supabase.from('interaction_logs').insert({
-                    entity_id: currentId,
-                    type: 'DOC',
-                    direction: 'Inbound',
-                    summary: summaryMsg,
-                    staff_name: 'System',
-                });
-                if (ins1) {
-                    console.error('Insert currentId error:', ins1);
+                const appendText = `\n\n${summaryMsg}`;
+
+                const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', currentId).single();
+                const currentMemo = ent?.memo || '';
+                const newMemo = currentMemo ? currentMemo + appendText : summaryMsg;
+
+                const { error: upd1 } = await supabase.from('account_entities').update({ memo: newMemo }).eq('id', currentId);
+
+                if (upd1) {
+                    console.error('Update currentId memo error:', upd1);
                 } else {
                     await createAuditLog('CONFLICT_ALERT', currentId, { summary: summaryMsg, conflictNum, otherNames });
                 }
@@ -158,15 +159,16 @@ export async function checkAndLogAssetRightConflicts(
             console.log('otherEntityIds:', otherEntityIds);
             for (const otherId of otherEntityIds) {
                 const summaryMsg = `[시스템 알림] 다른 회원(${currentNames})과 동일한 권리증 번호(${conflictNum})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
-                const { error: ins2 } = await supabase.from('interaction_logs').insert({
-                    entity_id: otherId,
-                    type: 'DOC',
-                    direction: 'Inbound',
-                    summary: summaryMsg,
-                    staff_name: 'System',
-                });
-                if (ins2) {
-                    console.error('Insert otherId error:', ins2);
+                const appendText = `\n\n${summaryMsg}`;
+
+                const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', otherId).single();
+                const currentMemo = ent?.memo || '';
+                const newMemo = currentMemo ? currentMemo + appendText : summaryMsg;
+
+                const { error: upd2 } = await supabase.from('account_entities').update({ memo: newMemo }).eq('id', otherId);
+
+                if (upd2) {
+                    console.error('Update otherId memo error:', upd2);
                 } else {
                     await createAuditLog('CONFLICT_ALERT', otherId, { summary: summaryMsg, conflictNum, otherNames: currentNames });
                 }

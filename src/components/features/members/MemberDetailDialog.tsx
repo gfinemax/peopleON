@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,9 @@ interface Member {
     assetRights?: any[] | null;
     real_owner?: { id: string; name: string } | null;
     nominees?: { id: string; name: string }[] | null;
+    birth_date?: string | null;
+    resident_registration_number?: string | null;
+    acts_as_agent_for?: { id: string; name: string; relation: string }[] | null;
 }
 
 interface MemberDetailDialogProps {
@@ -76,6 +80,7 @@ export function MemberDetailDialog({
     const [isAddingRight, setIsAddingRight] = useState(false);
     const [conflictRightNumbers, setConflictRightNumbers] = useState<string[]>([]);
     const [deletedRightsIds, setDeletedRightsIds] = useState<string[]>([]);
+    const [isSsnRevealed, setIsSsnRevealed] = useState(false);
 
     // Real Owner Search State
     const [ownerSearch, setOwnerSearch] = useState('');
@@ -84,6 +89,20 @@ export function MemberDetailDialog({
 
     const handleAddRight = async () => {
         if (!rightInput.trim() || !member) return;
+
+        // Validation: Prevent date-like strings from being added as certificates
+        const isDateLike = (v: string): boolean => {
+            const s = v.trim();
+            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
+            if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
+            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
+            return false;
+        };
+        if (isDateLike(rightInput)) {
+            alert('이 입력값은 생년월일 형식입니다. 권리증 번호가 확실한지 확인하시거나, 생년월일 칸에 입력해 주세요.');
+        }
+
         setIsAddingRight(true);
         try {
             const supabase = createClient();
@@ -271,10 +290,12 @@ export function MemberDetailDialog({
 
         const normalizePhone = (val: string | null | undefined) => (val || '').replace(/\D/g, '');
 
-        const [roleRes, relRes, rightsRes] = await Promise.all([
+        const [roleRes, relRes, revRelRes, rightsRes, privateInfoRes] = await Promise.all([
             supabase.from('membership_roles').select('role_code, is_registered').in('entity_id', ids),
             supabase.from('entity_relationships').select('from_entity_id, to_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name, phone)').in('to_entity_id', ids).eq('relation_type', 'agent'),
-            supabase.from('asset_rights').select('*').in('entity_id', ids)
+            supabase.from('entity_relationships').select('from_entity_id, to_entity_id, relation_type, relation_note, owner_entity:account_entities!to_entity_id(display_name, phone)').in('from_entity_id', ids).eq('relation_type', 'agent'),
+            supabase.from('asset_rights').select('*').in('entity_id', ids),
+            supabase.from('entity_private_info').select('resident_registration_number').in('entity_id', ids).maybeSingle()
         ]);
 
         // Deduplicate relationships by agent ID (from_entity_id) to avoid duplicates when merging multiple member records
@@ -330,6 +351,19 @@ export function MemberDetailDialog({
             }
         });
 
+        // Try to extract birth_date from certificate numbers if the primary field is empty
+        const isDateLike = (v: string) => /^(19|20)\d{2}[\.-]\d{1,2}[\.-]\d{1,2}$/.test(v.trim()) || /^(19|20)\d{6}$/.test(v.trim());
+        let derivedBirthDate = entity.birth_date || null;
+        if (!derivedBirthDate) {
+            // Check raw right_numbers (before sanitization) and member_number
+            const rawRightNumbers = assetRights.filter(r => r.right_type === 'certificate').map(r => r.right_number?.trim()).filter(Boolean) as string[];
+            const allPossibleCerts = [entity.member_number, ...rawRightNumbers].filter(Boolean) as string[];
+            const dateLikeValue = allPossibleCerts.find(cn => isDateLike(cn));
+            if (dateLikeValue) derivedBirthDate = dateLikeValue;
+        }
+
+        const residentNumber = privateInfoRes.data?.resident_registration_number || null;
+
         const combinedData: Member = {
             ...entity,
             name: entity.display_name,
@@ -349,7 +383,14 @@ export function MemberDetailDialog({
                 relation: uniqueRelations[1].relation_note || '대리인',
                 phone: (uniqueRelations[1].agent_entity as any)?.phone || null
             } : null,
-            assetRights: assetRights
+            acts_as_agent_for: revRelRes.data ? revRelRes.data.map(r => ({
+                id: r.to_entity_id,
+                name: (r.owner_entity as any)?.display_name || 'N/A',
+                relation: r.relation_note || '대리인'
+            })) : null,
+            assetRights: assetRights,
+            birth_date: derivedBirthDate,
+            resident_registration_number: residentNumber
         };
 
         // Conflict check
@@ -435,7 +476,9 @@ export function MemberDetailDialog({
                 memo: formData.memo,
                 role_code: formData.role_code,
                 representative: formData.representative,
-                representative2: formData.representative2
+                representative2: formData.representative2,
+                birth_date: formData.birth_date,
+                resident_registration_number: formData.resident_registration_number
             }),
         }).catch(() => null);
 
@@ -472,6 +515,16 @@ export function MemberDetailDialog({
                     }
                     if (original.right_number !== r.right_number && r.right_number) {
                         newlyChangedRightNumbers.push(r.right_number);
+                    }
+                    // Audit logging for certificate number change
+                    if (original.right_number !== r.right_number) {
+                        const targetIds = memberIds && memberIds.length > 0 ? memberIds : (memberId ? [memberId] : []);
+                        for (const tid of targetIds) {
+                            await createAuditLog('UPDATE_CERTIFICATE_NUMBER', tid, {
+                                old_number: original.right_number || null,
+                                new_number: r.right_number || null
+                            });
+                        }
                     }
                 }
             }
@@ -561,9 +614,44 @@ export function MemberDetailDialog({
                             </DialogTitle>
                             {member && <span className={cn("inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-sm", member.status === '정상' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" : member.status === '차명' ? "bg-sky-500/20 border-sky-500/30 text-sky-300" : "bg-gray-500/20 border-gray-500/30 text-gray-300")}>{member.status || '미정'}</span>}
                             <div className="flex gap-1.5 flex-wrap">
-                                {(member?.tiers || []).map((t, idx) => (
-                                    <span key={`${member?.id}-${idx}`} className="inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-sm bg-emerald-500/20 border-emerald-500/30 text-emerald-300">{t}</span>
-                                ))}
+                                {(() => {
+                                    let combinedTiers = [...(member?.tiers || [])];
+                                    if (member?.acts_as_agent_for && member.acts_as_agent_for.length > 0 && !combinedTiers.includes('대리인')) {
+                                        combinedTiers.push('대리인');
+                                    }
+                                    return combinedTiers
+                                        .map(t => {
+                                            const priorityMap: Record<string, number> = {
+                                                '등기조합원': 1,
+                                                '지주조합원': 2,
+                                                '2차': 3,
+                                                '일반분양': 4,
+                                                '예비조합원': 5,
+                                                '권리증보유자': 6,
+                                                '지주': 7,
+                                                '대리인': 8,
+                                                '관계인': 9,
+                                            };
+                                            return { t, p: priorityMap[t] || 99 };
+                                        })
+                                        .sort((a, b) => a.p - b.p)
+                                        .map(({ t }, idx) => {
+                                            let display = t;
+                                            if (t === '등기조합원') display = '조합원(등기)';
+                                            else if (t === '지주조합원') display = '조합원(지주)';
+                                            else if (t === '2차') display = '조합원(2차)';
+                                            else if (t === '일반분양') display = '조합원(일반분양)';
+                                            else if (t === '예비조합원') display = '조합원(예비)';
+                                            else if (t === '지주') display = '원지주';
+                                            else if (t === '권리증보유자') display = '권리증보유';
+
+                                            return (
+                                                <span key={`${member?.id}-${idx}`} className="inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-sm bg-emerald-500/20 border-emerald-500/30 text-emerald-300">
+                                                    {display}
+                                                </span>
+                                            );
+                                        })
+                                })()}
                             </div>
                         </div>
                         <p className="text-gray-400 text-sm font-normal">회원번호: <span className="text-gray-300 font-mono">{member?.member_number}</span></p>
@@ -643,9 +731,30 @@ export function MemberDetailDialog({
                                                 <div className="flex flex-col gap-0">
                                                     <div className="grid grid-cols-2">
                                                         <InfoRow icon="person" label="성명" value={member.name || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-bold" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />} />
+                                                        <InfoRow icon="cake" label="생년월일" value={member.birth_date || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} placeholder="YYYY-MM-DD" />} />
+                                                    </div>
+                                                    <div className="grid grid-cols-2">
+                                                        <InfoRow
+                                                            icon="badge"
+                                                            label="주민번호"
+                                                            value={isEditing ? '' : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>{isSsnRevealed ? (member.resident_registration_number || '미입력') : (member.resident_registration_number ? member.resident_registration_number.slice(0, 8) + '******' : '미입력')}</span>
+                                                                    {!isEditing && member.resident_registration_number && (
+                                                                        <Button variant="ghost" size="sm" onClick={() => setIsSsnRevealed(!isSsnRevealed)} className="h-6 px-1.5 text-[10px] text-gray-500 hover:text-white hover:bg-white/5">
+                                                                            <MaterialIcon name={isSsnRevealed ? 'visibility_off' : 'visibility'} size="xs" />
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            isEditing={isEditing}
+                                                            editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.resident_registration_number || ''} onChange={e => setFormData({ ...formData, resident_registration_number: e.target.value })} placeholder="000000-0000000" />}
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2">
+                                                        <InfoRow icon="smartphone" label="휴대전화" value={member.phone || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />} />
                                                         <InfoRow icon="mail" label="이메일" value={member.email || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />} />
                                                     </div>
-                                                    <InfoRow icon="smartphone" label="휴대전화" value={member.phone || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />} />
                                                     <InfoRow icon="home" label="현주소" value={member.address_legal || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.address_legal || ''} onChange={e => setFormData({ ...formData, address_legal: e.target.value })} />} />
                                                 </div>
 
@@ -658,10 +767,23 @@ export function MemberDetailDialog({
                                                 ) : <div className="bg-gray-800/10 border border-dashed border-white/10 rounded-xl p-6 text-center"><p className="text-[11px] font-medium text-gray-500 uppercase tracking-widest">지정된 대리인 정보가 없습니다.</p></div>}
 
                                                 {/* Admin memo - always shown regardless of representative data */}
-                                                {(member.memo || isEditing) && (
+                                                {(member.memo || isEditing || (member.acts_as_agent_for && member.acts_as_agent_for.length > 0)) && (
                                                     <div className="flex flex-col gap-3 pt-4">
                                                         <div className="flex items-center gap-2"><MaterialIcon name="sticky_note_2" className="text-yellow-500/70 text-[18px]" /><p className="text-gray-400 text-xs font-medium">관리자 메모</p></div>
-                                                        {isEditing ? <textarea className="w-full h-24 rounded-lg bg-[#1A2633] border border-white/10 p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-white resize-none" value={formData.memo || ''} onChange={e => setFormData({ ...formData, memo: e.target.value })} /> : <div className="bg-yellow-900/10 border border-yellow-500/20 p-4 rounded-lg"><p className="text-gray-200 text-sm leading-relaxed break-keep text-left">{member.memo || '메모가 없습니다.'}</p></div>}
+                                                        {isEditing ? (
+                                                            <textarea className="w-full h-24 rounded-lg bg-[#1A2633] border border-white/10 p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-white resize-none" value={formData.memo || ''} onChange={e => setFormData({ ...formData, memo: e.target.value })} />
+                                                        ) : (
+                                                            <div className="bg-yellow-900/10 border border-yellow-500/20 p-4 rounded-lg flex flex-col gap-2">
+                                                                {member.acts_as_agent_for && member.acts_as_agent_for.length > 0 && (
+                                                                    <div className="flex flex-col gap-1 pb-2 border-b border-yellow-500/10 last:border-0 last:pb-0">
+                                                                        {member.acts_as_agent_for.map((af, idx) => (
+                                                                            <span key={idx} className="text-emerald-400 font-bold text-sm flex items-center gap-1.5"><MaterialIcon name="person" size="xs" /> {af.name}의 대리인 <span className="text-xs font-normal text-emerald-500/70">({af.relation})</span></span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                <p className="text-gray-200 text-sm leading-relaxed break-keep text-left whitespace-pre-wrap">{member.memo || (member.acts_as_agent_for?.length ? '' : '메모가 없습니다.')}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -761,11 +883,11 @@ export function MemberDetailDialog({
     );
 }
 
-function InfoRow({ icon, label, value, isEditing, editElement }: { icon: string; label: string; value: string; isEditing: boolean; editElement: ReactNode; }) {
+function InfoRow({ icon, label, value, isEditing, editElement }: { icon: string; label: string; value: string | React.ReactNode; isEditing: boolean; editElement: React.ReactNode; }) {
     return (
         <div className="grid grid-cols-[80px_1fr] items-center gap-4 border-b border-white/5 py-3 last:border-0">
             <div className="flex items-center gap-2"><MaterialIcon name={icon} className="text-gray-500 text-[18px]" /><p className="text-gray-400 text-xs font-medium">{label}</p></div>
-            {isEditing ? editElement : <p className="text-gray-100 text-sm font-normal break-all text-left">{value}</p>}
+            {isEditing ? editElement : <div className="text-gray-100 text-sm font-normal break-all text-left">{value}</div>}
         </div>
     );
 }

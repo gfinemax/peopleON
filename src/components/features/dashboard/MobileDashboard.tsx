@@ -11,6 +11,11 @@ export interface DashboardStats {
     totalAmount: number;     // Total expected from payments
     collectedAmount: number; // Total collected
     paymentRate: number;     // Percentage
+    registeredMembersCount?: number;
+    registeredMembersRate?: number;
+    recentRegisteredCount?: number;
+    certificateHolderCount?: number;
+    relatedPartyCount?: number;
 }
 
 export interface DashboardEvent {
@@ -21,12 +26,20 @@ export interface DashboardEvent {
     type: 'payment' | 'member' | 'issue';
 }
 
+export interface PaymentBreakdown {
+    step1: { due: number; paid: number; rate: number };
+    step2: { due: number; paid: number; rate: number };
+    step3: { due: number; paid: number; rate: number };
+    general: { due: number; paid: number; rate: number };
+}
+
 interface MobileDashboardProps {
     stats: DashboardStats;
     events: DashboardEvent[];
+    paymentBreakdown?: PaymentBreakdown;
 }
 
-export function MobileDashboard({ stats, events }: MobileDashboardProps) {
+export function MobileDashboard({ stats, events, paymentBreakdown }: MobileDashboardProps) {
     return (
         <div className="flex flex-col min-h-screen bg-background pb-24">
             {/* 1. Header & Search - Sticky */}
@@ -86,17 +99,47 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
                         </div>
                     </div>
 
-                    {/* Issues Card */}
+                    {/* Registered Members Card */}
                     <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-orange-500"></div>
+                        <div className="absolute right-0 top-0 h-full w-1 bg-indigo-500"></div>
                         <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <MaterialIcon name="warning" size="sm" className="text-orange-500" />
-                                <span className="text-xs font-bold">진행 중 이슈</span>
+                                <MaterialIcon name="how_to_reg" size="sm" className="text-indigo-500" />
+                                <span className="text-xs font-bold">등기 조합원</span>
                             </div>
                             <div className="flex items-baseline gap-1.5">
-                                <p className="text-2xl font-black text-foreground tracking-tight">3</p>
-                                <span className="text-[9px] font-black text-white bg-orange-500 px-1.5 py-0.5 rounded-full uppercase tracking-wide">긴급</span>
+                                <p className="text-2xl font-black text-foreground tracking-tight">{stats.registeredMembersCount?.toLocaleString() || 0}</p>
+                                <span className="text-[10px] font-bold text-muted-foreground">({stats.registeredMembersRate || 0}%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Certificate Holders Card */}
+                    <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden">
+                        <div className="absolute right-0 top-0 h-full w-1 bg-violet-500"></div>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <MaterialIcon name="folder" size="sm" className="text-violet-500" />
+                                <span className="text-xs font-bold">권리증 보유</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                                <p className="text-2xl font-black text-foreground tracking-tight">{stats.certificateHolderCount?.toLocaleString() || 0}</p>
+                                <span className="text-[10px] font-bold text-muted-foreground">명</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Related Parties Card */}
+                    <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden">
+                        <div className="absolute right-0 top-0 h-full w-1 bg-rose-500"></div>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <MaterialIcon name="groups_2" size="sm" className="text-rose-500" />
+                                <span className="text-xs font-bold">관계인</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                                <p className="text-2xl font-black text-foreground tracking-tight">{stats.relatedPartyCount?.toLocaleString() || 0}</p>
+                                <span className="text-[10px] font-bold text-muted-foreground">명</span>
                             </div>
                         </div>
                     </div>
@@ -107,18 +150,52 @@ export function MobileDashboard({ stats, events }: MobileDashboardProps) {
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-1.5">
                             <MaterialIcon name="payments" size="sm" className="text-success" />
-                            <h4 className="font-bold text-xs text-foreground">납부 현황</h4>
+                            <h4 className="font-bold text-xs text-foreground">납부 현황 잔액</h4>
                         </div>
                         <span className="text-xs font-black text-foreground">{stats.paymentRate}% <span className="text-muted-foreground font-medium text-[10px]">수납 완료</span></span>
                     </div>
-                    <div className="w-full bg-muted/30 rounded-full h-2 mb-2 overflow-hidden">
+                    <div className="w-full bg-white/10 dark:bg-white/10 shadow-inner rounded-full h-2 mb-2 overflow-hidden">
                         <div className="bg-primary h-full rounded-full relative" style={{ width: `${stats.paymentRate}%` }}>
                             <div className="absolute inset-0 bg-white/20 w-full h-full animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]"></div>
                         </div>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
-                        <span>₩{(stats.collectedAmount / 100000000).toFixed(1)}억 수납</span>
-                        <span>₩{((stats.totalAmount - stats.collectedAmount) / 100000000).toFixed(1)}억 미납</span>
+
+                    {paymentBreakdown && (
+                        <div className="flex flex-col gap-1.5 mb-3">
+                            <div className="flex items-center gap-2">
+                                <span className="w-16 text-[10px] text-muted-foreground">1차납</span>
+                                <div className="flex-1 h-1.5 bg-white/10 dark:bg-white/10 shadow-inner rounded-full overflow-hidden">
+                                    <div className="h-full bg-success" style={{ width: `${paymentBreakdown.step1.rate}%` }}></div>
+                                </div>
+                                <span className="w-6 text-right text-[10px] font-bold">{paymentBreakdown.step1.rate}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-16 text-[10px] text-muted-foreground">2차납</span>
+                                <div className="flex-1 h-1.5 bg-white/10 dark:bg-white/10 shadow-inner rounded-full overflow-hidden">
+                                    <div className="h-full bg-success" style={{ width: `${paymentBreakdown.step2.rate}%` }}></div>
+                                </div>
+                                <span className="w-6 text-right text-[10px] font-bold">{paymentBreakdown.step2.rate}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-16 text-[10px] text-muted-foreground">3차납</span>
+                                <div className="flex-1 h-1.5 bg-white/10 dark:bg-white/10 shadow-inner rounded-full overflow-hidden">
+                                    <div className="h-full bg-yellow-500" style={{ width: `${paymentBreakdown.step3.rate}%` }}></div>
+                                </div>
+                                <span className="w-6 text-right text-[10px] font-bold">{paymentBreakdown.step3.rate}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-16 text-[10px] text-muted-foreground">기타</span>
+                                <div className="flex-1 h-1.5 bg-white/10 dark:bg-white/10 shadow-inner rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500" style={{ width: `${paymentBreakdown.general.rate}%` }}></div>
+                                </div>
+                                <span className="w-6 text-right text-[10px] font-bold">{paymentBreakdown.general.rate}%</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-between px-2 pt-2 border-t border-border/50 text-[10px] font-bold text-muted-foreground">
+                        <span>₩{Math.round(stats.collectedAmount / 100000000)}억 수납</span>
+                        <span>₩{Math.round((stats.totalAmount - stats.collectedAmount) / 100000000)}억 미납</span>
                     </div>
                 </div>
             </div>

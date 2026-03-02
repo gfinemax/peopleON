@@ -9,6 +9,8 @@ type MemberUpdatePayload = {
     phone?: string | null;
     email?: string | null;
     address_legal?: string | null;
+    birth_date?: string | null;
+    resident_registration_number?: string | null;
     memo?: string | null;
     role_code?: string | null;
     representative?: {
@@ -65,6 +67,7 @@ export async function POST(request: Request) {
     if (typeof body?.phone === 'string') patch.phone = formatPhone(body.phone);
     if (typeof body?.email === 'string') patch.email = body.email.trim() || null;
     if (typeof body?.address_legal === 'string') patch.address_legal = body.address_legal.trim() || null;
+    if (typeof body?.birth_date === 'string') patch.birth_date = body.birth_date.trim() || null;
     if (typeof body?.memo === 'string') patch.memo = body.memo.trim() || null;
 
     if (patch.display_name === null && typeof body?.name === 'string') {
@@ -89,7 +92,13 @@ export async function POST(request: Request) {
             .update({ role_code: body.role_code })
             .in('entity_id', targetIds);
 
-        if (roleError) console.error('Role update error:', roleError);
+        if (roleError) {
+            console.error('Role update error:', roleError);
+        } else {
+            await Promise.all(targetIds.map(tid =>
+                createAuditLog('UPDATE_MEMBER_ROLE', tid, { new_role: body.role_code })
+            ));
+        }
     }
 
     // 3. Update or Create or Delete representative
@@ -162,6 +171,24 @@ export async function POST(request: Request) {
                 }
             }
         }
+    }
+
+    // 4. Update resident_registration_number in entity_private_info
+    if (typeof body?.resident_registration_number === 'string') {
+        const ssn = body.resident_registration_number.trim();
+        // Update for all associated IDs to keep them in sync
+        const results = await Promise.all(targetIds.map(async (tid) => {
+            const { error: upsertError } = await supabase
+                .from('entity_private_info')
+                .upsert({
+                    entity_id: tid,
+                    resident_registration_number: ssn,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'entity_id' });
+            return upsertError;
+        }));
+        const ssnError = results.find(e => e);
+        if (ssnError) console.error('SSN update error:', ssnError);
     }
 
     return NextResponse.json({

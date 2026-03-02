@@ -1,0 +1,5 @@
+[dotenv@17.3.1] injecting env (4) from .env.local -- tip: ?숋툘  specify custom .env file path with { path: '/custom/path/.env' }
+Total account_entities (raw count): 570
+Total membership_roles: 535
+Unique entities with active member/landowner roles: 114
+Unique entities with active generic member roles (excl landowners, investors, agents): 114

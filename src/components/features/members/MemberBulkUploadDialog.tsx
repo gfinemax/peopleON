@@ -118,18 +118,18 @@ export function MemberBulkUploadDialog({ open, onOpenChange }: MemberBulkUploadD
                                     <table className="w-full text-[11px] text-left">
                                         <thead className="sticky top-0 bg-slate-800 text-slate-400 uppercase tracking-wider font-bold">
                                             <tr>
+                                                <th className="px-3 py-2 border-b border-slate-700">구분</th>
                                                 <th className="px-3 py-2 border-b border-slate-700">성명</th>
                                                 <th className="px-3 py-2 border-b border-slate-700">연락처</th>
-                                                <th className="px-3 py-2 border-b border-slate-700">구분</th>
                                                 <th className="px-3 py-2 border-b border-slate-700">그룹</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-700/50 text-slate-200">
                                             {parsedData.map((m, idx) => (
                                                 <tr key={idx} className="hover:bg-slate-700/30">
+                                                    <td className="px-3 py-1.5 text-sky-200">{m.tier}</td>
                                                     <td className="px-3 py-1.5 text-white font-bold">{m.name}</td>
                                                     <td className="px-3 py-1.5 text-slate-400 font-mono">{m.phone || "-"}</td>
-                                                    <td className="px-3 py-1.5 text-sky-200">{m.tier}</td>
                                                     <td className="px-3 py-1.5 text-slate-400 font-mono text-[10px]">{m.unit_group || "-"}</td>
                                                 </tr>
                                             ))}

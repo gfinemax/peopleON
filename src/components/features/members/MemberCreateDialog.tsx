@@ -39,10 +39,28 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
         unit_group: "",
         address_legal: "",
         memo: "",
+        birth_date: "",
+        resident_registration_number: "",
     })
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validation: Prevent date-like strings from being added as certificates
+        const isDateLike = (v: string): boolean => {
+            const s = v.trim();
+            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
+            if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
+            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
+            return false;
+        };
+        if (formData.right_number && isDateLike(formData.right_number)) {
+            if (!confirm('입력하신 권리증 번호가 생년월일 형식과 유사합니다. 권리증 번호가 확실한가요?')) {
+                return;
+            }
+        }
+
         setLoading(true)
 
         try {
@@ -66,6 +84,8 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                     unit_group: "",
                     address_legal: "",
                     memo: "",
+                    birth_date: "",
+                    resident_registration_number: "",
                 })
             } else {
                 alert(data.error || "등록 중 오류가 발생했습니다.")
@@ -109,6 +129,16 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="birth_date" className="text-right text-slate-400">생년월일</Label>
+                        <Input
+                            id="birth_date"
+                            value={formData.birth_date}
+                            onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                            className="col-span-3 bg-slate-800 border-slate-700"
+                            placeholder="YYYY-MM-DD"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="member_number" className="text-right text-slate-400">번호</Label>
                         <Input
                             id="member_number"
@@ -116,6 +146,16 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                             onChange={(e) => setFormData({ ...formData, member_number: e.target.value })}
                             className="col-span-3 bg-slate-800 border-slate-700 font-mono"
                             placeholder="고유 번호"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="resident_registration_number" className="text-right text-slate-400">주민번호</Label>
+                        <Input
+                            id="resident_registration_number"
+                            value={formData.resident_registration_number}
+                            onChange={(e) => setFormData({ ...formData, resident_registration_number: e.target.value })}
+                            className="col-span-3 bg-slate-800 border-slate-700"
+                            placeholder="000000-0000000"
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -139,12 +179,13 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                                     <SelectValue placeholder="구분 선택" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
-                                    <SelectItem value="등기조합원">등기조합원</SelectItem>
-                                    <SelectItem value="지주조합원">지주조합원</SelectItem>
+                                    <SelectItem value="등기조합원">조합원(등기)</SelectItem>
+                                    <SelectItem value="지주조합원">조합원(지주)</SelectItem>
                                     <SelectItem value="2차">2차</SelectItem>
-                                    <SelectItem value="일반분양">일반분양</SelectItem>
-                                    <SelectItem value="예비조합원">예비조합원</SelectItem>
-                                    <SelectItem value="권리증보유자">권리증보유자</SelectItem>
+                                    <SelectItem value="일반분양">조합원(일반분양)</SelectItem>
+                                    <SelectItem value="예비조합원">조합원(예비)</SelectItem>
+                                    <SelectItem value="권리증보유자">권리증보유</SelectItem>
+                                    <SelectItem value="지주">원지주</SelectItem>
                                     <SelectItem value="대리인">대리인</SelectItem>
                                     <SelectItem value="관계인">관계인</SelectItem>
                                 </SelectContent>
