@@ -1,0 +1,16 @@
+[dotenv@17.3.1] injecting env (4) from .env.local -- tip: ?숋툘  specify custom .env file path with { path: '/custom/path/.env' }
+Testing simple ilike:
+(node:39568) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/workspace/antigravity/peopleon/tmp_query_test2.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\workspace\antigravity\peopleon\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+d1: undefined e1: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column interaction_logs.title does not exist'
+}
+Testing simple ilike on summary:
+d2: 1 e2: null
+Testing OR query:
+d3: undefined e3: column interaction_logs.title does not exist

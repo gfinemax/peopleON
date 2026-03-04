@@ -23,6 +23,13 @@ export default async function DashboardPage() {
         recentRegisteredCount: 0,
         certificateHolderCount: 0,
         relatedPartyCount: 0,
+        retention: {
+            registeredActive: 0,
+            unregisteredActive: 0,
+            registeredWithdrawn: 0,
+            unregisteredWithdrawn: 0,
+            totalHistorical: 0
+        }
     };
     let safeEvents: any[] = [];
     let paymentBreakdown = {
@@ -30,6 +37,19 @@ export default async function DashboardPage() {
         step2: { due: 0, paid: 0, rate: 0 },
         step3: { due: 0, paid: 0, rate: 0 },
         general: { due: 0, paid: 0, rate: 0 },
+    };
+
+    // New financial stats from member_payments
+    let financialStats = {
+        contributionDue: 0,
+        contributionPaid: 0,
+        contributionRate: 0,
+        investmentTotal: 0,  // 출자금 (필증 + 인정분)
+        additionalBurden: 0, // 추가 부담금
+        byType: {} as Record<string, { label: string; due: number; paid: number; rate: number }>,
+        byUnitType: {} as Record<string, { due: number; paid: number; count: number }>,
+        byAccount: {} as Record<string, { total: number; type: string }>,
+        hasData: false,
     };
 
     let t1Count = 0;
@@ -72,6 +92,35 @@ export default async function DashboardPage() {
         const certificateHolderCount = unifiedPeople.filter((p) => p.role_types.includes('certificate_holder')).length;
         const relatedPartyCount = unifiedPeople.filter((p) => p.role_types.includes('related_party')).length;
 
+        // Calculate Retention Stats
+        let registeredActive = 0;
+        let unregisteredActive = 0;
+        let registeredWithdrawn = 0;
+        let unregisteredWithdrawn = 0;
+
+        unifiedPeople.forEach(p => {
+            const isWithdrawnStatus = ['탈퇴', '제명'].includes(p.status || '');
+            const isHistoricalMember = p.role_types.includes('member') || isWithdrawnStatus;
+
+            if (isHistoricalMember) {
+                if (p.is_registered) {
+                    if (isWithdrawnStatus) {
+                        registeredWithdrawn++;
+                    } else {
+                        registeredActive++;
+                    }
+                } else {
+                    if (isWithdrawnStatus) {
+                        unregisteredWithdrawn++;
+                    } else {
+                        unregisteredActive++;
+                    }
+                }
+            }
+        });
+
+        const totalHistorical = registeredActive + unregisteredActive + registeredWithdrawn + unregisteredWithdrawn;
+
         // Fetch payments
         const { data: allPayments } = await supabase.from('payments').select('amount_due, amount_paid, step');
 
@@ -107,8 +156,101 @@ export default async function DashboardPage() {
             registeredMembersRate: registeredRate,
             recentRegisteredCount: recentRegisteredCount,
             certificateHolderCount,
-            relatedPartyCount
+            relatedPartyCount,
+            retention: {
+                registeredActive,
+                unregisteredActive,
+                registeredWithdrawn,
+                unregisteredWithdrawn,
+                totalHistorical
+            }
         };
+
+        // ── New Financial Stats from member_payments ──
+        const { data: memberPayments } = await supabase
+            .from('member_payments')
+            .select('payment_type, amount_due, amount_paid, is_contribution, unit_type_id, deposit_account_id');
+
+        const { data: unitTypesData } = await supabase.from('unit_types').select('id, name').eq('is_active', true);
+        const { data: accountsData } = await supabase.from('deposit_accounts').select('id, account_name, account_type').eq('is_active', true);
+
+        if (memberPayments && memberPayments.length > 0) {
+            const unitMap = new Map((unitTypesData || []).map(u => [u.id, u.name]));
+            const accountMap = new Map((accountsData || []).map(a => [a.id, { name: a.account_name, type: a.account_type }]));
+
+            const typeLabels: Record<string, string> = {
+                certificate: '출자금(필증)',
+                premium: '프리미엄',
+                premium_recognized: '인정분',
+                contract: '계약금',
+                installment_1: '1차 분담금',
+                installment_2: '2차 분담금',
+                balance: '잔금',
+                other: '기타',
+            };
+
+            let certPaid = 0;
+            let premRecPaid = 0;
+
+            for (const p of memberPayments) {
+                const due = Number(p.amount_due) || 0;
+                const paid = Number(p.amount_paid) || 0;
+
+                if (p.is_contribution && p.payment_type !== 'premium') {
+                    financialStats.contributionDue += due;
+                    financialStats.contributionPaid += paid;
+                }
+
+                if (p.payment_type === 'certificate') certPaid += paid;
+                if (p.payment_type === 'premium_recognized') premRecPaid += paid;
+
+                // By type
+                if (!financialStats.byType[p.payment_type]) {
+                    financialStats.byType[p.payment_type] = { label: typeLabels[p.payment_type] || p.payment_type, due: 0, paid: 0, rate: 0 };
+                }
+                financialStats.byType[p.payment_type].due += due;
+                financialStats.byType[p.payment_type].paid += paid;
+
+                // By unit type
+                if (p.unit_type_id) {
+                    const utName = unitMap.get(p.unit_type_id) || '미정';
+                    if (!financialStats.byUnitType[utName]) financialStats.byUnitType[utName] = { due: 0, paid: 0, count: 0 };
+                    financialStats.byUnitType[utName].due += due;
+                    financialStats.byUnitType[utName].paid += paid;
+                }
+
+                // By account
+                if (p.deposit_account_id && paid > 0) {
+                    const acc = accountMap.get(p.deposit_account_id);
+                    const accName = acc?.name || '미지정';
+                    if (!financialStats.byAccount[accName]) financialStats.byAccount[accName] = { total: 0, type: acc?.type || 'unknown' };
+                    financialStats.byAccount[accName].total += paid;
+                }
+            }
+
+            financialStats.investmentTotal = certPaid + premRecPaid;
+            financialStats.additionalBurden = Math.max(0, financialStats.contributionDue - financialStats.investmentTotal);
+            financialStats.contributionRate = financialStats.contributionDue > 0
+                ? Math.round((financialStats.contributionPaid / financialStats.contributionDue) * 100) : 0;
+
+            // Calculate rates per type
+            for (const key of Object.keys(financialStats.byType)) {
+                const t = financialStats.byType[key];
+                t.rate = t.due > 0 ? Math.round((t.paid / t.due) * 100) : 0;
+            }
+
+            // Count unique entities per unit type
+            const entityUnitMap = new Map<string, Set<string>>();
+            for (const p of memberPayments) {
+                if (p.unit_type_id) {
+                    const utName = unitMap.get(p.unit_type_id) || '미정';
+                    if (!entityUnitMap.has(utName)) entityUnitMap.set(utName, new Set());
+                    // We don't have entity_id in this select, so count based on payment lines
+                }
+            }
+
+            financialStats.hasData = true;
+        }
 
         // Fetch events
         const { data: recentPayments } = await supabase
@@ -173,39 +315,8 @@ export default async function DashboardPage() {
             }
         }
 
-        // Fetch Action Required (withdrawn/lawsuit members)
-        const { data: withdrawnRoles } = await supabase
-            .from('membership_roles')
-            .select('entity_id')
-            .eq('role_status', 'inactive')
-            .limit(10); // Fetch a bit more to mix
-
-        let dbActionList: any[] = [];
-        if (withdrawnRoles && withdrawnRoles.length > 0) {
-            const entityIds = withdrawnRoles.map((r: { entity_id: string }) => r.entity_id);
-            // Don't fetch if they are already in duplicateConflicts to avoid showing them twice
-            const filteredEntityIds = entityIds.filter(id => !seenDuplicateIds.has(id));
-
-            if (filteredEntityIds.length > 0) {
-                const { data: actions } = await supabase
-                    .from('account_entities')
-                    .select('id, display_name, phone, member_number, status')
-                    .in('id', filteredEntityIds);
-
-                dbActionList = (actions || []).map((a: any) => ({
-                    id: a.id,
-                    name: a.display_name,
-                    member_number: a.member_number,
-                    tier: '기타', // We can get this from unifiedPeople if needed, but let's keep it simple or look it up
-                    phone: a.phone,
-                    status: a.status || '탈퇴', // Or lawsuit
-                    href: `/members/${a.id}`
-                }));
-            }
-        }
-
         // Merge them, prioritizing duplicates
-        actionList = [...duplicateConflicts, ...dbActionList].slice(0, 8); // Show up to 8 action items
+        actionList = duplicateConflicts.slice(0, 8); // Show up to 8 action items
 
 
         // Process Events
@@ -354,18 +465,139 @@ export default async function DashboardPage() {
                                         </div>
                                         <h3 className="text-sm font-bold text-muted-foreground">분담금 수납 현황</h3>
                                     </div>
-                                    <span className="flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-black text-success border border-success/20">
-                                        총 {Math.round(safeStats.totalAmount / 100000000)}억원
-                                    </span>
+                                    {financialStats.hasData ? (
+                                        <span className="flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-black text-success border border-success/20">
+                                            수납률 {financialStats.contributionRate}%
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-black text-success border border-success/20">
+                                            총 {Math.round(safeStats.totalAmount / 100000000)}억원
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="space-y-3 mt-2 flex-1">
-                                    <PaymentProgressRow label="1차 분담금" rate={paymentBreakdown.step1.rate} />
-                                    <PaymentProgressRow label="2차 분담금" rate={paymentBreakdown.step2.rate} />
-                                    <PaymentProgressRow label="3차 분담금" rate={paymentBreakdown.step3.rate} />
-                                    <PaymentProgressRow label="기타 납입건" rate={paymentBreakdown.general.rate} />
+                                    {financialStats.hasData ? (
+                                        <>
+                                            {Object.entries(financialStats.byType)
+                                                .filter(([key]) => !['premium'].includes(key))
+                                                .sort(([, a], [, b]) => {
+                                                    const order = ['certificate', 'premium_recognized', 'contract', 'installment_1', 'installment_2', 'balance', 'other'];
+                                                    return order.indexOf(a.label === a.label ? '' : '') || 0;
+                                                })
+                                                .map(([key, val]) => (
+                                                    <PaymentProgressRow
+                                                        key={key}
+                                                        label={val.label}
+                                                        rate={val.rate}
+                                                        subtitle={val.due > 0 ? `₩${val.paid.toLocaleString()} / ₩${val.due.toLocaleString()}` : undefined}
+                                                    />
+                                                ))}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <PaymentProgressRow label="1차 분담금" rate={paymentBreakdown.step1.rate} />
+                                            <PaymentProgressRow label="2차 분담금" rate={paymentBreakdown.step2.rate} />
+                                            <PaymentProgressRow label="3차 분담금" rate={paymentBreakdown.step3.rate} />
+                                            <PaymentProgressRow label="기타 납입건" rate={paymentBreakdown.general.rate} />
+                                        </>
+                                    )}
                                 </div>
+                                {financialStats.hasData && (
+                                    <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-2 gap-3">
+                                        <div className="rounded-md bg-emerald-500/5 p-2.5 border border-emerald-500/10">
+                                            <p className="text-[9px] font-bold text-emerald-500/70 uppercase tracking-wider">출자금</p>
+                                            <p className="text-sm font-black text-emerald-500">₩{financialStats.investmentTotal.toLocaleString()}</p>
+                                        </div>
+                                        <div className="rounded-md bg-amber-500/5 p-2.5 border border-amber-500/10">
+                                            <p className="text-[9px] font-bold text-amber-500/70 uppercase tracking-wider">추가 부담</p>
+                                            <p className="text-sm font-black text-amber-500">₩{financialStats.additionalBurden.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Retention Funnel Overview */}
+                            <RetentionWidget retention={safeStats.retention} />
                         </div>
+
+                        {/* Financial Breakdown: Unit Type & Account (only when data exists) */}
+                        {financialStats.hasData && (
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                {/* By Unit Type */}
+                                {Object.keys(financialStats.byUnitType).length > 0 && (
+                                    <div className="flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                                                <MaterialIcon name="straighten" size="sm" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-muted-foreground">평형별 수납 현황</h3>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {Object.entries(financialStats.byUnitType).map(([name, val]) => {
+                                                const rate = val.due > 0 ? Math.round((val.paid / val.due) * 100) : 0;
+                                                return (
+                                                    <div key={name} className="space-y-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs font-bold text-foreground">{name}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] text-muted-foreground">₩{val.paid.toLocaleString()} / ₩{val.due.toLocaleString()}</span>
+                                                                <span className="text-xs font-black text-foreground">{rate}%</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all duration-700"
+                                                                style={{ width: `${rate}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* By Account */}
+                                {Object.keys(financialStats.byAccount).length > 0 && (
+                                    <div className="flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500 border border-violet-500/20">
+                                                <MaterialIcon name="account_balance" size="sm" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-muted-foreground">계좌별 입금 현황</h3>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {Object.entries(financialStats.byAccount)
+                                                .sort(([, a], [, b]) => b.total - a.total)
+                                                .map(([name, val]) => {
+                                                    const totalAll = Object.values(financialStats.byAccount).reduce((s, v) => s + v.total, 0);
+                                                    const pct = totalAll > 0 ? Math.round((val.total / totalAll) * 100) : 0;
+                                                    const typeColor = val.type === 'union' ? 'bg-blue-500' :
+                                                        val.type === 'trust' ? 'bg-emerald-500' :
+                                                            val.type === 'external' ? 'bg-amber-500' : 'bg-violet-500';
+                                                    const typeLabel = val.type === 'union' ? '조합' :
+                                                        val.type === 'trust' ? '신탁' :
+                                                            val.type === 'external' ? '외부' : '인정';
+
+                                                    return (
+                                                        <div key={name} className="flex items-center gap-3 py-1.5">
+                                                            <div className={cn("w-2 h-2 rounded-full", typeColor)} />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-xs font-bold text-foreground truncate">{name}</span>
+                                                                    <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded">{typeLabel}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-foreground">₩{val.total.toLocaleString()}</span>
+                                                            <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Favorite Members Section */}
                         {favoriteList && favoriteList.length > 0 && (
@@ -450,23 +682,26 @@ export default async function DashboardPage() {
                                         <tbody className="divide-y divide-border/20">
                                             {actionList && actionList.length > 0 ? (
                                                 actionList.map((member: any) => (
-                                                    <ActionRequiredRow
-                                                        key={member.id}
-                                                        name={member.name}
-                                                        memberId={member.member_number}
-                                                        tier={member.tier || '-'}
-                                                        status={member.status || '미확인'}
-                                                        statusColor={
-                                                            member.status === '충돌오류' ? "bg-red-500/20 text-red-600 border-red-500/30 font-black animate-pulse" :
+                                                    member.status === '충돌오류' ? (
+                                                        <DuplicateConflictRow key={member.id} member={member} />
+                                                    ) : (
+                                                        <ActionRequiredRow
+                                                            key={member.id}
+                                                            name={member.name}
+                                                            memberId={member.member_number}
+                                                            tier={member.tier || '-'}
+                                                            status={member.status || '미확인'}
+                                                            statusColor={
                                                                 member.status === '탈퇴' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
                                                                     member.status === '소송중' ? "bg-orange-500/10 text-orange-500 border-orange-500/20" :
                                                                         "bg-gray-500/10 text-gray-500 border-gray-500/20"
-                                                        }
-                                                        amount={member.phone || '-'}
-                                                        actionLabel="상세 보기"
-                                                        isPrimaryAction={true}
-                                                        href={member.href}
-                                                    />
+                                                            }
+                                                            amount={member.phone || '-'}
+                                                            actionLabel="상세 보기"
+                                                            isPrimaryAction={true}
+                                                            href={member.href}
+                                                        />
+                                                    )
                                                 ))
                                             ) : (
                                                 <tr>
@@ -561,6 +796,41 @@ function KpiCard({ title, icon, value, unit, trend, trendIcon, subtitle, iconCol
     );
 }
 
+function DuplicateConflictRow({ member }: { member: any }) {
+    return (
+        <tr className="group hover:bg-muted/10 transition-colors">
+            <td colSpan={5} className="p-3">
+                <div className="flex items-center justify-between rounded-lg border border-red-500/30 bg-red-500/5 p-4 shadow-sm animate-pulse-slow">
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-500">
+                            <MaterialIcon name="warning" size="md" />
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2 mb-1 cursor-default">
+                                <span className="font-extrabold text-red-500 text-sm">권리증 충돌 오류</span>
+                                <span className="text-[10px] font-bold text-red-500/70 tracking-wider font-mono bg-red-500/10 px-2 py-0.5 rounded-full">{member.member_number}</span>
+                                <span className="text-[10px] font-black text-red-500 border border-red-500/30 bg-red-500/10 px-2 py-0.5 rounded uppercase tracking-wider">{member.tier}</span>
+                            </div>
+                            <p className="text-xs font-bold text-muted-foreground">
+                                해당 권리증 번호를 <strong className="text-foreground">{member.phone}</strong> 님이 중복해서 소유하고 있습니다.
+                            </p>
+                        </div>
+                    </div>
+                    {member.href ? (
+                        <Link href={member.href} className="shrink-0 inline-block rounded-lg px-4 py-2 text-xs font-black bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm shadow-red-500/20">
+                            상세 보기
+                        </Link>
+                    ) : (
+                        <button className="shrink-0 inline-block rounded-lg px-4 py-2 text-xs font-black bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm shadow-red-500/20">
+                            상세 보기
+                        </button>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
+}
+
 function ActionRequiredRow({ name, memberId, tier, status, statusColor, amount, actionLabel, isPrimaryAction, href }: any) {
     return (
         <tr className="group hover:bg-muted/10 transition-colors">
@@ -573,10 +843,9 @@ function ActionRequiredRow({ name, memberId, tier, status, statusColor, amount, 
             <td className="px-4 py-3">
                 <span className={cn(
                     "inline-flex items-center rounded px-2 py-0.5 text-[10px] font-black border uppercase tracking-wider",
-                    tier.includes('중복') ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                        tier === '1차' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
-                            tier === '지주' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" :
-                                "bg-success/10 text-success border-success/20"
+                    tier === '1차' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                        tier === '지주' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" :
+                            "bg-success/10 text-success border-success/20"
                 )}>
                     {tier}
                 </span>
@@ -637,11 +906,14 @@ function ActivityItem({ icon, iconColor, iconBg, title, desc, time, isLast }: an
     );
 }
 
-function PaymentProgressRow({ label, rate }: { label: string, rate: number }) {
+function PaymentProgressRow({ label, rate, subtitle }: { label: string, rate: number, subtitle?: string }) {
     return (
         <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-muted-foreground">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground">{label}</span>
+                    {subtitle && <span className="text-[10px] text-muted-foreground/60">{subtitle}</span>}
+                </div>
                 <span className="text-xs font-extrabold text-foreground">{rate}%</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/10 dark:bg-white/10 shadow-inner">
@@ -652,6 +924,98 @@ function PaymentProgressRow({ label, rate }: { label: string, rate: number }) {
                     )}
                     style={{ width: `${rate}%` }}
                 />
+            </div>
+        </div>
+    );
+}
+
+function RetentionWidget({ retention }: { retention: any }) {
+    const { registeredActive, unregisteredActive, registeredWithdrawn, unregisteredWithdrawn, totalHistorical } = retention;
+
+    // Percentages
+    const calcPct = (val: number) => totalHistorical > 0 ? Math.round((val / totalHistorical) * 100) : 0;
+
+    const pRegAct = calcPct(registeredActive);
+    const pUnregAct = calcPct(unregisteredActive);
+    const pRegWd = calcPct(registeredWithdrawn);
+    const pUnregWd = calcPct(unregisteredWithdrawn);
+
+    return (
+        <div className="group flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-300">
+            <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                        <MaterialIcon name="filter_alt" size="sm" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h3 className="text-sm font-bold text-muted-foreground">조합원 유지율 퍼널</h3>
+                        <p className="text-[10px] font-bold text-muted-foreground/60 mt-0.5">누적 등록자 {totalHistorical.toLocaleString()}명 기준</p>
+                    </div>
+                </div>
+                <span className="flex items-center rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] font-black text-orange-500 border border-orange-500/20">
+                    전체 흐름
+                </span>
+            </div>
+
+            <div className="flex flex-col gap-3 mt-1 flex-1 justify-center">
+                {/* Visual Funnel Bar */}
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted/50">
+                    {pRegAct > 0 && <div style={{ width: `${pRegAct}%` }} className="bg-emerald-500 transition-all duration-500" title={`유지 (등기): ${registeredActive}명`} />}
+                    {pUnregAct > 0 && <div style={{ width: `${pUnregAct}%` }} className="bg-emerald-400/60 transition-all duration-500" title={`유지 (미등기): ${unregisteredActive}명`} />}
+                    {pRegWd > 0 && <div style={{ width: `${pRegWd}%` }} className="bg-rose-400 transition-all duration-500" title={`이탈 (등기후): ${registeredWithdrawn}명`} />}
+                    {pUnregWd > 0 && <div style={{ width: `${pUnregWd}%` }} className="bg-rose-500/50 transition-all duration-500" title={`이탈 (미등기): ${unregisteredWithdrawn}명`} />}
+                </div>
+
+                {/* Legend & Stats */}
+                <div className="grid grid-cols-2 gap-x-2 gap-y-3 mt-2">
+                    <div className="flex flex-col p-2 rounded bg-emerald-500/5 border border-emerald-500/10">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            <span className="text-[10px] font-bold text-muted-foreground">유지 (등기완료)</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-black text-foreground">{registeredActive.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground">명</span>
+                            <span className="text-[10px] font-bold text-emerald-500 ml-auto">{pRegAct}%</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col p-2 rounded bg-emerald-400/5 border border-emerald-400/10">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400/60"></div>
+                            <span className="text-[10px] font-bold text-muted-foreground">유지 (미등기/기타)</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-black text-foreground">{unregisteredActive.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground">명</span>
+                            <span className="text-[10px] font-bold text-emerald-500/70 ml-auto">{pUnregAct}%</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col p-2 rounded bg-rose-400/5 border border-rose-400/10">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-rose-400"></div>
+                            <span className="text-[10px] font-bold text-muted-foreground">이탈 (등기 후)</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-black text-foreground">{registeredWithdrawn.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground">명</span>
+                            <span className="text-[10px] font-bold text-rose-500 ml-auto">{pRegWd}%</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col p-2 rounded bg-rose-500/5 border border-rose-500/10">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-rose-500/50"></div>
+                            <span className="text-[10px] font-bold text-muted-foreground">이탈 (미등기)</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-black text-foreground">{unregisteredWithdrawn.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground">명</span>
+                            <span className="text-[10px] font-bold text-rose-500/70 ml-auto">{pUnregWd}%</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -55,6 +55,7 @@ interface MemberDetailDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSaved?: () => void;
+    initialTab?: TabType;
 }
 
 type TabType = 'info' | 'timeline' | 'payment' | 'admin';
@@ -64,7 +65,8 @@ export function MemberDetailDialog({
     memberIds,
     open,
     onOpenChange,
-    onSaved
+    onSaved,
+    initialTab
 }: MemberDetailDialogProps) {
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
@@ -76,6 +78,13 @@ export function MemberDetailDialog({
         message: string;
     } | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('info');
+
+    useEffect(() => {
+        if (open) {
+            setActiveTab(initialTab || 'info');
+        }
+    }, [open, initialTab]);
+
     const [rightInput, setRightInput] = useState('');
     const [isAddingRight, setIsAddingRight] = useState(false);
     const [conflictRightNumbers, setConflictRightNumbers] = useState<string[]>([]);
@@ -352,7 +361,14 @@ export function MemberDetailDialog({
         });
 
         // Try to extract birth_date from certificate numbers if the primary field is empty
-        const isDateLike = (v: string) => /^(19|20)\d{2}[\.-]\d{1,2}[\.-]\d{1,2}$/.test(v.trim()) || /^(19|20)\d{6}$/.test(v.trim());
+        const isDateLike = (v: string): boolean => {
+            const s = v.trim();
+            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
+            if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
+            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
+            return false;
+        };
         let derivedBirthDate = entity.birth_date || null;
         if (!derivedBirthDate) {
             // Check raw right_numbers (before sanitization) and member_number
@@ -801,7 +817,7 @@ export function MemberDetailDialog({
                                                 <div className="space-y-6">
                                                     <div className="grid grid-cols-2 gap-4 text-left">
                                                         <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">총 보유 권리증</span><span className="text-2xl font-black text-white font-mono text-left">{member.assetRights.length} <span className="text-sm font-normal text-gray-400">개</span></span></div>
-                                                        <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">기납부 총액</span><span className="text-2xl font-black text-blue-400 font-mono text-left">₩{member.assetRights.reduce((acc, r) => acc + (Number(r.principal_amount) || 0), 0).toLocaleString()}</span></div>
+                                                        <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 총액</span><span className="text-2xl font-black text-blue-400 font-mono text-left">₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.certificate_price) || Number(r.principal_amount) || 0), 0).toLocaleString()}</span>{member.assetRights.some((r: any) => Number(r.premium_price) > 0) && <span className="text-[11px] font-bold text-amber-400">+ 프리미엄 ₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.premium_price) || 0), 0).toLocaleString()}</span>}</div>
                                                     </div>
                                                     <div className="space-y-4">
                                                         <h3 className="text-white text-base font-bold flex items-center gap-2"><span className="w-1 h-4 bg-sky-500 rounded-full"></span>상세 보유 내역</h3>
@@ -863,6 +879,58 @@ export function MemberDetailDialog({
                                                                             )}
                                                                         </div>
                                                                     </div>
+
+                                                                    {/* 취득 정보 (엑셀 마이그레이션 데이터) */}
+                                                                    {(right.holder_name || right.price_text || right.acquisition_source || right.issued_date) && (
+                                                                        <div className="mt-3 pt-3 border-t border-white/5">
+                                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                                <MaterialIcon name="receipt_long" size="xs" className="text-amber-400/70" />
+                                                                                <span className="text-[10px] font-bold text-amber-400/70 uppercase tracking-wider">취득 정보</span>
+                                                                            </div>
+                                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                                                {right.holder_name && (
+                                                                                    <div className="flex flex-col gap-0.5">
+                                                                                        <span className="text-[9px] font-bold text-gray-500 uppercase">필증 성명</span>
+                                                                                        <span className="text-xs font-bold text-gray-200">{right.holder_name}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {right.issued_date && (
+                                                                                    <div className="flex flex-col gap-0.5">
+                                                                                        <span className="text-[9px] font-bold text-gray-500 uppercase">필증 발급일</span>
+                                                                                        <span className="text-xs font-bold text-gray-200 font-mono">{right.issued_date}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {right.price_text && (
+                                                                                    <div className="flex flex-col gap-0.5">
+                                                                                        <span className="text-[9px] font-bold text-gray-500 uppercase">거래 가격</span>
+                                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                            {Number(right.certificate_price) > 0 && (
+                                                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
+                                                                                                    필증 {(Number(right.certificate_price) / 10000).toLocaleString()}만
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {Number(right.premium_price) > 0 && (
+                                                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-500/10 text-amber-300 rounded border border-amber-500/20">
+                                                                                                    P {(Number(right.premium_price) / 10000).toLocaleString()}만
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {Number(right.broker_fee) > 0 && (
+                                                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-gray-500/10 text-gray-400 rounded border border-gray-500/20">
+                                                                                                    수수료 {(Number(right.broker_fee) / 10000).toLocaleString()}만
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                                {right.acquisition_source && (
+                                                                                    <div className="flex flex-col gap-0.5">
+                                                                                        <span className="text-[9px] font-bold text-gray-500 uppercase">구입처</span>
+                                                                                        <span className="text-xs font-bold text-gray-200">{right.acquisition_source}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>

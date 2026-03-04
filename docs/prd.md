@@ -151,18 +151,10 @@
 | `amount` | `numeric` | **청구 기준 금액** | |
 | `due_date` | `date` | 납부 기한 | 연체 판단 기준 |
 
-### ⑥ `payments` (개인별 납부원장)
-개인에게 발행된 실제 청구서와 수납 내역을 매칭합니다.
-
-| 컬럼명 | 데이터 타입 | 설명 | 비고 |
-| :--- | :--- | :--- | :--- |
-| `id` | `uuid` | 고유 식별자 | |
-| `member_id` | `uuid` | **조합원 ID (FK)** | |
-| `step` | `integer` | 회차 | 1, 2, 3... |
-| `amount_due` | `numeric` | **청구액** | `price_tables` 기준 금액 |
-| `amount_paid` | `numeric` | **실납부액** | 은행 입금 매칭 금액 |
-| `paid_date` | `date` | 수납 확인일 | |
-| `is_paid` | `boolean` | 완납 여부 | `Paid >= Due` 조건 충족 시 `true` |
+### ⑥ `payments` (개인별 납부원장) / `member_payments` (신규 ERP 납부관리)
+- 기존 `payments`: 초기 구축에 사용된 납부 내역 매칭 테이블
+- 신규 `member_payments`: 향상된 ERP 기능 (출자금, 계약금, 중도금, 잔금 등 세분화된 납부 관리 및 통계 연동)
+- 신규 연관 테이블: `unit_types` (입주 평형 기준액), `deposit_accounts` (입금계좌)
 
 ### ⑦ `settlement_cases` (정산 케이스)
 환불 및 정산 프로세스를 관리하는 핵심 테이블입니다.
@@ -176,44 +168,6 @@
 
 ---
 
-## 3. SQL 실행 스크립트 (Action Item)
-*아래 코드를 Supabase SQL Editor에서 실행하면 위 테이블들이 즉시 생성됩니다.*
-
-```sql
--- 1. Members 테이블 확장 (AI 태깅 기능 추가)
-ALTER TABLE members ADD COLUMN IF NOT EXISTS tags text[];
-
--- 2. CRM 로그 테이블 생성
-CREATE TABLE IF NOT EXISTS interaction_logs (
-  id uuid default gen_random_uuid() primary key,
-  member_id uuid references members(id),
-  type text, -- CALL, MEET, SMS, DOC
-  summary text,
-  direction text, -- Inbound, Outbound
-  staff_name text,
-  attachment text,
-  created_at timestamptz default now()
-);
-
--- 3. 표준 가격표 테이블 생성
-CREATE TABLE IF NOT EXISTS price_tables (
-  id uuid default gen_random_uuid() primary key,
-  tier text, -- 1차, 지주...
-  unit text, -- 59, 84...
-  step integer, -- 1, 2...
-  step_name text,
-  amount numeric,
-  due_date date
-);
-
--- 4. 개인별 납부원장 테이블 생성
-CREATE TABLE IF NOT EXISTS payments (
-  id uuid default gen_random_uuid() primary key,
-  member_id uuid references members(id),
-  step integer,
-  amount_due numeric default 0,
-  amount_paid numeric default 0,
-  paid_date date,
-  is_paid boolean default false,
-  created_at timestamptz default now()
-);
+## 4. 데이터 정합성 강화 (Data Integrity)
+- 발생 가능한 **동명이인 중복 데이터(Ghost data)** 및 **번호 오기입(예: 생년월일이 회원번호에 기입됨)**을 로직 및 스크립트로 정제하여, 사용자 단에서 깔끔하고 유일한 조합원 뷰를 제공합니다.
+- 리스트 뷰와 상세 뷰의 조합원 식별 로직을 동기화하여 시각적 불일치를 제거했습니다.

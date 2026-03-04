@@ -1,0 +1,38 @@
+[dotenv@17.3.1] injecting env (4) from .env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+김선진 Records Found: 4
+
+[0]
+  ID: 8599358e-cf8f-4fd8-9917-c67cf2ddac03
+  Name: 김선진
+  MemNo: null
+  Phone: null
+  Birth: null
+  Created: 2026-02-27T11:50:53.488065+00:00
+  SourcePartyId: null
+
+[1]
+  ID: 3519a677-cf43-443d-8a80-0d58dc9615f5
+  Name: 김선진
+  MemNo: null
+  Phone: null
+  Birth: null
+  Created: 2026-02-27T11:58:54.531732+00:00
+  SourcePartyId: null
+
+[2]
+  ID: 086fbe44-b3b7-4c87-96fb-32fc31c15bfb
+  Name: 김선진
+  MemNo: null
+  Phone: null
+  Birth: null
+  Created: 2026-02-27T12:18:25.735167+00:00
+  SourcePartyId: null
+
+[3]
+  ID: f1ed1563-79bd-4c87-a9e5-7b24f991dfff
+  Name: 김선진
+  MemNo: 1979.01.10
+  Phone: null
+  Birth: 1979.01.10
+  Created: 2026-02-27T11:34:18.721986+00:00
+  SourcePartyId: null

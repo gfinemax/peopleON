@@ -38,6 +38,7 @@ interface Member {
     acts_as_agent_for?: { id?: string; name: string; relation: string; type: string }[] | null;
     real_owner?: { id: string; name: string } | null;
     nominees?: { id: string; name: string }[] | null;
+    _matchedLog?: boolean;
 }
 
 interface MembersTableProps {
@@ -528,6 +529,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSaved={() => router.refresh()}
+                initialTab={members.find(m => m.id === selectedMemberId)?._matchedLog ? 'timeline' : 'info'}
             />
         </>
     );

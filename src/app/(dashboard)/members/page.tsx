@@ -187,6 +187,19 @@ export default async function MembersPage({
     const { unifiedPeople, fetchError: fetchErr } = await getUnifiedMembers(supabase);
     let fetchError: unknown = fetchErr;
 
+    // --- Search History Integration ---
+    const matchedEntityIds = new Set<string>();
+    if (query) {
+        const { data, error } = await supabase
+            .from('interaction_logs')
+            .select('entity_id')
+            .ilike('summary', `%${query}%`);
+
+        if (error) console.error("Search history error:", error);
+        if (data) data.forEach(log => matchedEntityIds.add(log.entity_id));
+    }
+    // -----------------------------------
+
     const isTierMatch = (person: UnifiedPerson, targetTier: string) => {
         const tierLabels = (person.tiers || []).map(t => normalizeText(t));
         const tierText = normalizeText(person.tier);
@@ -232,7 +245,14 @@ export default async function MembersPage({
     }
 
     const filteredPeople = peopleInCurrentRole.filter(p => {
-        if (query && !`${p.name} ${p.member_number} ${p.phone}`.toLowerCase().includes(query.toLowerCase())) return false;
+        if (query) {
+            const queryLower = query.toLowerCase();
+            const isTextMatch = `${p.name} ${p.member_number} ${p.phone} ${p.notes || ''}`
+                .toLowerCase()
+                .includes(queryLower);
+            const isLogMatch = Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id));
+            if (!isTextMatch && !isLogMatch) return false;
+        }
         if (tierFilter !== 'all' && !isTierMatch(p, tierFilter)) return false;
         if (statusFilter !== 'all') {
             if (statusFilter === '정산대기' && p.settlement_remaining <= 0) return false;
@@ -251,7 +271,10 @@ export default async function MembersPage({
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const normalizedPage = Math.min(page, totalPages);
     const { from, to } = getRange(normalizedPage, pageSize);
-    const displayedMembers = sortedPeople.slice(from, to + 1);
+    const displayedMembers = sortedPeople.slice(from, to + 1).map(p => ({
+        ...p,
+        _matchedLog: !!(query && Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id)))
+    }));
 
     const allRelations = unifiedPeople.flatMap(p => p.relationships || []).map(r => r.relation);
     const relationNames = Array.from(new Set(allRelations.filter(Boolean) as string[])).sort();

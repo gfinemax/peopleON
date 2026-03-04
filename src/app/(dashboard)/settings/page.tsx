@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import { UnitTypesSection, DepositAccountsSection } from '@/components/features/settings/FinancialSettings';
 
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
@@ -192,6 +193,12 @@ export default function SettingsPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Financial: Unit Types */}
+                    <UnitTypesSection />
+
+                    {/* Financial: Deposit Accounts */}
+                    <DepositAccountsSection />
 
                     {/* Notification Section */}
                     <div className="rounded-lg border border-border bg-card shadow-sm">
