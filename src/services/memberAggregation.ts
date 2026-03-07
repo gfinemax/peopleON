@@ -39,6 +39,59 @@ export type UnifiedPerson = {
 export const normalizeText = (value?: string | null) => (value || '').replace(/\s+/g, '').toLowerCase();
 export const normalizePhone = (value?: string | null) => (value || '').replace(/\D/g, '');
 
+const isLikelyPersonName = (value?: string | null) => {
+    const candidate = (value || '').trim().replace(/\s+/g, '');
+    if (!candidate || candidate.length < 2 || candidate.length > 10) return false;
+    if (/\d/.test(candidate)) return false;
+    if (!/^[가-힣A-Za-z]+$/.test(candidate)) return false;
+
+    const blocked = new Set([
+        '미입력', '정상', '탈퇴', '조합원', '권리증', '대리인', '관계인', '남편', '아내', '배우자',
+        '형수', '시동생', '부', '모', '자녀', '기타', '메모', '연락처', '전화번호'
+    ]);
+    return !blocked.has(candidate);
+};
+
+const inferNameByPhoneFromNotes = (people: UnifiedPerson[]) => {
+    const namesByPhone = new Map<string, Set<string>>();
+    const addCandidate = (rawPhone: string, rawName: string) => {
+        const digits = normalizePhone(rawPhone);
+        const name = (rawName || '').trim().replace(/\s+/g, '');
+        if (digits.length < 9 || !isLikelyPersonName(name)) return;
+
+        const existing = namesByPhone.get(digits) || new Set<string>();
+        existing.add(name);
+        namesByPhone.set(digits, existing);
+    };
+
+    const patterns: RegExp[] = [
+        /(\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})\s*\(([^()\n]{2,20})\)/g,
+        /([^()\n]{2,20})\s*\((\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4})\)/g,
+    ];
+
+    for (const person of people) {
+        const notes = person.notes || '';
+        if (!notes) continue;
+
+        for (const pattern of patterns) {
+            pattern.lastIndex = 0;
+            let match: RegExpExecArray | null;
+            while ((match = pattern.exec(notes)) !== null) {
+                if (pattern === patterns[0]) addCandidate(match[1], match[2]);
+                else addCandidate(match[2], match[1]);
+            }
+        }
+    }
+
+    const resolved = new Map<string, string>();
+    for (const [digits, names] of namesByPhone.entries()) {
+        if (names.size === 1) {
+            resolved.set(digits, Array.from(names)[0]);
+        }
+    }
+    return resolved;
+};
+
 export const normalizeTierLabel = (rawTier?: string | null, isRegistered = false) => {
     const tierText = normalizeText(rawTier);
     if (tierText === '1차') return '등기조합원';
@@ -296,7 +349,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         const normalizeNumForDedup = (s: string) => s.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/[\s]/g, '').toLowerCase();
         const numsByNormKey = new Map<string, string>();
         const addNum = (raw: string) => {
-            let clean = raw.replace(/\s?외\s?\d+건/, '').trim();
+            const clean = raw.replace(/\s?외\s?\d+건/, '').trim();
             if (!clean || clean === '-') return;
             const key = normalizeNumForDedup(clean);
             const existing = numsByNormKey.get(key);
@@ -397,22 +450,25 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         });
     }
 
+    const inferredNameByPhone = inferNameByPhoneFromNotes(rawUnifiedPeople);
     const peopleByName = new Map<string, UnifiedPerson[]>();
     const namelessByPhone = new Map<string, UnifiedPerson[]>();
 
     for (const p of rawUnifiedPeople) {
-        const n = normalizeText(p.name);
+        const inferredName = !normalizeText(p.name) && p.phone ? inferredNameByPhone.get(normalizePhone(p.phone)) : null;
+        const person = inferredName ? { ...p, name: inferredName } : p;
+        const n = normalizeText(person.name);
         if (n) {
             const list = peopleByName.get(n) || [];
-            list.push(p);
+            list.push(person);
             peopleByName.set(n, list);
-        } else if (p.phone) {
-            const digits = normalizePhone(p.phone);
+        } else if (person.phone) {
+            const digits = normalizePhone(person.phone);
             const list = namelessByPhone.get(digits) || [];
-            list.push(p);
+            list.push(person);
             namelessByPhone.set(digits, list);
         } else {
-            peopleByName.set(`unnamed_${p.id}`, [p]);
+            peopleByName.set(`unnamed_${person.id}`, [person]);
         }
     }
 
@@ -617,7 +673,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         }
     }
 
-    for (const [digits, list] of namelessByPhone.entries()) {
+    for (const [, list] of namelessByPhone.entries()) {
         const target = { ...list[0], entity_ids: list.map(p => p.id) };
         target.name = `(성명없음: ${list[0].phone})`;
 

@@ -19,6 +19,12 @@ type MemberUpdatePayload = {
         relation?: string | null;
         phone?: string | null;
     } | null;
+    representative2?: {
+        id?: string;
+        name?: string | null;
+        relation?: string | null;
+        phone?: string | null;
+    } | null;
 };
 
 export async function POST(request: Request) {
@@ -101,25 +107,26 @@ export async function POST(request: Request) {
         }
     }
 
-    // 3. Update or Create or Delete representative
-    if (body && body.representative !== undefined) {
-        const rep = body.representative;
-        if (rep === null) {
-            // Delete the relationship
-            const { error: deleteError } = await supabase
-                .from('entity_relationships')
-                .delete()
-                .in('to_entity_id', targetIds)
-                .eq('relation_type', 'agent');
+    // 3. Update, Create, Delete representatives (Sync with current active agents)
+    const activeAgentIds: string[] = [];
 
-            if (deleteError) console.error('Representative delete error:', deleteError);
-        } else {
+    // Process only if any representative field is provided in body
+    if (body !== null && (body.representative !== undefined || body.representative2 !== undefined)) {
+        const repsToProcess = [body.representative, body.representative2].filter(r => r !== undefined && r !== null);
+
+        for (const rep of repsToProcess) {
             const repName = typeof rep.name === 'string' ? rep.name.trim() : null;
             const repPhone = typeof rep.phone === 'string' ? formatPhone(rep.phone) : null;
             const repRelation = typeof rep.relation === 'string' ? rep.relation.trim() : null;
+            const hasIdentity = Boolean(repName || repPhone);
+            const hasMeaningfulRelation = Boolean(repRelation && repRelation !== '대리인');
+
+            if (!hasIdentity && !hasMeaningfulRelation) {
+                continue;
+            }
 
             if (rep.id) {
-                // Update existing agent
+                // Update existing agent info
                 const repPatch: Record<string, string | null> = {};
                 if (repName !== null) repPatch.display_name = repName;
                 if (repPhone !== null) repPatch.phone = repPhone;
@@ -141,6 +148,7 @@ export async function POST(request: Request) {
                         .eq('relation_type', 'agent');
                     if (relationError) console.error('Representative relation update error:', relationError);
                 }
+                activeAgentIds.push(rep.id);
             } else if (repName || repPhone) {
                 // Create new agent
                 const { data: newAgent, error: createError } = await supabase
@@ -168,8 +176,28 @@ export async function POST(request: Request) {
                     ));
                     const errors = results.filter(r => r.error);
                     if (errors.length > 0) console.error('Representative map error:', errors[0].error);
+                    activeAgentIds.push(newAgent.id);
                 }
             }
+        }
+
+        // Delete any stale relationships
+        if (activeAgentIds.length > 0) {
+            const { error: deleteError } = await supabase
+                .from('entity_relationships')
+                .delete()
+                .in('to_entity_id', targetIds)
+                .eq('relation_type', 'agent')
+                .not('from_entity_id', 'in', `(${activeAgentIds.join(',')})`);
+            if (deleteError) console.error('Representative stale delete error:', deleteError);
+        } else {
+            // Delete all agent relation if no active agents
+            const { error: deleteError } = await supabase
+                .from('entity_relationships')
+                .delete()
+                .in('to_entity_id', targetIds)
+                .eq('relation_type', 'agent');
+            if (deleteError) console.error('Representative all delete error:', deleteError);
         }
     }
 

@@ -13,6 +13,7 @@ import { ActivityTimelineTab } from './ActivityTimelineTab';
 import { PaymentStatusTab } from './PaymentStatusTab';
 import { logSystemInteraction, checkAndLogAssetRightConflicts } from '@/app/actions/interaction';
 import { createAuditLog } from '@/app/actions/audit';
+import { deleteMemberEntities } from '@/app/actions/member';
 
 interface Member {
     id: string;
@@ -71,6 +72,7 @@ export function MemberDetailDialog({
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Member>>({});
     const [saveFeedback, setSaveFeedback] = useState<{
@@ -474,10 +476,47 @@ export function MemberDetailDialog({
         }
     };
 
+    const handleDeleteMember = async () => {
+        if (!member) return;
+
+        const targetIds = memberIds && memberIds.length > 0 ? memberIds : [member.id];
+        const label = targetIds.length > 1 ? `${member.name || '선택한 인물'} 포함 ${targetIds.length}건` : (member.name || '선택한 인물');
+        const confirmed = confirm(
+            `${label} 정보를 삭제하시겠습니까?\n권리증, 정산, 납부 이력이 있으면 삭제가 차단됩니다.`
+        );
+
+        if (!confirmed) return;
+
+        setDeleting(true);
+        setSaveFeedback(null);
+
+        const result = await deleteMemberEntities(targetIds);
+
+        if (!result.success) {
+            setSaveFeedback({
+                tone: 'error',
+                message: result.error || '인물 정보 삭제에 실패했습니다.'
+            });
+            setDeleting(false);
+            return;
+        }
+
+        setDeleting(false);
+        handleDialogOpenChange(false);
+        if (onSaved) onSaved();
+    };
+
     const handleSave = async () => {
         if (!memberId) return;
         setSaving(true);
         setSaveFeedback(null);
+
+        const cleanRep = (rep: any) => {
+            if (!rep) return null;
+            const hasIdentity = Boolean(rep.name?.trim() || rep.phone?.trim());
+            if (!hasIdentity) return null;
+            return rep;
+        };
 
         const response = await fetch('/api/members/update', {
             method: 'POST',
@@ -491,8 +530,8 @@ export function MemberDetailDialog({
                 address_legal: formData.address_legal,
                 memo: formData.memo,
                 role_code: formData.role_code,
-                representative: formData.representative,
-                representative2: formData.representative2,
+                representative: cleanRep(formData.representative),
+                representative2: cleanRep(formData.representative2),
                 birth_date: formData.birth_date,
                 resident_registration_number: formData.resident_registration_number
             }),
@@ -676,10 +715,22 @@ export function MemberDetailDialog({
                         {isEditing ? (
                             <>
                                 <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="h-8 px-3 text-xs text-gray-400 hover:text-white hover:bg-white/5">취소</Button>
-                                <Button size="sm" onClick={handleSave} disabled={saving} className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/20">{saving ? '저장...' : '저장'}</Button>
+                                <Button size="sm" onClick={handleSave} disabled={saving || deleting} className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/20">{saving ? '저장...' : '저장'}</Button>
                             </>
                         ) : (
-                            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="h-8 px-3 text-xs border-white/10 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 font-bold"><MaterialIcon name="edit" size="xs" className="mr-1.5" />정보 수정</Button>
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleDeleteMember}
+                                    disabled={deleting || loading || !member}
+                                    className="h-8 px-3 text-xs border-rose-500/20 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 hover:text-rose-100 font-bold"
+                                >
+                                    <MaterialIcon name="delete" size="xs" className="mr-1.5" />
+                                    {deleting ? '삭제 중...' : '인물 삭제'}
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} disabled={deleting} className="h-8 px-3 text-xs border-white/10 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 font-bold"><MaterialIcon name="edit" size="xs" className="mr-1.5" />정보 수정</Button>
+                            </>
                         )}
                         <Link href={`/members/${member?.id}`} className="group p-2 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center" title="전체 페이지로 이동"><MaterialIcon name="open_in_new" className="text-gray-400 group-hover:text-white transition-colors" size="sm" /></Link>
                         <button onClick={handleClose} className="group p-2 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"><MaterialIcon name="close" className="text-gray-400 group-hover:text-white transition-colors" size="sm" /></button>
