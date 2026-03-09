@@ -33,6 +33,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
     const [formData, setFormData] = React.useState({
         name: "",
         phone: "",
+        secondary_phone: "",
         member_number: "",
         right_number: "",
         tier: "예비조합원",
@@ -78,6 +79,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                 setFormData({
                     name: "",
                     phone: "",
+                    secondary_phone: "",
                     member_number: "",
                     right_number: "",
                     tier: "예비조합원",
@@ -90,7 +92,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
             } else {
                 alert(data.error || "등록 중 오류가 발생했습니다.")
             }
-        } catch (error) {
+        } catch {
             alert("등록 중 오류가 발생했습니다.")
         } finally {
             setLoading(false)
@@ -124,6 +126,16 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                             id="phone"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="col-span-3 bg-slate-800 border-slate-700"
+                            placeholder="010-0000-0000"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="secondary_phone" className="text-right text-slate-400">보조 연락처</Label>
+                        <Input
+                            id="secondary_phone"
+                            value={formData.secondary_phone}
+                            onChange={(e) => setFormData({ ...formData, secondary_phone: e.target.value })}
                             className="col-span-3 bg-slate-800 border-slate-700"
                             placeholder="010-0000-0000"
                         />

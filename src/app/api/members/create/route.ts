@@ -9,7 +9,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 });
     }
 
-    const { name, phone, member_number, right_number, tier, unit_group, address_legal, memo, birth_date } = body;
+    const formatPhone = (val: string | null | undefined) => {
+        if (!val) return null;
+        const items = val.split(',').map((v: string) => v.trim()).filter(Boolean);
+        const formatted = items.map((item: string) => {
+            const cleaned = item.replace(/\D/g, '');
+            if (cleaned.length === 11) return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
+            if (cleaned.length === 10) return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+            return item;
+        });
+        return formatted.join(', ');
+    };
+
+    const { name, phone, secondary_phone, member_number, right_number, tier, unit_group, address_legal, memo, birth_date } = body;
 
     try {
         // 1. Create account_entity
@@ -17,7 +29,8 @@ export async function POST(request: Request) {
             .from('account_entities')
             .insert({
                 display_name: name,
-                phone: phone || null,
+                phone: formatPhone(phone),
+                phone_secondary: formatPhone(secondary_phone),
                 member_number: member_number || null,
                 unit_group: unit_group || null,
                 address_legal: address_legal || null,
@@ -75,8 +88,9 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ success: true, id: entity.id });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating member:', error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

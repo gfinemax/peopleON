@@ -30,6 +30,7 @@ type EditableMember = {
     name: string;
     member_number?: string | null;
     phone?: string | null;
+    secondary_phone?: string | null;
     unit_group?: string | null;
     tier?: string | null;
     status?: string | null;
@@ -79,6 +80,13 @@ export function EditMemberDialog({ member }: { member: EditableMember }) {
                             <Label htmlFor="phone">전화번호</Label>
                             <Input id="phone" name="phone" defaultValue={member.phone ?? ''} />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="secondary_phone">보조 전화번호</Label>
+                            <Input id="secondary_phone" name="secondary_phone" defaultValue={member.secondary_phone ?? ''} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="unit_group">평형 타입</Label>
                             <Input id="unit_group" name="unit_group" defaultValue={member.unit_group ?? ''} />

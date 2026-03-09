@@ -7,6 +7,7 @@ type MemberUpdatePayload = {
     ids?: string[]; // Multiple IDs for merged members
     name?: string | null;
     phone?: string | null;
+    secondary_phone?: string | null;
     email?: string | null;
     address_legal?: string | null;
     birth_date?: string | null;
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
     const patch: Record<string, unknown> = {};
     if (typeof body?.name === 'string') patch.display_name = body.name.trim() || null;
     if (typeof body?.phone === 'string') patch.phone = formatPhone(body.phone);
+    if (typeof body?.secondary_phone === 'string') patch.phone_secondary = formatPhone(body.secondary_phone);
     if (typeof body?.email === 'string') patch.email = body.email.trim() || null;
     if (typeof body?.address_legal === 'string') patch.address_legal = body.address_legal.trim() || null;
     if (typeof body?.birth_date === 'string') patch.birth_date = body.birth_date.trim() || null;

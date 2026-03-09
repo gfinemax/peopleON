@@ -16,11 +16,11 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
     const supabase = await createClient();
     const cleanQuery = query.trim();
 
-    // Search by display_name, member_number, or phone
+    // Search by display_name, member_number, primary/secondary phone
     const { data, error } = await supabase
         .from('account_entities')
-        .select('id, display_name, member_number, phone')
-        .or(`display_name.ilike.%${cleanQuery}%,member_number.ilike.%${cleanQuery}%,phone.ilike.%${cleanQuery}%`)
+        .select('id, display_name, member_number, phone, phone_secondary')
+        .or(`display_name.ilike.%${cleanQuery}%,member_number.ilike.%${cleanQuery}%,phone.ilike.%${cleanQuery}%,phone_secondary.ilike.%${cleanQuery}%`)
         .limit(10);
 
     if (error) {
@@ -28,11 +28,11 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
         return [];
     }
 
-    return (data || []).map((row: { id: string; display_name: string; member_number: string | null; phone: string | null }) => ({
+    return (data || []).map((row: { id: string; display_name: string; member_number: string | null; phone: string | null; phone_secondary: string | null }) => ({
         id: row.id,
         name: row.display_name,
         member_number: row.member_number || '',
-        phone: row.phone,
+        phone: row.phone || row.phone_secondary,
         status: '정상',
     }));
 }

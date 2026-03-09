@@ -29,6 +29,7 @@ export async function updateMember(
     const name = formData.get('name') as string;
     const member_number = formData.get('member_number') as string;
     const phone = formData.get('phone') as string;
+    const secondary_phone = formData.get('secondary_phone') as string;
     const tier = formData.get('tier') as string;
     const status = formData.get('status') as string;
     const unit_group = formData.get('unit_group') as string;
@@ -46,6 +47,7 @@ export async function updateMember(
                 display_name: name,
                 member_number,
                 phone,
+                phone_secondary: secondary_phone,
                 unit_group,
                 memo,
             })
@@ -77,6 +79,7 @@ export async function updateMember(
                 name,
                 member_number,
                 phone,
+                secondary_phone,
                 tier,
                 status,
                 unit_group,

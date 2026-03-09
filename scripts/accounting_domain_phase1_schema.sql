@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.account_entities (
     entity_type entity_type NOT NULL DEFAULT 'person',
     display_name text NOT NULL,
     phone text,
+    phone_secondary text,
     id_hash text,
     deposit_account_masked text,
     meta jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS public.account_entities (
 
 CREATE INDEX IF NOT EXISTS idx_account_entities_display_name ON public.account_entities(display_name);
 CREATE INDEX IF NOT EXISTS idx_account_entities_phone ON public.account_entities(phone);
+CREATE INDEX IF NOT EXISTS idx_account_entities_phone_secondary ON public.account_entities(phone_secondary);
 
 -- -----------------------------------------------------
 -- 2) membership_roles (사업적 지위)

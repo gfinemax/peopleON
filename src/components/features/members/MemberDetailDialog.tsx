@@ -20,6 +20,7 @@ interface Member {
     name: string;
     member_number: string;
     phone: string | null;
+    secondary_phone?: string | null;
     email: string | null;
     address_legal: string | null;
     tier: string | null;
@@ -381,11 +382,26 @@ export function MemberDetailDialog({
         }
 
         const residentNumber = privateInfoRes.data?.resident_registration_number || null;
+        const uniqueSecondaryPhones: string[] = [];
+        const secondaryPhoneDigits = new Set<string>();
+        entities.forEach((e) => {
+            if (!e.phone_secondary) return;
+            const phones = e.phone_secondary.split(',').map((p: string) => p.trim()).filter(Boolean);
+            for (const p of phones) {
+                const digits = normalizePhone(p);
+                if (!digits || secondaryPhoneDigits.has(digits)) continue;
+                secondaryPhoneDigits.add(digits);
+                if (digits.length === 11) uniqueSecondaryPhones.push(`${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`);
+                else if (digits.length === 10) uniqueSecondaryPhones.push(`${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`);
+                else uniqueSecondaryPhones.push(p);
+            }
+        });
 
         const combinedData: Member = {
             ...entity,
             name: entity.display_name,
             phone: uniqueDisplayPhones.join(', '),
+            secondary_phone: uniqueSecondaryPhones.join(', ') || null,
             member_number: displayMemberNumber,
             tiers: tiers,
             role_code: rolesData[0]?.role_code || null,
@@ -526,6 +542,7 @@ export function MemberDetailDialog({
                 ids: memberIds,
                 name: formData.name,
                 phone: formData.phone,
+                secondary_phone: formData.secondary_phone,
                 email: formData.email,
                 address_legal: formData.address_legal,
                 memo: formData.memo,
@@ -820,6 +837,9 @@ export function MemberDetailDialog({
                                                     </div>
                                                     <div className="grid grid-cols-2">
                                                         <InfoRow icon="smartphone" label="휴대전화" value={member.phone || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />} />
+                                                        <InfoRow icon="phone" label="보조 휴대전화" value={member.secondary_phone || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.secondary_phone || ''} onChange={e => setFormData({ ...formData, secondary_phone: e.target.value })} />} />
+                                                    </div>
+                                                    <div className="grid grid-cols-2">
                                                         <InfoRow icon="mail" label="이메일" value={member.email || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />} />
                                                     </div>
                                                     <InfoRow icon="home" label="현주소" value={member.address_legal || '미입력'} isEditing={isEditing} editElement={<Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white" value={formData.address_legal || ''} onChange={e => setFormData({ ...formData, address_legal: e.target.value })} />} />
