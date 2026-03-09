@@ -23,6 +23,9 @@ export default async function DashboardPage() {
         recentRegisteredCount: 0,
         certificateHolderCount: 0,
         relatedPartyCount: 0,
+        totalExpectedRefund: 0,
+        totalPaidRefund: 0,
+        totalRemainingRefund: 0,
         retention: {
             registeredActive: 0,
             unregisteredActive: 0,
@@ -91,6 +94,9 @@ export default async function DashboardPage() {
         // Additional counts for new dashboard cards
         const certificateHolderCount = unifiedPeople.filter((p) => p.role_types.includes('certificate_holder')).length;
         const relatedPartyCount = unifiedPeople.filter((p) => p.role_types.includes('related_party')).length;
+        const totalExpectedRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_expected, 0);
+        const totalPaidRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_paid, 0);
+        const totalRemainingRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_remaining, 0);
 
         // Calculate Retention Stats
         let registeredActive = 0;
@@ -157,6 +163,9 @@ export default async function DashboardPage() {
             recentRegisteredCount: recentRegisteredCount,
             certificateHolderCount,
             relatedPartyCount,
+            totalExpectedRefund,
+            totalPaidRefund,
+            totalRemainingRefund,
             retention: {
                 registeredActive,
                 unregisteredActive,
@@ -451,6 +460,33 @@ export default async function DashboardPage() {
                                 subtitle="대리인 포함"
                                 iconColor="text-rose-500"
                                 iconBg="bg-rose-500/10"
+                            />
+
+                            <KpiCard
+                                title="환불 예정"
+                                icon="account_balance_wallet"
+                                value={formatAmount(safeStats.totalExpectedRefund)}
+                                subtitle="세입자 제외"
+                                iconColor="text-amber-500"
+                                iconBg="bg-amber-500/10"
+                            />
+
+                            <KpiCard
+                                title="지급 완료"
+                                icon="paid"
+                                value={formatAmount(safeStats.totalPaidRefund)}
+                                subtitle="누적 현황"
+                                iconColor="text-emerald-500"
+                                iconBg="bg-emerald-500/10"
+                            />
+
+                            <KpiCard
+                                title="잔여 환불"
+                                icon="receipt_long"
+                                value={formatAmount(safeStats.totalRemainingRefund)}
+                                subtitle="예정 - 지급"
+                                iconColor={safeStats.totalRemainingRefund > 0 ? 'text-rose-500' : 'text-emerald-500'}
+                                iconBg={safeStats.totalRemainingRefund > 0 ? 'bg-rose-500/10' : 'bg-emerald-500/10'}
                             />
                         </div>
 
@@ -771,6 +807,10 @@ export default async function DashboardPage() {
 }
 
 // Keep components defined for later restoration
+function formatAmount(value: number) {
+    return `₩${Math.round(value).toLocaleString('ko-KR')}`;
+}
+
 function KpiCard({ title, icon, value, unit, trend, trendIcon, subtitle, iconColor, iconBg }: any) {
     return (
         <div className="group flex flex-col rounded-lg border border-border bg-card p-6 shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-300">
@@ -789,7 +829,7 @@ function KpiCard({ title, icon, value, unit, trend, trendIcon, subtitle, iconCol
             </div>
             <div className="flex items-baseline gap-2 mb-1">
                 <p className="text-3xl font-black text-foreground tracking-tighter">{value}</p>
-                <span className="text-base font-bold text-muted-foreground">{unit}</span>
+                {unit ? <span className="text-base font-bold text-muted-foreground">{unit}</span> : null}
             </div>
             <p className="text-[10px] font-bold text-muted-foreground/60">{subtitle}</p>
         </div>

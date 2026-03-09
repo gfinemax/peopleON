@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { MaterialIcon } from '@/components/ui/icon';
+import { formatSafeDateTime, formatSafeTime } from '@/lib/utils';
 import { SETTLEMENT_OPS_EVENT, type SettlementOpsEventDetail } from '@/components/features/settlements/opsEvents';
 
 type Severity = 'pass' | 'warn' | 'fail';
@@ -199,12 +200,11 @@ export function SettlementOpsChecklistCard() {
             )}
 
             {lastAction && (
-                <div className={`mt-2 rounded border px-2.5 py-2 text-[11px] ${
-                    lastAction.ok
+                <div className={`mt-2 rounded border px-2.5 py-2 text-[11px] ${lastAction.ok
                         ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
                         : 'border-amber-400/20 bg-amber-500/10 text-amber-200'
-                }`}>
-                    최근 실행: {actionLabel(lastAction.action)} · {lastAction.message || '-'} · {new Date(lastAction.at).toLocaleTimeString('ko-KR')}
+                    }`}>
+                    최근 실행: {actionLabel(lastAction.action)} · {lastAction.message || '-'} · {formatSafeTime(lastAction.at)}
                 </div>
             )}
 
@@ -217,7 +217,7 @@ export function SettlementOpsChecklistCard() {
                                 {opsStatus.latest_qa.overall.toUpperCase()} · 이슈 {opsStatus.latest_qa.issue_count}
                             </span>
                             <p className="mt-1 text-[10px] text-slate-500">
-                                {new Date(opsStatus.latest_qa.created_at).toLocaleString('ko-KR')}
+                                {formatSafeDateTime(opsStatus.latest_qa.created_at)}
                             </p>
                         </div>
                     ) : (
@@ -230,7 +230,7 @@ export function SettlementOpsChecklistCard() {
                     {opsStatus?.latest_sync ? (
                         <div className="mt-1 text-[10px] text-slate-300">
                             <p>업데이트 {opsStatus.latest_sync.updated_count}건</p>
-                            <p className="text-slate-500">{new Date(opsStatus.latest_sync.created_at).toLocaleString('ko-KR')}</p>
+                            <p className="text-slate-500">{formatSafeDateTime(opsStatus.latest_sync.created_at)}</p>
                         </div>
                     ) : (
                         <p className="mt-1 text-[10px] text-slate-500">실행 이력 없음</p>
@@ -241,7 +241,7 @@ export function SettlementOpsChecklistCard() {
                     <p className="text-[10px] text-slate-400">최근 권한/RLS 점검</p>
                     {opsStatus?.latest_probe ? (
                         <p className="mt-1 text-[10px] text-slate-300">
-                            {new Date(opsStatus.latest_probe.created_at).toLocaleString('ko-KR')}
+                            {formatSafeDateTime(opsStatus.latest_probe.created_at)}
                         </p>
                     ) : (
                         <p className="mt-1 text-[10px] text-slate-500">실행 이력 없음</p>
@@ -253,7 +253,7 @@ export function SettlementOpsChecklistCard() {
                     {opsStatus?.latest_case_create ? (
                         <div className="mt-1 text-[10px] text-slate-300">
                             <p>성공 {opsStatus.latest_case_create.created_count} / 실패 {opsStatus.latest_case_create.failed_count}</p>
-                            <p className="text-slate-500">{new Date(opsStatus.latest_case_create.created_at).toLocaleString('ko-KR')}</p>
+                            <p className="text-slate-500">{formatSafeDateTime(opsStatus.latest_case_create.created_at)}</p>
                         </div>
                     ) : (
                         <p className="mt-1 text-[10px] text-slate-500">실행 이력 없음</p>
@@ -266,7 +266,7 @@ export function SettlementOpsChecklistCard() {
                         <div className="mt-1 text-[10px] text-slate-300">
                             <p>금액 {Math.round(opsStatus.latest_payment.paid_amount).toLocaleString()}원</p>
                             <p className="text-slate-500">pay {shortToken(opsStatus.latest_payment.refund_payment_id)}</p>
-                            <p className="text-slate-500">{new Date(opsStatus.latest_payment.created_at).toLocaleString('ko-KR')}</p>
+                            <p className="text-slate-500">{formatSafeDateTime(opsStatus.latest_payment.created_at)}</p>
                         </div>
                     ) : (
                         <p className="mt-1 text-[10px] text-slate-500">실행 이력 없음</p>

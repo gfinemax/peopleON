@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MaterialIcon } from '@/components/ui/icon';
+import { formatSafeDateTime } from '@/lib/utils';
 
 type Severity = 'pass' | 'fail';
 
@@ -157,11 +158,10 @@ export function AccountingCompatReadyCard() {
             {payload?.config && (
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px]">
                     <span
-                        className={`rounded-full border px-2 py-1 font-bold ${
-                            payload.config.accounting_compat_only
+                        className={`rounded-full border px-2 py-1 font-bold ${payload.config.accounting_compat_only
                                 ? 'border-amber-400/30 bg-amber-500/10 text-amber-200'
                                 : 'border-slate-400/30 bg-slate-500/10 text-slate-300'
-                        }`}
+                            }`}
                     >
                         MODE {payload.config.accounting_compat_only ? 'COMPAT_ONLY ON' : 'FALLBACK ON'}
                     </span>
@@ -233,17 +233,16 @@ export function AccountingCompatReadyCard() {
                                         PASS {item.pass_checks} / FAIL {item.fail_checks}
                                     </span>
                                     {item.guard && (
-                                        <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${
-                                            item.guard === 'danger'
+                                        <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${item.guard === 'danger'
                                                 ? 'border-rose-400/20 bg-rose-500/10 text-rose-200'
                                                 : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
-                                        }`}>
+                                            }`}>
                                             {item.guard.toUpperCase()}
                                         </span>
                                     )}
                                 </div>
                                 <span className="text-[10px] text-slate-500">
-                                    {new Date(item.created_at).toLocaleString('ko-KR')}
+                                    {formatSafeDateTime(item.created_at)}
                                 </span>
                             </div>
                         </div>

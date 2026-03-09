@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { MaterialIcon } from '@/components/ui/icon';
+import { formatSafeDateTime } from '@/lib/utils';
 
 type Severity = 'pass' | 'warn' | 'fail';
 
@@ -120,7 +121,7 @@ export function SettlementAlertCenterCard() {
                                 <p className="text-[11px] font-semibold text-slate-100">{item.reason}</p>
                             </div>
                             <span className="text-[10px] text-slate-500">
-                                {new Date(item.created_at).toLocaleString('ko-KR')}
+                                {formatSafeDateTime(item.created_at)}
                             </span>
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px]">

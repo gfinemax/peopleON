@@ -12,6 +12,7 @@ import React from 'react';
 import { getUnifiedMembers, UnifiedPerson, normalizeText } from '@/services/memberAggregation';
 
 export const dynamic = 'force-dynamic';
+const TOTAL_HOUSEHOLDS = 254;
 
 type MembersSearchParams = {
     q?: string;
@@ -285,8 +286,25 @@ export default async function MembersPage({
     const totalPaidRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_paid, 0);
     const totalRemainingRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_remaining, 0);
     const registeredCount = unifiedPeople.filter(p => p.is_registered).length;
-    const certificateHolderCount = unifiedPeople.filter(p => p.role_types.includes('certificate_holder')).length;
-    const relatedPartyCount = unifiedPeople.filter(p => p.role_types.includes('related_party')).length;
+    const allCertificateNumbers = new Set<string>();
+    const memberCertificateNumbers = new Set<string>();
+    for (const person of unifiedPeople) {
+        const uniqueNumbers = person.certificate_numbers || [];
+        for (const certificateNumber of uniqueNumbers) {
+            allCertificateNumbers.add(certificateNumber);
+            if (person.is_registered) {
+                memberCertificateNumbers.add(certificateNumber);
+            }
+        }
+    }
+    const registeredCertificateHolderCount = memberCertificateNumbers.size;
+    const certificateTotalCount = allCertificateNumbers.size;
+    const refundCertificateCount = Math.max(certificateTotalCount - registeredCertificateHolderCount, 0);
+    const additionalRecruitmentCount = Math.max(TOTAL_HOUSEHOLDS - registeredCount, 0);
+    const relationPeople = unifiedPeople.filter(p => p.role_types.includes('agent') || p.role_types.includes('related_party'));
+    const agentCount = relationPeople.filter(p => p.role_types.includes('agent')).length;
+    const relationOtherCount = relationPeople.filter(p => !p.role_types.includes('agent') && p.role_types.includes('related_party')).length;
+    const relationPeopleCount = agentCount + relationOtherCount;
 
     const statusCounts: Record<string, number> = {};
     for (const p of unifiedPeople) {
@@ -360,14 +378,27 @@ export default async function MembersPage({
             <DashboardManager
                 kpiSection={(
                     <MembersKpiStrip
-                        items={[
-                            { label: '등기 조합원', value: `${registeredCount.toLocaleString()}명`, icon: 'badge', tone: 'default', hint: 'is_registered=true' },
-                            { label: '권리증 보유', value: `${certificateHolderCount.toLocaleString()}명`, icon: 'folder', tone: 'default', hint: '중복 병합 완료' },
-                            { label: '관계인', value: `${relatedPartyCount.toLocaleString()}명`, icon: 'groups_2', tone: 'default', hint: '대리인 포함' },
-                            { label: '환불 예정', value: formatAmount(totalExpectedRefund), icon: 'account_balance_wallet', tone: 'warn', hint: '세입자 제외' },
-                            { label: '지급 완료', value: formatAmount(totalPaidRefund), icon: 'paid', tone: 'positive', hint: '누적 현황' },
-                            { label: '잔여 환불', value: formatAmount(totalRemainingRefund), icon: 'receipt_long', tone: totalRemainingRefund > 0 ? 'danger' : 'positive', hint: '예정 - 지급' },
-                        ]}
+                        households={{
+                            total: TOTAL_HOUSEHOLDS,
+                            members: registeredCount,
+                            recruitmentTarget: additionalRecruitmentCount,
+                        }}
+                        certificates={{
+                            total: certificateTotalCount,
+                            memberHeld: registeredCertificateHolderCount,
+                            externalHeld: refundCertificateCount,
+                            refundEligible: refundCertificateCount,
+                        }}
+                        relations={{
+                            total: relationPeopleCount,
+                            agents: agentCount,
+                            others: relationOtherCount,
+                        }}
+                        financials={{
+                            expected: totalExpectedRefund,
+                            paid: totalPaidRefund,
+                            remaining: totalRemainingRefund,
+                        }}
                     />
                 )}
                 qualitySection={(

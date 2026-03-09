@@ -16,6 +16,9 @@ export interface DashboardStats {
     recentRegisteredCount?: number;
     certificateHolderCount?: number;
     relatedPartyCount?: number;
+    totalExpectedRefund?: number;
+    totalPaidRefund?: number;
+    totalRemainingRefund?: number;
 }
 
 export interface DashboardEvent {
@@ -38,6 +41,8 @@ interface MobileDashboardProps {
     events: DashboardEvent[];
     paymentBreakdown?: PaymentBreakdown;
 }
+
+const formatAmount = (value?: number) => `₩${Math.round(value || 0).toLocaleString('ko-KR')}`;
 
 export function MobileDashboard({ stats, events, paymentBreakdown }: MobileDashboardProps) {
     return (
@@ -140,6 +145,49 @@ export function MobileDashboard({ stats, events, paymentBreakdown }: MobileDashb
                             <div className="flex items-baseline gap-1.5">
                                 <p className="text-2xl font-black text-foreground tracking-tight">{stats.relatedPartyCount?.toLocaleString() || 0}</p>
                                 <span className="text-[10px] font-bold text-muted-foreground">명</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden">
+                        <div className="absolute right-0 top-0 h-full w-1 bg-amber-500"></div>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <MaterialIcon name="account_balance_wallet" size="sm" className="text-amber-500" />
+                                <span className="text-xs font-bold">환불 예정</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                                <p className="text-lg font-black text-foreground tracking-tight">{formatAmount(stats.totalExpectedRefund)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden">
+                        <div className="absolute right-0 top-0 h-full w-1 bg-emerald-500"></div>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <MaterialIcon name="paid" size="sm" className="text-emerald-500" />
+                                <span className="text-xs font-bold">지급 완료</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                                <p className="text-lg font-black text-foreground tracking-tight">{formatAmount(stats.totalPaidRefund)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-card p-3 rounded-xl shadow-sm border border-border/50 flex flex-col justify-center h-20 relative overflow-hidden">
+                        <div className={`absolute right-0 top-0 h-full w-1 ${((stats.totalRemainingRefund || 0) > 0) ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <MaterialIcon
+                                    name="receipt_long"
+                                    size="sm"
+                                    className={(stats.totalRemainingRefund || 0) > 0 ? 'text-rose-500' : 'text-emerald-500'}
+                                />
+                                <span className="text-xs font-bold">잔여 환불</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                                <p className="text-lg font-black text-foreground tracking-tight">{formatAmount(stats.totalRemainingRefund)}</p>
                             </div>
                         </div>
                     </div>

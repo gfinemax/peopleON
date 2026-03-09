@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
-import { cn } from '@/lib/utils';
+import { cn, formatSafeDateTime } from '@/lib/utils';
 import Image from 'next/image';
 
 interface InteractionLog {
@@ -68,7 +68,7 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
                                     d.type === 'REPAIR' ? '수리 건' : '기타 메모',
                     summary: d.summary || '',
                     staff_name: d.staff_name,
-                    created_at: new Date(d.created_at).toLocaleString('ko-KR'),
+                    created_at: formatSafeDateTime(d.created_at),
                     attachment: null
                 }));
 

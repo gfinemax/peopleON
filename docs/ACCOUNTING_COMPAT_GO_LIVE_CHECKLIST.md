@@ -1,5 +1,7 @@
 # peopleON 회계 Compat 운영 전환 체크리스트
 
+![1772889868690](image/ACCOUNTING_COMPAT_GO_LIVE_CHECKLIST/1772889868690.png)
+
 ## 0) 목적
 - `legacy -> compat` 읽기 전환을 안전하게 실행하고, 이상 시 즉시 롤백하기 위한 실무 체크리스트입니다.
 - 기준 플래그: `ACCOUNTING_COMPAT_ONLY`
@@ -61,4 +63,3 @@
   - 전환 직후 PASS 화면
 - `CSV 내보내기` 파일 1개 저장
 - 필요 시 `/api/accounting/compat-history?limit=6` 결과 캡처
-

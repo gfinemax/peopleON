@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { MaterialIcon } from '@/components/ui/icon';
+import { formatSafeDateTime } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -187,7 +188,7 @@ export function SettlementQaRunCard() {
                         <span className="text-amber-200">WARN {report.summary.warn_checks}</span>
                         <span className="text-rose-200">FAIL {report.summary.fail_checks}</span>
                         <span className="text-slate-400">
-                            실행시각 {new Date(report.generated_at).toLocaleString('ko-KR')}
+                            실행시각 {formatSafeDateTime(report.generated_at)}
                         </span>
                         {report.audit_logged === false && (
                             <span className="text-rose-300">이력 저장 실패</span>
@@ -242,7 +243,7 @@ export function SettlementQaRunCard() {
                                     </span>
                                 </div>
                                 <span className="text-[10px] text-slate-500">
-                                    {new Date(item.created_at).toLocaleString('ko-KR')}
+                                    {formatSafeDateTime(item.created_at)}
                                 </span>
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px]">
@@ -264,7 +265,7 @@ export function SettlementQaRunCard() {
                         <DialogTitle className="text-base font-extrabold">QA 실행 스냅샷</DialogTitle>
                         <DialogDescription className="text-slate-400">
                             {selectedHistory
-                                ? `실행시각 ${new Date(selectedHistory.created_at).toLocaleString('ko-KR')} · actor ${selectedHistory.actor}`
+                                ? `실행시각 ${formatSafeDateTime(selectedHistory.created_at)} · actor ${selectedHistory.actor}`
                                 : ''}
                         </DialogDescription>
                     </DialogHeader>

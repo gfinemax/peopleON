@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
-import { cn } from '@/lib/utils';
+import { cn, formatSafeDate } from '@/lib/utils';
 import { InteractionLog } from '@/components/features/timeline/TimelineItem';
 import { MemberDetailRightPanel } from '@/components/features/members/MemberDetailRightPanel';
 
@@ -62,8 +62,7 @@ function formatKRW(value: number): string {
 }
 
 function formatDate(value?: string | null): string {
-    if (!value) return '-';
-    return new Date(value).toLocaleDateString('ko-KR');
+    return formatSafeDate(value);
 }
 
 export default async function MemberDetailPage({
@@ -218,7 +217,7 @@ export default async function MemberDetailPage({
                         {/* 1. Page Breadcrumbs for Mobile/Tablet context - REPLACED with Recent Activity */}
                         <h2 className="text-xl font-extrabold tracking-tight text-foreground mb-1">활동 및 상세 정보</h2>
                         <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/40 uppercase tracking-wide mb-2 transition-opacity hover:opacity-100 opacity-60">
-                            <span>최근 활동: <span className="text-foreground">{logs[0]?.created_at ? new Date(logs[0].created_at).toLocaleDateString() : '2023-10-25'} (전화 상담)</span></span>
+                            <span>최근 활동: <span className="text-foreground">{logs[0]?.created_at ? formatSafeDate(logs[0].created_at) : '2023-10-25'} (전화 상담)</span></span>
                         </div>
 
                         {/* 2. Main Profile Card */}
@@ -310,67 +309,69 @@ export default async function MemberDetailPage({
                                 )}
                             </div>
 
-                            {!settlementCase ? (
-                                <div className="rounded-lg border border-dashed border-border/40 bg-muted/5 p-4 text-xs font-medium text-muted-foreground">
-                                    생성된 정산 케이스가 없습니다.
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <SettlementSummaryRow
-                                        label="최종 환불 예정"
-                                        value={formatKRW(normalizedFinalRefundAmount)}
-                                        emphasis
-                                    />
-                                    <SettlementSummaryRow
-                                        label="권리증 기준 환불"
-                                        value={formatKRW(certBaseAmount)}
-                                    />
-                                    <SettlementSummaryRow
-                                        label="인정 프리미엄"
-                                        value={formatKRW(premiumAmount)}
-                                    />
-                                    <SettlementSummaryRow
-                                        label="출자금 + 차입금"
-                                        value={formatKRW(capitalAmount + debtAmount)}
-                                    />
-                                    <SettlementSummaryRow
-                                        label="매몰비용 차감"
-                                        value={formatKRW(Math.abs(rawLossAmount))}
-                                        muted
-                                    />
-                                    <SettlementSummaryRow
-                                        label="기지급 차감"
-                                        value={formatKRW(Math.abs(rawAlreadyPaidAmount))}
-                                        muted
-                                    />
-                                    <SettlementSummaryRow
-                                        label="요청 지급액"
-                                        value={formatKRW(requestedPaymentAmount)}
-                                        muted
-                                    />
+                            {
+                                !settlementCase ? (
+                                    <div className="rounded-lg border border-dashed border-border/40 bg-muted/5 p-4 text-xs font-medium text-muted-foreground">
+                                        생성된 정산 케이스가 없습니다.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <SettlementSummaryRow
+                                            label="최종 환불 예정"
+                                            value={formatKRW(normalizedFinalRefundAmount)}
+                                            emphasis
+                                        />
+                                        <SettlementSummaryRow
+                                            label="권리증 기준 환불"
+                                            value={formatKRW(certBaseAmount)}
+                                        />
+                                        <SettlementSummaryRow
+                                            label="인정 프리미엄"
+                                            value={formatKRW(premiumAmount)}
+                                        />
+                                        <SettlementSummaryRow
+                                            label="출자금 + 차입금"
+                                            value={formatKRW(capitalAmount + debtAmount)}
+                                        />
+                                        <SettlementSummaryRow
+                                            label="매몰비용 차감"
+                                            value={formatKRW(Math.abs(rawLossAmount))}
+                                            muted
+                                        />
+                                        <SettlementSummaryRow
+                                            label="기지급 차감"
+                                            value={formatKRW(Math.abs(rawAlreadyPaidAmount))}
+                                            muted
+                                        />
+                                        <SettlementSummaryRow
+                                            label="요청 지급액"
+                                            value={formatKRW(requestedPaymentAmount)}
+                                            muted
+                                        />
 
-                                    <div className="pt-3 border-t border-border/30 space-y-2">
-                                        <div className="flex items-center justify-between text-[11px] font-bold">
-                                            <span className="text-muted-foreground uppercase tracking-wider">지급 진행률</span>
-                                            <span className="text-foreground font-mono">{payoutRate.toFixed(0)}%</span>
+                                        <div className="pt-3 border-t border-border/30 space-y-2">
+                                            <div className="flex items-center justify-between text-[11px] font-bold">
+                                                <span className="text-muted-foreground uppercase tracking-wider">지급 진행률</span>
+                                                <span className="text-foreground font-mono">{payoutRate.toFixed(0)}%</span>
+                                            </div>
+                                            <div className="h-2 w-full rounded-full bg-muted/20 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-all"
+                                                    style={{ width: `${payoutRate}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-[11px] font-semibold">
+                                                <span className="text-muted-foreground">지급완료 {formatKRW(paidPaymentAmount)}</span>
+                                                <span className="text-muted-foreground">잔여 {formatKRW(remainingAmount)}</span>
+                                            </div>
                                         </div>
-                                        <div className="h-2 w-full rounded-full bg-muted/20 overflow-hidden">
-                                            <div
-                                                className="h-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-all"
-                                                style={{ width: `${payoutRate}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between text-[11px] font-semibold">
-                                            <span className="text-muted-foreground">지급완료 {formatKRW(paidPaymentAmount)}</span>
-                                            <span className="text-muted-foreground">잔여 {formatKRW(remainingAmount)}</span>
+
+                                        <div className="pt-3 border-t border-border/30 text-[11px] text-muted-foreground font-semibold">
+                                            최근 케이스 생성일: {formatDate(settlementCase.created_at)}
                                         </div>
                                     </div>
-
-                                    <div className="pt-3 border-t border-border/30 text-[11px] text-muted-foreground font-semibold">
-                                        최근 케이스 생성일: {formatDate(settlementCase.created_at)}
-                                    </div>
-                                </div>
-                            )}
+                                )
+                            }
                         </div>
                     </div>
 
@@ -432,4 +433,3 @@ function ProfileInfoItem({
         </div>
     );
 }
-

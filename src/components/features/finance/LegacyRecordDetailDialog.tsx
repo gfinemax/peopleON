@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { MaterialIcon } from '@/components/ui/icon';
-import { cn } from '@/lib/utils';
+import { cn, formatSafeDateTime } from '@/lib/utils';
 import { extractCertificateNumbers } from '@/lib/legacy/certificateNumbers';
 
 interface LegacyRecord {
@@ -280,7 +280,7 @@ export function LegacyRecordDetailDialog({
                                                     <InfoRow icon="link" label="조합원 매칭" value={record.member_id ? "매칭 완료 (회원 ID 연동됨)" : "매칭되지 않음 (미가입/탈퇴)"} />
                                                     <InfoRow icon="confirmation_number" label="권리증 번호 기준 보유 수" value={`${certificateNumbers.length}개`} />
                                                     <InfoRow icon="database" label="DB 저장 보유 수(rights_count)" value={`${record.rights_count || 0}개`} />
-                                                    <InfoRow icon="schedule" label="데이터 생성일" value={new Date(record.created_at).toLocaleString()} />
+                                                    <InfoRow icon="schedule" label="데이터 생성일" value={formatSafeDateTime(record.created_at)} />
                                                 </div>
                                             </div>
 

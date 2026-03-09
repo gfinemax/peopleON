@@ -2,7 +2,7 @@
 
 import { MaterialIcon } from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, formatSafeDate } from '@/lib/utils';
 import { useState } from 'react';
 
 interface AssetRight {
@@ -88,7 +88,7 @@ export function AssetRightsCard({ rights }: { rights: AssetRight[] }) {
                                 <div className="px-6 pb-8 pl-[4.5rem] animate-in slide-in-from-top-2 fade-in duration-200">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/20 rounded-lg p-5 border border-border/30">
                                         <DetailRow label="필증 성명" value={right.meta.cert_name || right.meta.registered_name || '-'} />
-                                        <DetailRow label="발행일" value={right.issued_at ? new Date(right.issued_at).toLocaleDateString() : '-'} />
+                                        <DetailRow label="발행일" value={formatSafeDate(right.issued_at)} />
                                         <DetailRow label="필지 정보" value={right.land_lot_info || '-'} />
                                         <DetailRow label="취득 경로" value={right.meta.source || '-'} />
                                         {Object.entries(right.meta).map(([k, v]) => {
