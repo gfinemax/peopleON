@@ -19,12 +19,6 @@ type RelationBlock = {
     others: number;
 };
 
-type FinancialBlock = {
-    expected: number;
-    paid: number;
-    remaining: number;
-};
-
 type Segment = {
     label: string;
     value: number;
@@ -36,7 +30,6 @@ interface MembersKpiStripProps {
     households: SummaryBlock;
     certificates: CertificateBlock;
     relations: RelationBlock;
-    financials: FinancialBlock;
 }
 
 function ratio(value: number, total: number) {
@@ -46,10 +39,6 @@ function ratio(value: number, total: number) {
 
 function formatCount(value: number, unit: string) {
     return `${value.toLocaleString()}${unit}`;
-}
-
-function formatAmount(value: number) {
-    return `₩${Math.round(value).toLocaleString('ko-KR')}`;
 }
 
 function DonutChart({
@@ -176,7 +165,7 @@ function CompactDonutCard({
     );
 }
 
-export function MembersKpiStrip({ households, certificates, relations, financials }: MembersKpiStripProps) {
+export function MembersKpiStrip({ households, certificates, relations }: MembersKpiStripProps) {
     const householdSegments: Segment[] = [
         { label: '조합원', value: households.members, colorClass: 'bg-sky-400', stroke: '#38bdf8' },
         { label: '추가모집 예정', value: households.recruitmentTarget, colorClass: 'bg-amber-400', stroke: '#fbbf24' },
@@ -204,9 +193,6 @@ export function MembersKpiStrip({ households, certificates, relations, financial
                     pillText={`조합원 ${ratio(households.members, households.total)}%`}
                     pillClassName="border-sky-400/20 bg-sky-500/10 text-sky-200"
                     segments={householdSegments}
-                    summaryRows={[
-                        { label: '추가 모집 필요', value: formatCount(households.recruitmentTarget, '세대') },
-                    ]}
                 />
 
                 <CompactDonutCard
@@ -218,11 +204,6 @@ export function MembersKpiStrip({ households, certificates, relations, financial
                     pillText={`환불 권리증 ${formatCount(certificates.refundEligible, '건')}`}
                     pillClassName="border-violet-400/20 bg-violet-500/10 text-violet-200"
                     segments={certificateSegments}
-                    summaryRows={[
-                        { label: '환불 예정', value: formatAmount(financials.expected) },
-                        { label: '지급 완료', value: formatAmount(financials.paid) },
-                        { label: '잔여 환불', value: formatAmount(financials.remaining) },
-                    ]}
                 />
 
                 <CompactDonutCard

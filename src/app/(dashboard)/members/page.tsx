@@ -394,11 +394,6 @@ export default async function MembersPage({
                             agents: agentCount,
                             others: relationOtherCount,
                         }}
-                        financials={{
-                            expected: totalExpectedRefund,
-                            paid: totalPaidRefund,
-                            remaining: totalRemainingRefund,
-                        }}
                     />
                 )}
                 qualitySection={(
