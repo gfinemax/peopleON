@@ -1,4 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import {
+    getCertificateDisplayText,
+    getCertificateSearchTokens,
+    getConfirmedCertificateNumbers,
+} from '@/lib/certificates/rightNumbers';
 
 export type RoleType = 'member' | 'certificate_holder' | 'related_party' | 'refund_applicant' | 'agent';
 
@@ -9,8 +14,9 @@ export type UnifiedPerson = {
     member_id: string | null;
     party_id: string | null;
     name: string;
-    member_number: string | null;
+    certificate_display?: string | null;
     certificate_numbers?: string[];
+    certificate_search_tokens?: string[];
     phone: string | null;
     tier: string | null;
     status: string | null;
@@ -40,29 +46,6 @@ export type UnifiedPerson = {
 export const normalizeText = (value?: string | null) => (value || '').replace(/\s+/g, '').toLowerCase();
 export const normalizePhone = (value?: string | null) => (value || '').replace(/\D/g, '');
 const normalizeCertificateNumber = (value: string) => value.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/[\s]/g, '').toLowerCase();
-const extractCurrentCertificateNumber = (value?: string | null) => {
-    const raw = (value || '').trim();
-    if (!raw || raw === '-') return null;
-
-    const stripped = raw.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ').trim();
-    const patterns = [
-        /(\d{4}-\d{1,2}-\d+)/,
-        /(\d{4}\.\d{1,2}\.\d+)/,
-        /(\d{4}\/\d{1,2}\/\d+)/,
-        /(\d{4}[-./]특[-./]?\d+)/,
-    ];
-
-    for (const pattern of patterns) {
-        const match = stripped.match(pattern);
-        if (!match) continue;
-        const normalized = match[1].replace(/[./]/g, '-').replace(/\s+/g, '');
-        if (normalized.startsWith('19')) return null;
-        if (/^\d{4}\.\d{2}\.\d{2}$/.test(raw)) return null;
-        return normalized;
-    }
-
-    return null;
-};
 
 const isLikelyPersonName = (value?: string | null) => {
     const candidate = (value || '').trim().replace(/\s+/g, '');
@@ -167,13 +150,14 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
     const [entitiesRes, rolesRes, rightsRes, casesRes, relsRes] = await Promise.all([
         supabase
             .from('account_entities')
-            .select('id, entity_type, display_name, phone, member_number, address_legal, unit_group, memo, is_favorite, tags, email, meta, status'),
+            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, email, meta, status'),
         supabase
             .from('membership_roles')
             .select('id, entity_id, role_code, role_status, is_registered'),
         supabase
-            .from('asset_rights')
-            .select('id, entity_id, right_type, right_number'),
+            .from('certificate_registry')
+            .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count')
+            .eq('is_active', true),
         supabase
             .from('settlement_cases')
             .select('id, entity_id, case_status, created_at')
@@ -196,7 +180,17 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
 
     const entities = (entitiesRes.data as any[] | null) || [];
     const roles = (rolesRes.data as any[] | null) || [];
-    const rights = (rightsRes.data as any[] | null) || [];
+    const rightsRaw = (rightsRes.data as any[] | null) || [];
+    const rights = rightsRaw.map(r => ({
+        id: r.id,
+        entity_id: r.entity_id,
+        right_type: 'certificate',
+        right_number: r.certificate_number_normalized,
+        right_number_raw: r.certificate_number_raw,
+        right_number_status: r.certificate_status,
+        right_number_note: r.note,
+        is_confirmed_for_count: r.is_confirmed_for_count
+    }));
     const settlementCases = (casesRes.data as any[] | null) || [];
     const relationsList = (relsRes?.data as any[] | null) || [];
 
@@ -366,58 +360,22 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         }
 
         const entityRights = rightsByEntity.get(entity.id) || [];
-        const certNumbers = entityRights
-            .filter(r => r.right_type === 'certificate')
-            .map(r => r.right_number?.trim())
-            .filter(Boolean) as string[];
-
-        const actualNumsByNormKey = new Map<string, string>();
-        const addActualNum = (raw: string) => {
-            const extracted = extractCurrentCertificateNumber(raw);
-            if (!extracted) return;
-            const key = normalizeCertificateNumber(extracted);
-            const existing = actualNumsByNormKey.get(key);
-            if (!existing || extracted.length > existing.length) {
-                actualNumsByNormKey.set(key, extracted);
-            }
-        };
-        const displayNumsByNormKey = new Map<string, string>();
-        const addDisplayNum = (raw: string) => {
-            const clean = raw.replace(/\s?외\s?\d+건/, '').trim();
-            if (!clean || clean === '-') return;
-            const key = normalizeCertificateNumber(clean);
-            const existing = displayNumsByNormKey.get(key);
-            if (!existing || clean.length > existing.length) {
-                displayNumsByNormKey.set(key, clean);
-            }
-        };
+        const certificateNumbers = getConfirmedCertificateNumbers(entityRights);
+        const certificateDisplay = getCertificateDisplayText(entityRights, { includeFallbackStatus: true });
+        const certificateSearchTokens = getCertificateSearchTokens(entityRights);
 
         const isDateLike = (v: string): boolean => {
             const s = v.trim();
-            // Stricter check: only match YYYY[.-]MM[.-]DD where MM and DD are explicitly 2 digits
-            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{2})[\.\-](\d{2})$/);
+            const m = s.match(/^(19[2-9]\d)[\.\-](\d{2})[\.\-](\d{2})$/);
             if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
 
-            // Allow YYYYMMDD format
-            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            const m2 = s.match(/^(19[2-9]\d)(\d{2})(\d{2})$/);
             if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
 
             return false;
         };
 
-        const realCertNumbers = certNumbers.filter(cn => !isDateLike(cn));
-        const dateLikeCertNumbers = certNumbers.filter(cn => isDateLike(cn));
-
-        if (realCertNumbers.length > 0) {
-            realCertNumbers.forEach(cn => {
-                addActualNum(cn);
-                const extracted = extractCurrentCertificateNumber(cn);
-                if (extracted) addDisplayNum(extracted);
-            });
-        } else {
-            const mainNum = sanitizeNumber(entity.member_number);
-            if (mainNum) addDisplayNum(mainNum);
-        }
+        const dateLikeCertNumbers = certificateSearchTokens.filter(cn => isDateLike(cn));
 
         let derivedBirthDate = entity.birth_date;
         if (!derivedBirthDate && dateLikeCertNumbers.length > 0) {
@@ -428,10 +386,8 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             }
         }
 
-        const displayMemberNumber = displayNumsByNormKey.size > 0 ? Array.from(displayNumsByNormKey.values()).join(', ') : '-';
-        const hasLiveCertData = certNumbers.length > 0;
-
-        const hasNumericCert = displayMemberNumber !== '-' && displayMemberNumber !== '';
+        const hasLiveCertData = entityRights.some((right: any) => right.right_type === 'certificate');
+        const hasNumericCert = certificateNumbers.length > 0;
         if (roleTypes.has('certificate_holder')) {
             if (hasNumericCert) {
                 tiers.push('권리증번호있음');
@@ -447,8 +403,9 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             member_id: entity.id,
             party_id: entity.id,
             name: entity.display_name,
-            member_number: displayMemberNumber,
-            certificate_numbers: Array.from(actualNumsByNormKey.values()),
+            certificate_display: certificateDisplay,
+            certificate_numbers: certificateNumbers,
+            certificate_search_tokens: certificateSearchTokens,
             birth_date: derivedBirthDate,
             phone: entity.phone,
             tier,
@@ -511,9 +468,50 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         }
     }
 
+    const mergeCertificateNumbers = (left: string[] | undefined, right: string[] | undefined) => {
+        const mergedCertificateNumbers = new Map<string, string>();
+        for (const number of [...(left || []), ...(right || [])]) {
+            const key = normalizeCertificateNumber(number);
+            const previous = mergedCertificateNumbers.get(key);
+            if (!previous || number.length > previous.length) mergedCertificateNumbers.set(key, number);
+        }
+        return Array.from(mergedCertificateNumbers.values());
+    };
+
+    const mergeCertificateTokens = (left: string[] | undefined, right: string[] | undefined) =>
+        Array.from(new Set([...(left || []), ...(right || [])].filter(Boolean)));
+
+    const mergeRelationships = (
+        left: { id?: string; name: string; relation: string; phone?: string }[] | null | undefined,
+        right: { id?: string; name: string; relation: string; phone?: string }[] | null | undefined,
+    ) => {
+        const merged = new Map<string, { id?: string; name: string; relation: string; phone?: string }>();
+        for (const relation of [...(left || []), ...(right || [])]) {
+            const key = `${relation.id || relation.name}|${relation.relation}`;
+            if (!merged.has(key)) merged.set(key, relation);
+        }
+        return Array.from(merged.values());
+    };
+
+    const finalizeCertificateFields = (person: UnifiedPerson) => {
+        const uniqueNumbers = mergeCertificateNumbers([], person.certificate_numbers);
+        person.certificate_numbers = uniqueNumbers;
+
+        if (uniqueNumbers.length > 1) {
+            person.certificate_display = `${uniqueNumbers[0]} 외 ${uniqueNumbers.length - 1}건`;
+        } else if (uniqueNumbers.length === 1) {
+            person.certificate_display = uniqueNumbers[0];
+        } else if (!person.certificate_display || person.certificate_display === '-') {
+            person.certificate_display = '-';
+        }
+
+        person.certificate_search_tokens = mergeCertificateTokens(person.certificate_search_tokens, uniqueNumbers);
+    };
+
     const unifiedPeople: UnifiedPerson[] = [];
     for (const group of peopleByName.values()) {
         if (group.length === 1) {
+            finalizeCertificateFields(group[0]);
             unifiedPeople.push(group[0]);
             continue;
         }
@@ -543,59 +541,17 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
 
         processPhone(target.phone);
 
-        const groupHasLiveCertData = group.some((g: any) => g._hasLiveCertData);
-
-        if (groupHasLiveCertData && !target._hasLiveCertData) {
-            target.member_number = '-';
-        }
-
         for (let i = 1; i < group.length; i++) {
             const p = group[i];
             target.tiers = Array.from(new Set([...(target.tiers || []), ...(p.tiers || [])]));
             target.role_types = Array.from(new Set([...target.role_types, ...p.role_types]));
             target.tier = target.tiers[0];
-
-            if (groupHasLiveCertData && !(p as any)._hasLiveCertData) {
-                // Don't merge stale member_number
-            } else if (p.member_number && p.member_number !== '-') {
-                const normKey = (s: string) => normalizeCertificateNumber(s.replace(/\s?외\s?\d+건/, '').trim());
-                const existingParts = (target.member_number === '-' ? '' : (target.member_number || ''))
-                    .split(',').map(s => s.replace(/\s?외\s?\d+건/, '').trim()).filter(Boolean);
-                const incomingParts = p.member_number
-                    .split(',').map(s => s.replace(/\s?외\s?\d+건/, '').trim()).filter(Boolean);
-
-                const merged = new Map<string, string>();
-                for (const part of [...existingParts, ...incomingParts]) {
-                    const key = normKey(part);
-                    const prev = merged.get(key);
-                    if (!prev || part.length > prev.length) merged.set(key, part);
-                }
-                target.member_number = merged.size > 0 ? Array.from(merged.values()).join(', ') : '-';
-
-                if (incomingParts.some(cn => {
-                    const t = cn.trim();
-                    if (!/\d/.test(t)) return false;
-                    if (/^\d{4}\.\d{2}\.\d{2}$/.test(t)) return false;
-                    if (/^19\d{2,}$/.test(t)) return false;
-                    return true;
-                })) {
-                    if (target.role_types.includes('certificate_holder')) {
-                        if (!target.tiers.includes('권리증번호있음')) {
-                            target.tiers.push('권리증번호있음');
-                            target.tiers = target.tiers.filter(t => t !== '권리증번호없음');
-                        }
-                    }
-                }
+            if ((!target.certificate_display || target.certificate_display === '-') && p.certificate_display && p.certificate_display !== '-') {
+                target.certificate_display = p.certificate_display;
             }
-            if (!(groupHasLiveCertData && !(p as any)._hasLiveCertData) && p.certificate_numbers && p.certificate_numbers.length > 0) {
-                const mergedCertificateNumbers = new Map<string, string>();
-                for (const number of [...(target.certificate_numbers || []), ...p.certificate_numbers]) {
-                    const key = normalizeCertificateNumber(number);
-                    const previous = mergedCertificateNumbers.get(key);
-                    if (!previous || number.length > previous.length) mergedCertificateNumbers.set(key, number);
-                }
-                target.certificate_numbers = Array.from(mergedCertificateNumbers.values());
-            }
+            target.certificate_numbers = mergeCertificateNumbers(target.certificate_numbers, p.certificate_numbers);
+            target.certificate_search_tokens = mergeCertificateTokens(target.certificate_search_tokens, p.certificate_search_tokens);
+            target.relationships = mergeRelationships(target.relationships, p.relationships);
             if (p.is_registered) target.is_registered = true;
             if (!target.birth_date && p.birth_date) target.birth_date = p.birth_date;
 
@@ -630,14 +586,11 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
                     target.entity_ids = Array.from(new Set([...target.entity_ids, np.id]));
                     target.tiers = Array.from(new Set([...(target.tiers || []), ...(np.tiers || [])]));
                     target.role_types = Array.from(new Set([...target.role_types, ...np.role_types]));
-                    if (np.certificate_numbers && np.certificate_numbers.length > 0) {
-                        const mergedCertificateNumbers = new Map<string, string>();
-                        for (const number of [...(target.certificate_numbers || []), ...np.certificate_numbers]) {
-                            const key = normalizeCertificateNumber(number);
-                            const previous = mergedCertificateNumbers.get(key);
-                            if (!previous || number.length > previous.length) mergedCertificateNumbers.set(key, number);
-                        }
-                        target.certificate_numbers = Array.from(mergedCertificateNumbers.values());
+                    target.certificate_numbers = mergeCertificateNumbers(target.certificate_numbers, np.certificate_numbers);
+                    target.certificate_search_tokens = mergeCertificateTokens(target.certificate_search_tokens, np.certificate_search_tokens);
+                    target.relationships = mergeRelationships(target.relationships, np.relationships);
+                    if ((!target.certificate_display || target.certificate_display === '-') && np.certificate_display && np.certificate_display !== '-') {
+                        target.certificate_display = np.certificate_display;
                     }
                     if (np.acts_as_agent_for) {
                         target.acts_as_agent_for = [...(target.acts_as_agent_for || []), ...np.acts_as_agent_for];
@@ -656,35 +609,10 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             }
         }
 
-        if (target.member_number && target.member_number !== '-') {
-            const normKey = (s: string) => s.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/[\s]/g, '').toLowerCase();
-            const nums = target.member_number.split(',')
-                .map(s => {
-                    let text = s.trim();
-                    const sufIdx = text.indexOf(' 외 ');
-                    if (sufIdx > -1) text = text.substring(0, sufIdx).trim();
-                    return text;
-                })
-                .filter(Boolean);
-
-            const deduped = new Map<string, string>();
-            for (const n of nums) {
-                const key = normKey(n);
-                const prev = deduped.get(key);
-                if (!prev || n.length > prev.length) deduped.set(key, n);
-            }
-            const uniqueNums = Array.from(deduped.values());
-            if (uniqueNums.length > 1) {
-                target.member_number = `${uniqueNums[0]} 외 ${uniqueNums.length - 1}건`;
-            } else if (uniqueNums.length === 1) {
-                target.member_number = uniqueNums[0];
-            } else {
-                target.member_number = '-';
-            }
-        }
+        finalizeCertificateFields(target);
 
         if (target.role_types.includes('certificate_holder') && target.tiers) {
-            const hasFinalCertNumber = target.member_number && target.member_number !== '-' && target.member_number !== '';
+            const hasFinalCertNumber = (target.certificate_numbers || []).length > 0;
             if (hasFinalCertNumber) {
                 target.tiers = target.tiers.filter(t => t !== '권리증번호없음');
                 if (!target.tiers.includes('권리증번호있음')) {
@@ -701,35 +629,6 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         unifiedPeople.push(target);
     }
 
-    for (const p of unifiedPeople) {
-        if (p.member_number && p.member_number !== '-' && p.member_number.includes(',')) {
-            const normKey = (s: string) => s.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/[\s]/g, '').toLowerCase();
-            const nums = p.member_number.split(',')
-                .map(s => {
-                    let text = s.trim();
-                    const sufIdx = text.indexOf(' 외 ');
-                    if (sufIdx > -1) text = text.substring(0, sufIdx).trim();
-                    return text;
-                })
-                .filter(Boolean);
-
-            const deduped = new Map<string, string>();
-            for (const n of nums) {
-                const key = normKey(n);
-                const prev = deduped.get(key);
-                if (!prev || n.length > prev.length) deduped.set(key, n);
-            }
-            const uniqueNums = Array.from(deduped.values());
-            if (uniqueNums.length > 1) {
-                p.member_number = `${uniqueNums[0]} 외 ${uniqueNums.length - 1}건`;
-            } else if (uniqueNums.length === 1) {
-                p.member_number = uniqueNums[0];
-            } else {
-                p.member_number = '-';
-            }
-        }
-    }
-
     for (const [, list] of namelessByPhone.entries()) {
         const target = { ...list[0], entity_ids: list.map(p => p.id) };
         target.name = `(성명없음: ${list[0].phone})`;
@@ -739,14 +638,11 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             target.entity_ids = Array.from(new Set([...target.entity_ids, p.id]));
             target.tiers = Array.from(new Set([...(target.tiers || []), ...(p.tiers || [])]));
             target.role_types = Array.from(new Set([...target.role_types, ...p.role_types]));
-            if (p.certificate_numbers && p.certificate_numbers.length > 0) {
-                const mergedCertificateNumbers = new Map<string, string>();
-                for (const number of [...(target.certificate_numbers || []), ...p.certificate_numbers]) {
-                    const key = normalizeCertificateNumber(number);
-                    const previous = mergedCertificateNumbers.get(key);
-                    if (!previous || number.length > previous.length) mergedCertificateNumbers.set(key, number);
-                }
-                target.certificate_numbers = Array.from(mergedCertificateNumbers.values());
+            target.certificate_numbers = mergeCertificateNumbers(target.certificate_numbers, p.certificate_numbers);
+            target.certificate_search_tokens = mergeCertificateTokens(target.certificate_search_tokens, p.certificate_search_tokens);
+            target.relationships = mergeRelationships(target.relationships, p.relationships);
+            if ((!target.certificate_display || target.certificate_display === '-') && p.certificate_display && p.certificate_display !== '-') {
+                target.certificate_display = p.certificate_display;
             }
             if (p.acts_as_agent_for) {
                 target.acts_as_agent_for = [...(target.acts_as_agent_for || []), ...p.acts_as_agent_for];
@@ -755,7 +651,70 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             target.settlement_paid += p.settlement_paid;
             target.settlement_remaining = Math.max(target.settlement_expected - target.settlement_paid, 0);
         }
+        finalizeCertificateFields(target);
         unifiedPeople.push(target);
+    }
+
+    const personByEntityId = new Map<string, UnifiedPerson>();
+    for (const person of unifiedPeople) {
+        for (const entityId of person.entity_ids) {
+            personByEntityId.set(entityId, person);
+        }
+    }
+
+    const collectLinkedRegisteredPeople = (person: UnifiedPerson) => {
+        const linked = new Map<string, UnifiedPerson>();
+        const pushLinked = (entityId?: string | null) => {
+            if (!entityId) return;
+            const linkedPerson = personByEntityId.get(entityId);
+            if (!linkedPerson || linkedPerson.id === person.id || !linkedPerson.is_registered) return;
+            if ((linkedPerson.certificate_numbers || []).length === 0) return;
+            linked.set(linkedPerson.id, linkedPerson);
+        };
+
+        for (const relation of person.relationships || []) {
+            pushLinked(relation.id);
+        }
+
+        for (const owner of person.acts_as_agent_for || []) {
+            pushLinked(owner.id);
+        }
+
+        pushLinked(person.real_owner?.id);
+        for (const nominee of person.nominees || []) {
+            pushLinked(nominee.id);
+        }
+
+        return Array.from(linked.values());
+    };
+
+    for (const person of unifiedPeople) {
+        if (!person.is_registered) continue;
+        if ((person.certificate_numbers || []).length > 0) continue;
+
+        const linkedRegisteredPeople = collectLinkedRegisteredPeople(person);
+        if (linkedRegisteredPeople.length === 0) continue;
+
+        const inheritedNumbers = mergeCertificateNumbers(
+            [],
+            linkedRegisteredPeople.flatMap((linkedPerson) => linkedPerson.certificate_numbers || []),
+        );
+
+        if (inheritedNumbers.length === 0) continue;
+
+        person.certificate_numbers = inheritedNumbers;
+        person.certificate_search_tokens = mergeCertificateTokens(person.certificate_search_tokens, inheritedNumbers);
+        person.certificate_display =
+            inheritedNumbers.length > 1
+                ? `${inheritedNumbers[0]} 외 ${inheritedNumbers.length - 1}건`
+                : inheritedNumbers[0];
+
+        if (person.tiers) {
+            person.tiers = person.tiers.filter((tier) => tier !== '권리증번호없음');
+            if (!person.tiers.includes('권리증번호있음')) {
+                person.tiers.push('권리증번호있음');
+            }
+        }
     }
 
     return { unifiedPeople, fetchError };

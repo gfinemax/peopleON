@@ -142,7 +142,7 @@ function comparePeople(a: UnifiedPerson, b: UnifiedPerson, field: string, order:
     const valueOf = (person: UnifiedPerson): string | number => {
         switch (field) {
             case 'member_number':
-                return person.member_number || '';
+                return person.certificate_display || '';
             case 'phone':
                 return person.phone || '';
             case 'tier':
@@ -248,7 +248,8 @@ export default async function MembersPage({
     const filteredPeople = peopleInCurrentRole.filter(p => {
         if (query) {
             const queryLower = query.toLowerCase();
-            const isTextMatch = `${p.name} ${p.member_number} ${p.phone} ${p.notes || ''}`
+            const certificateText = `${p.certificate_display || ''} ${(p.certificate_search_tokens || []).join(' ')}`;
+            const isTextMatch = `${p.name} ${p.member_number || ''} ${certificateText} ${p.phone} ${p.notes || ''}`
                 .toLowerCase()
                 .includes(queryLower);
             const isLogMatch = Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id));

@@ -26,6 +26,10 @@ type MemberUpdatePayload = {
         relation?: string | null;
         phone?: string | null;
     } | null;
+    manual_certificate_count?: number | null;
+    certificate_summary_review_status?: 'pending' | 'reviewed' | 'manual_locked' | null;
+    certificate_summary_note?: string | null;
+    certificate_summary_owner_group?: 'registered' | 'others' | null;
 };
 
 export async function POST(request: Request) {
@@ -219,6 +223,64 @@ export async function POST(request: Request) {
         }));
         const ssnError = results.find(e => e);
         if (ssnError) console.error('SSN update error:', ssnError);
+    }
+
+    // 5. Update person-level certificate summary (single target only)
+    const wantsSummaryUpdate =
+        body?.manual_certificate_count !== undefined ||
+        body?.certificate_summary_review_status !== undefined ||
+        body?.certificate_summary_note !== undefined;
+
+    if (wantsSummaryUpdate && targetIds.length === 1) {
+        const summaryPatch: Record<string, unknown> = {
+            entity_id: targetIds[0],
+            updated_at: new Date().toISOString(),
+        };
+
+        if (body.certificate_summary_owner_group === 'registered' || body.certificate_summary_owner_group === 'others') {
+            summaryPatch.owner_group = body.certificate_summary_owner_group;
+        } else {
+            const { data: ownerRoleRows } = await supabase
+                .from('membership_roles')
+                .select('is_registered, role_status')
+                .eq('entity_id', targetIds[0]);
+
+            const isRegistered = ((ownerRoleRows as Array<{ is_registered?: boolean | null; role_status?: string | null }> | null) || [])
+                .some((row) => row.is_registered && (row.role_status || 'active') === 'active');
+            summaryPatch.owner_group = isRegistered ? 'registered' : 'others';
+        }
+
+        if (body.manual_certificate_count === null) {
+            summaryPatch.manual_certificate_count = null;
+        } else if (body.manual_certificate_count !== undefined) {
+            summaryPatch.manual_certificate_count = Math.max(0, Number(body.manual_certificate_count) || 0);
+        }
+
+        if (
+            body.certificate_summary_review_status === 'pending' ||
+            body.certificate_summary_review_status === 'reviewed' ||
+            body.certificate_summary_review_status === 'manual_locked'
+        ) {
+            summaryPatch.review_status = body.certificate_summary_review_status;
+        }
+
+        if (typeof body.certificate_summary_note === 'string') {
+            summaryPatch.summary_note = body.certificate_summary_note.trim() || null;
+        }
+
+        const { error: summaryError } = await supabase
+            .from('person_certificate_summaries')
+            .upsert(summaryPatch, { onConflict: 'entity_id' });
+
+        if (summaryError) {
+            return NextResponse.json({ success: false, error: summaryError.message }, { status: 500 });
+        }
+
+        await createAuditLog('UPDATE_PERSON_CERTIFICATE_SUMMARY', targetIds[0], {
+            manual_certificate_count: summaryPatch.manual_certificate_count ?? null,
+            review_status: summaryPatch.review_status ?? null,
+            summary_note: summaryPatch.summary_note ?? null,
+        });
     }
 
     return NextResponse.json({

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { classifyCertificateInput } from '@/lib/certificates/rightNumbers';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -40,11 +41,17 @@ export async function POST(request: Request) {
 
             // Insert right if provided
             if (m.right_number) {
+                const classifiedRight = classifyCertificateInput(m.right_number);
                 const { error: rightError } = await supabase
                     .from('asset_rights')
                     .insert({
                         entity_id: entity.id,
-                        right_number: m.right_number,
+                        right_number: classifiedRight.confirmedNumber,
+                        right_number_raw: classifiedRight.rawValue,
+                        right_number_status: classifiedRight.status,
+                        right_number_note: classifiedRight.note,
+                        classification_source: 'auto',
+                        classified_at: new Date().toISOString(),
                         right_type: 'certificate'
                     });
                 if (rightError) console.error(`Error inserting asset right for ${m.name}:`, rightError);

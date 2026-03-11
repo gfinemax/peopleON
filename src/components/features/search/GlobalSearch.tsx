@@ -163,7 +163,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                         <MaterialIcon name="search" size="md" className="text-muted-foreground" />
                         <input
                             className="flex-1 bg-transparent border-none text-base text-foreground placeholder:text-muted-foreground focus:outline-none h-9"
-                            placeholder="이름, 동호수, 전화번호로 검색..."
+                            placeholder="이름, 회원번호, 권리증번호, 전화번호로 검색..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -188,7 +188,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                                             <span className="text-sm font-bold text-foreground">
                                                 {member.name}
                                                 <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                                                    ({member.member_number})
+                                                    ({member.certificate_display || member.member_number || '-'})
                                                 </span>
                                             </span>
                                             {member.phone && (

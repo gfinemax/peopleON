@@ -18,6 +18,7 @@ interface Member {
     party_id?: string | null;
     name: string;
     member_number: string | null;
+    certificate_display?: string | null;
     phone: string | null;
     tier: string | null;
     status: string | null;
@@ -178,10 +179,8 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
         );
     };
 
-    const formatCertificateNumber = (num: string | null, member: Member) => {
+    const formatCertificateNumber = (num: string | null) => {
         if (!num) return '-';
-        // In the future, if we have multiple certs in an array, we'd handle it here.
-        // For now, if num contains commas or is known to be multiple:
         return num;
     };
 
@@ -345,7 +344,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-2 py-1.5 font-medium text-gray-200">{member.member_number || '-'}</td>
+                                <td className="px-2 py-1.5 font-medium text-gray-200">{formatCertificateNumber(member.certificate_display || null)}</td>
                                 <td className="px-2 py-1.5 text-gray-400">{getRepresentativeDisplay(member.relationships)}</td>
                                 <td className="px-2 py-1.5 flex justify-center items-center h-[46px]">
                                     <InlineCellDropdown
@@ -427,7 +426,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         {member.status === '차명' && (
                                             <span className="text-[9px] font-black bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1 rounded">명의</span>
                                         )}
-                                        <span className="text-[11px] text-muted-foreground/60 font-mono">{member.member_number || '-'}</span>
+                                        <span className="text-[11px] text-muted-foreground/60 font-mono">{formatCertificateNumber(member.certificate_display || null)}</span>
                                     </div>
                                     {member.status === '차명' && member.real_owner && (
                                         <div className="text-[10px] text-sky-400 font-bold mt-0.5 flex items-center gap-1">

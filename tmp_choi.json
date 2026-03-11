@@ -1,0 +1,67 @@
+[dotenv@17.3.1] injecting env (4) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[
+  {
+    "id": "3ae473fd-ee53-4c85-983d-9066cf0fed14",
+    "entity_id": "08073eaa-ab87-47eb-9d41-148a39a510e5",
+    "certificate_number_raw": "2006-1-69",
+    "certificate_number_normalized": "2006-1-69",
+    "certificate_status": "confirmed",
+    "source_type": "asset_rights",
+    "source_ref_id": "96c88e05-ab5d-4e65-8c6f-71a644e83593",
+    "is_confirmed_for_count": true,
+    "is_active": true,
+    "review_status": "auto",
+    "merge_key": "08073eaa-ab87-47eb-9d41-148a39a510e5|2006-1-69",
+    "note": null,
+    "created_at": "2026-03-10T10:27:41.945413+00:00",
+    "updated_at": "2026-03-10T10:27:41.945413+00:00"
+  },
+  {
+    "id": "a857d79b-fecd-47dc-bced-b774533e18fb",
+    "entity_id": "5d8746d7-f55c-455e-8845-8ec468498c5a",
+    "certificate_number_raw": "2006-1-69",
+    "certificate_number_normalized": "2006-1-69",
+    "certificate_status": "confirmed",
+    "source_type": "asset_rights",
+    "source_ref_id": "685459c1-8a49-4e43-9a3c-29e331f76ab8",
+    "is_confirmed_for_count": true,
+    "is_active": true,
+    "review_status": "auto",
+    "merge_key": "5d8746d7-f55c-455e-8845-8ec468498c5a|2006-1-69",
+    "note": null,
+    "created_at": "2026-03-10T10:27:41.945413+00:00",
+    "updated_at": "2026-03-10T10:27:41.945413+00:00"
+  },
+  {
+    "id": "d4d60d2a-f5e3-4a85-97ca-71a0a2828c64",
+    "entity_id": "08073eaa-ab87-47eb-9d41-148a39a510e5",
+    "certificate_number_raw": "2006-1-221",
+    "certificate_number_normalized": "2006-1-221",
+    "certificate_status": "confirmed",
+    "source_type": "asset_rights",
+    "source_ref_id": "0701cab0-0b10-4105-ae53-a8a48085311b",
+    "is_confirmed_for_count": true,
+    "is_active": true,
+    "review_status": "auto",
+    "merge_key": "08073eaa-ab87-47eb-9d41-148a39a510e5|2006-1-221",
+    "note": null,
+    "created_at": "2026-03-10T10:27:41.945413+00:00",
+    "updated_at": "2026-03-10T10:27:41.945413+00:00"
+  },
+  {
+    "id": "06c5194b-f5b8-4bac-a34d-d2273a8f2835",
+    "entity_id": "08073eaa-ab87-47eb-9d41-148a39a510e5",
+    "certificate_number_raw": "2006-1-241",
+    "certificate_number_normalized": "2006-1-241",
+    "certificate_status": "confirmed",
+    "source_type": "asset_rights",
+    "source_ref_id": "98319f38-ef20-4c4b-88b6-f1d18092058d",
+    "is_confirmed_for_count": true,
+    "is_active": true,
+    "review_status": "auto",
+    "merge_key": "08073eaa-ab87-47eb-9d41-148a39a510e5|2006-1-241",
+    "note": null,
+    "created_at": "2026-03-10T10:27:41.945413+00:00",
+    "updated_at": "2026-03-10T10:27:41.945413+00:00"
+  }
+]

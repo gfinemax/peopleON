@@ -50,9 +50,9 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
         // Validation: Prevent date-like strings from being added as certificates
         const isDateLike = (v: string): boolean => {
             const s = v.trim();
-            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
+            const m = s.match(/^(19[2-9]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
             if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
-            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            const m2 = s.match(/^(19[2-9]\d)(\d{2})(\d{2})$/);
             if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
             return false;
         };

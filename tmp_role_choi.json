@@ -1,0 +1,15 @@
+[dotenv@17.3.1] injecting env (4) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+[
+  {
+    "id": "134d90b4-4a1f-4aa9-b78a-a7ffaea5eb99",
+    "entity_id": "5d8746d7-f55c-455e-8845-8ec468498c5a",
+    "source_member_id": null,
+    "role_code": "등기조합원",
+    "role_status": "inactive",
+    "is_registered": true,
+    "valid_from": null,
+    "valid_to": null,
+    "note": null,
+    "created_at": "2026-02-27T03:10:02.411049+00:00"
+  }
+]

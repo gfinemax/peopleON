@@ -288,15 +288,14 @@ export default async function DashboardPage() {
         // Identify Duplicate Certificate Holders
         const certNumberMap = new Map<string, any[]>();
         unifiedPeople.forEach(p => {
-            if (p.role_types.includes('certificate_holder') && p.member_number && p.member_number !== '-') {
-                const nums = p.member_number.split(',').map(n => n.replace(/\s?외\s?\d+건/, '').trim()).filter(Boolean);
+            const nums = p.certificate_numbers || [];
+            if (p.role_types.includes('certificate_holder') && nums.length > 0) {
                 nums.forEach(n => {
                     const normNum = n.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/[\s]/g, '').toLowerCase();
-                    if (normNum) {
-                        const existing = certNumberMap.get(normNum) || [];
-                        existing.push({ person: p, rawNum: n });
-                        certNumberMap.set(normNum, existing);
-                    }
+                    if (!normNum) return;
+                    const existing = certNumberMap.get(normNum) || [];
+                    existing.push({ person: p, rawNum: n });
+                    certNumberMap.set(normNum, existing);
                 });
             }
         });

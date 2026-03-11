@@ -4,7 +4,6 @@ import { MaterialIcon } from '@/components/ui/icon';
 import { createClient } from '@/lib/supabase/server';
 import { LegacyFilter } from '@/components/features/finance/LegacyFilter';
 import { LegacyTable } from '@/components/features/finance/LegacyTable';
-import { extractCertificateNumbers, normalizeCertificateNumber } from '@/lib/legacy/certificateNumbers';
 import {
     LEGACY_MEMBER_SEGMENT_LABEL_MAP,
     LEGACY_MEMBER_SEGMENT_OPTIONS,
@@ -16,6 +15,13 @@ import {
     type RegisteredMemberProxyReference,
 } from '@/lib/legacy/registeredProxyMatcher';
 import { fetchCertificateCompatRows } from '@/lib/server/certificateCompat';
+import { fetchPersonCertificateSummarySnapshot } from '@/lib/server/personCertificateSummary';
+import {
+    getConfirmedCertificateNumbers,
+    normalizeCertificateNumber,
+    resolveCertificateRight,
+    RIGHT_NUMBER_STATUS_LABEL,
+} from '@/lib/certificates/rightNumbers';
 
 export const dynamic = 'force-dynamic';
 
@@ -203,7 +209,7 @@ export default async function FinancePage({
 
     const supabase = await createClient();
 
-    const [rightsRes, rolesRes, registeredEntitiesRes] = await Promise.all([
+    const [rightsRes, rolesRes, registeredEntitiesRes, personCertificateSnapshot] = await Promise.all([
         supabase
             .from('asset_rights')
             .select(`
@@ -221,12 +227,16 @@ export default async function FinancePage({
         supabase
             .from('account_entities')
             .select('id, display_name, member_number, phone')
-            .eq('entity_type', 'person')
+            .eq('entity_type', 'person'),
+        fetchPersonCertificateSummarySnapshot(supabase),
     ]);
 
     const allRights = (rightsRes.data || []) as any[];
     const rightsError = rightsRes.error;
     const allRoles = (rolesRes.data || []) as any[];
+    const personSummaryAvailable = personCertificateSnapshot.available;
+    const personSummaryRollups = personCertificateSnapshot.rollups;
+    const personSummaryRows = personCertificateSnapshot.summaries;
 
     if (rightsError) {
         console.error('Error fetching asset_rights:', rightsError.message);
@@ -254,6 +264,43 @@ export default async function FinancePage({
     })) as RegisteredMemberRow[];
 
     const registeredProxyIndex = buildRegisteredProxyIndex(registeredMembers);
+    const personSummaryRollupMap = new Map(personSummaryRollups.map((row) => [row.owner_group, row]));
+    const registeredPersonRollup = personSummaryRollupMap.get('registered') || {
+        owner_group: 'registered' as const,
+        owner_count: 0,
+        owner_with_certificate_count: 0,
+        provisional_certificate_count: 0,
+        effective_certificate_count: 0,
+        conflict_certificate_count: 0,
+        manual_locked_count: 0,
+        pending_review_count: 0,
+    };
+    const othersPersonRollup = personSummaryRollupMap.get('others') || {
+        owner_group: 'others' as const,
+        owner_count: 0,
+        owner_with_certificate_count: 0,
+        provisional_certificate_count: 0,
+        effective_certificate_count: 0,
+        conflict_certificate_count: 0,
+        manual_locked_count: 0,
+        pending_review_count: 0,
+    };
+    const totalManualLockedCount = personSummaryRollups.reduce((sum, row) => sum + row.manual_locked_count, 0);
+    const totalPendingReviewCount = personSummaryRollups.reduce((sum, row) => sum + row.pending_review_count, 0);
+    const registeredSummaryReviewRows = personSummaryRows
+        .filter((row) =>
+            row.owner_group === 'registered' &&
+            (
+                row.review_status !== 'manual_locked' ||
+                row.conflict_certificate_count > 0 ||
+                row.effective_certificate_count === 0
+            ),
+        )
+        .sort((a, b) =>
+            (b.conflict_certificate_count - a.conflict_certificate_count) ||
+            (b.effective_certificate_count - a.effective_certificate_count) ||
+            (a.display_name || '').localeCompare(b.display_name || '', 'ko'),
+        );
 
     // Robustly sanitize legacy birthday data (Starts with 19 or matches YYYY.MM.DD)
     const sanitizeNumber = (val: string | null | undefined) => {
@@ -272,9 +319,7 @@ export default async function FinancePage({
         const contact = entity?.phone || right.meta?.contact || '-';
 
         // Use normalized and sanitized right_number
-        const rawCertNo = normalizeCertificateNumber(right.right_number) || right.right_number;
-        const certNo = sanitizeNumber(rawCertNo);
-        const certNumbers = certNo ? [certNo] : [];
+        const certNumbers = getConfirmedCertificateNumbers([right]).map((number) => sanitizeNumber(number)).filter(Boolean) as string[];
 
         // Resolve segment logic
         const entityRoles = entity ? (rolesMap.get(entity.id) || []) : [];
@@ -308,10 +353,6 @@ export default async function FinancePage({
     for (const member of registeredMembers) {
         if (entitiesProcessed.has(member.id)) continue;
 
-        const rawVal = member.member_number || '';
-        const sanitizedNo = sanitizeNumber(rawVal);
-        const certNumbers = sanitizedNo ? [sanitizedNo] : [];
-
         baseRecords.push({
             id: `v-${member.id}`,
             original_name: member.name || '-',
@@ -319,8 +360,8 @@ export default async function FinancePage({
             raw_data: {},
             member_id: member.id,
             member_segment: 'registered_116',
-            certificate_numbers: certNumbers,
-            certificate_count: certNumbers.length,
+            certificate_numbers: [],
+            certificate_count: 0,
             contact: '-',
             member_name: member.name,
         });
@@ -388,28 +429,19 @@ export default async function FinancePage({
         .filter(([, count]) => count > 1)
         .sort((a, b) => b[1] - a[1]);
 
-    const registeredMemberNumberFrequency = new Map<string, number>();
-    const registeredInvalidMemberNumbers: Array<{ name: string; value: string }> = [];
-    for (const member of registeredMembers) {
-        const rawNumber = member.member_number?.trim() || '';
-        if (!rawNumber) continue;
-
-        const normalized = normalizeCertificateNumber(rawNumber);
-        if (!normalized) {
-            registeredInvalidMemberNumbers.push({
-                name: member.name || '-',
-                value: rawNumber,
-            });
-            continue;
-        }
-
-        registeredMemberNumberFrequency.set(
+    const registeredBaseRecords = enrichedRecords.filter((record) => record.member_segment === 'registered_116');
+    const registeredCertificateFrequency = new Map<string, number>();
+    for (const number of registeredBaseRecords.flatMap((record) => record.certificate_numbers)) {
+        const normalized = normalizeCertificateNumber(number);
+        if (!normalized) continue;
+        registeredCertificateFrequency.set(
             normalized,
-            (registeredMemberNumberFrequency.get(normalized) || 0) + 1,
+            (registeredCertificateFrequency.get(normalized) || 0) + 1,
         );
     }
 
-    const registeredMemberNumberSet = new Set(registeredMemberNumberFrequency.keys());
+    const registeredMemberNumberSet = new Set(registeredCertificateFrequency.keys());
+    const registeredMissingRightsRows = registeredBaseRecords.filter((record) => record.certificate_count === 0);
     const legacyBaseRecords = enrichedRecords.filter((record) => record.member_segment !== 'registered_116');
     const legacyNumberFrequency = new Map<string, number>();
     for (const number of legacyBaseRecords.flatMap((record) => record.certificate_numbers)) {
@@ -449,7 +481,7 @@ export default async function FinancePage({
 
     const mergedDuplicateRows = [...mergedNumberSet]
         .map((number) => {
-            const registeredCount = registeredMemberNumberFrequency.get(number) || 0;
+            const registeredCount = registeredCertificateFrequency.get(number) || 0;
             const legacyCount = legacyNumberFrequency.get(number) || 0;
             return {
                 number,
@@ -460,7 +492,7 @@ export default async function FinancePage({
         })
         .filter((row) => row.totalCount > 1)
         .sort((a, b) => b.totalCount - a.totalCount);
-    const registeredDuplicateRows = [...registeredMemberNumberFrequency.entries()]
+    const registeredDuplicateRows = [...registeredCertificateFrequency.entries()]
         .filter(([, count]) => count > 1)
         .sort((a, b) => b[1] - a[1]);
 
@@ -477,6 +509,22 @@ export default async function FinancePage({
         .filter((record) => record.member_segment === 'refunded' && record.certificate_count > 0)
         .sort((a, b) => b.certificate_count - a.certificate_count)
         .slice(0, 8);
+
+    const reviewRequiredRightRows = (allRights || [])
+        .map((right) => {
+            const resolved = resolveCertificateRight(right as any);
+            const entity = (right as any).account_entities as any;
+            return {
+                id: right.id,
+                entityId: right.entity_id,
+                ownerName: right.meta?.cert_name || entity?.display_name || '-',
+                rawValue: resolved.rawValue || '-',
+                status: resolved.status,
+                note: resolved.note || '-',
+            };
+        })
+        .filter((row) => row.status === 'review_required' || row.status === 'invalid')
+        .sort((a, b) => a.ownerName.localeCompare(b.ownerName, 'ko'));
 
     const memberIdsFromLegacy = Array.from(
         new Set(
@@ -656,20 +704,100 @@ export default async function FinancePage({
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+                        {personSummaryAvailable ? (
+                            <>
+                                <KpiCard title="등기 최종 권리증" value={`${registeredPersonRollup.effective_certificate_count}개`} tone="emerald" />
+                                <KpiCard title="등기 잠정 권리증" value={`${registeredPersonRollup.provisional_certificate_count}개`} tone="blue" />
+                                <KpiCard title="기타 최종 권리증" value={`${othersPersonRollup.effective_certificate_count}개`} tone="amber" />
+                                <KpiCard title="수동 고정 인원" value={`${totalManualLockedCount}명`} tone="slate" />
+                                <KpiCard title="사람별 검수대기" value={`${totalPendingReviewCount}명`} tone="red" />
+                                <KpiCard title="등기 미보유 인원" value={`${Math.max(registeredPersonRollup.owner_count - registeredPersonRollup.owner_with_certificate_count, 0)}명`} tone="red" />
+                            </>
+                        ) : (
+                            <>
                         <KpiCard title="통합 권리증번호(A∪B)" value={`${mergedNumberSet.size}개`} tone="blue" />
-                        <KpiCard title="등기 조합번호(A)" value={`${registeredMemberNumberSet.size}개`} tone="emerald" />
+                        <KpiCard title="등기 권리증(A)" value={`${registeredMemberNumberSet.size}개`} tone="emerald" />
                         <KpiCard title="Legacy 권리증(B, 비등기)" value={`${legacyNumberSet.size}개`} tone="amber" />
                         <KpiCard title="교집합 중복(A∩B)" value={`${overlapNumbers.length}개`} tone="red" />
                         <KpiCard title="등기만(A-B)" value={`${registeredOnlyNumbers.length}개`} tone="slate" />
                         <KpiCard title="Legacy만(B-A)" value={`${legacyOnlyNumbers.length}개`} tone="slate" />
+                            </>
+                        )}
                     </div>
+                    {personSummaryAvailable && (
+                        <section className="rounded-xl border border-white/[0.08] bg-[#101725] overflow-hidden">
+                            <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-sm font-extrabold text-foreground">사람별 최종 권리증 확정</h3>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        `person_certificate_summaries` 기준입니다. 수동 고정된 최종 개수가 있으면 registry 잠정값보다 우선합니다.
+                                    </p>
+                                </div>
+                                <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-200">
+                                    등기 {registeredPersonRollup.owner_count.toLocaleString()}명 / 기타 {othersPersonRollup.owner_count.toLocaleString()}명
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+                                <div className="rounded-lg border border-border/60 overflow-hidden">
+                                    <div className="px-3 py-2 border-b border-border/60 bg-muted/20">
+                                        <p className="text-xs font-bold text-foreground">등기조합원 사람별 집계</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 p-3 text-xs">
+                                        <SummaryStat label="전체 인원" value={`${registeredPersonRollup.owner_count}명`} />
+                                        <SummaryStat label="보유 인원" value={`${registeredPersonRollup.owner_with_certificate_count}명`} />
+                                        <SummaryStat label="잠정 개수" value={`${registeredPersonRollup.provisional_certificate_count}개`} />
+                                        <SummaryStat label="최종 개수" value={`${registeredPersonRollup.effective_certificate_count}개`} tone="emerald" />
+                                        <SummaryStat label="충돌 건수" value={`${registeredPersonRollup.conflict_certificate_count}개`} tone="amber" />
+                                        <SummaryStat label="수동 고정" value={`${registeredPersonRollup.manual_locked_count}명`} />
+                                    </div>
+                                </div>
+                                <div className="rounded-lg border border-border/60 overflow-hidden">
+                                    <div className="px-3 py-2 border-b border-border/60 bg-muted/20">
+                                        <p className="text-xs font-bold text-foreground">등기 사람별 검수 대기</p>
+                                    </div>
+                                    <div className="max-h-52 overflow-auto">
+                                        {registeredSummaryReviewRows.length > 0 ? (
+                                            <table className="w-full text-xs">
+                                                <thead className="text-muted-foreground bg-muted/10">
+                                                    <tr>
+                                                        <th className="text-left px-3 py-2 font-bold">이름</th>
+                                                        <th className="text-right px-3 py-2 font-bold">잠정</th>
+                                                        <th className="text-right px-3 py-2 font-bold">최종</th>
+                                                        <th className="text-right px-3 py-2 font-bold">충돌</th>
+                                                        <th className="text-left px-3 py-2 font-bold">상태</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-border/40">
+                                                    {registeredSummaryReviewRows.slice(0, 20).map((row) => (
+                                                        <tr key={row.entity_id}>
+                                                            <td className="px-3 py-2 text-foreground">
+                                                                <Link href={`/members?q=${encodeURIComponent(row.display_name || '')}`} className="hover:text-sky-300">
+                                                                    {row.display_name || '-'}
+                                                                </Link>
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right font-mono text-muted-foreground">{row.provisional_certificate_count}</td>
+                                                            <td className="px-3 py-2 text-right font-mono text-emerald-300">{row.effective_certificate_count}</td>
+                                                            <td className="px-3 py-2 text-right font-mono text-amber-300">{row.conflict_certificate_count}</td>
+                                                            <td className="px-3 py-2 text-muted-foreground">{row.review_status}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        ) : (
+                                            <p className="text-xs text-muted-foreground p-4 text-center">등기 사람별 검수 대기가 없습니다.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
                     <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
                         <KpiCard title="통합 중복 의심" value={`${mergedDuplicateRows.length}개`} tone="red" />
                         <KpiCard title="등기 내부 중복" value={`${registeredDuplicateRows.length}개`} tone="amber" />
                         <KpiCard title="Legacy 내부 중복" value={`${legacyDuplicateRows.length}개`} tone="amber" />
                         <KpiCard title="중복 없는 Legacy" value={`${legacyNonDuplicateCount}개`} tone="emerald" />
                         <KpiCard title="중복없는 Legacy-등기제외" value={`${legacyExclusiveUniqueRows.length}개`} tone="blue" />
-                        <KpiCard title="등기 번호 형식오류" value={`${registeredInvalidMemberNumbers.length}건`} tone="red" />
+                        <KpiCard title="등기 미연결" value={`${registeredMissingRightsRows.length}건`} tone="red" />
                     </div>
                     <section className="rounded-xl border border-white/[0.08] bg-[#101725] p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -698,6 +826,55 @@ export default async function FinancePage({
                             <QualityBadge label="상태 불일치" count={settlementStatusMismatchCount} tone={settlementStatusMismatchCount > 0 ? 'danger' : 'ok'} href="/settlements?diag=status_mismatch" />
                         </div>
                     </section>
+                    <section className="rounded-xl border border-border bg-card overflow-hidden">
+                        <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-extrabold text-foreground">권리증 검수 대기</h3>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    자동 분류로 확정하지 못한 권리증 원문입니다. 멤버 상세에서 상태를 수동 확정하세요.
+                                </p>
+                            </div>
+                            <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-bold text-amber-200">
+                                {reviewRequiredRightRows.length.toLocaleString()}건
+                            </span>
+                        </div>
+                        <div className="max-h-72 overflow-auto">
+                            {reviewRequiredRightRows.length > 0 ? (
+                                <table className="w-full text-xs">
+                                    <thead className="sticky top-0 bg-[#161B22] text-muted-foreground border-b border-border/60">
+                                        <tr>
+                                            <th className="text-left px-4 py-2 font-bold">명의자</th>
+                                            <th className="text-left px-4 py-2 font-bold">원문값</th>
+                                            <th className="text-left px-4 py-2 font-bold">상태</th>
+                                            <th className="text-left px-4 py-2 font-bold">메모</th>
+                                            <th className="text-left px-4 py-2 font-bold">바로가기</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/40">
+                                        {reviewRequiredRightRows.slice(0, 20).map((row) => (
+                                            <tr key={row.id}>
+                                                <td className="px-4 py-2 text-foreground">{row.ownerName}</td>
+                                                <td className="px-4 py-2 font-mono text-amber-200">{row.rawValue}</td>
+                                                <td className="px-4 py-2 text-amber-300 font-bold">{RIGHT_NUMBER_STATUS_LABEL[row.status]}</td>
+                                                <td className="px-4 py-2 text-muted-foreground">{row.note}</td>
+                                                <td className="px-4 py-2">
+                                                    <Link
+                                                        href={`/members?q=${encodeURIComponent(row.rawValue)}`}
+                                                        className="inline-flex items-center gap-1 rounded border border-sky-400/30 bg-sky-500/10 px-2 py-1 text-[10px] font-bold text-sky-200 hover:bg-sky-500/20"
+                                                    >
+                                                        <MaterialIcon name="open_in_new" size="xs" />
+                                                        멤버 찾기
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="text-xs text-muted-foreground p-4 text-center">검수 대기 권리증이 없습니다.</p>
+                            )}
+                        </div>
+                    </section>
                     <p className="text-[11px] text-muted-foreground px-1">
                         Legacy 내부 중복은 B(비등기 Legacy)에서 같은 권리증번호가 2건 이상인 번호 수입니다.
                     </p>
@@ -707,7 +884,7 @@ export default async function FinancePage({
                     <section className="rounded-xl border border-border bg-card overflow-hidden">
                         <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
                             <h3 className="text-sm font-extrabold text-foreground">권리증 통합 검수 통계</h3>
-                            <span className="text-[10px] font-bold uppercase text-muted-foreground">A:등기조합원 조합번호 / B:비등기 Legacy 권리증번호</span>
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground">A:등기조합원 asset_rights 권리증 / B:비등기 Legacy 권리증번호</span>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
                             <div className="rounded-lg border border-border/60 overflow-hidden">
@@ -744,28 +921,28 @@ export default async function FinancePage({
 
                             <div className="rounded-lg border border-border/60 overflow-hidden">
                                 <div className="px-3 py-2 border-b border-border/60 bg-muted/20">
-                                    <p className="text-xs font-bold text-foreground">등기 조합번호 형식 오류</p>
+                                    <p className="text-xs font-bold text-foreground">등기 권리증 미연결</p>
                                 </div>
                                 <div className="max-h-52 overflow-auto">
-                                    {registeredInvalidMemberNumbers.length > 0 ? (
+                                    {registeredMissingRightsRows.length > 0 ? (
                                         <table className="w-full text-xs">
                                             <thead className="text-muted-foreground bg-muted/10">
                                                 <tr>
                                                     <th className="text-left px-3 py-2 font-bold">이름</th>
-                                                    <th className="text-left px-3 py-2 font-bold">원본 조합번호</th>
+                                                    <th className="text-left px-3 py-2 font-bold">출처</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-border/40">
-                                                {registeredInvalidMemberNumbers.slice(0, 12).map((row, index) => (
-                                                    <tr key={`${row.name}-${row.value}-${index}`}>
-                                                        <td className="px-3 py-2 text-foreground">{row.name}</td>
-                                                        <td className="px-3 py-2 font-mono text-red-400">{row.value}</td>
+                                                {registeredMissingRightsRows.slice(0, 12).map((row) => (
+                                                    <tr key={row.id}>
+                                                        <td className="px-3 py-2 text-foreground">{row.original_name}</td>
+                                                        <td className="px-3 py-2 font-mono text-red-400">{row.source_file}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </table>
                                     ) : (
-                                        <p className="text-xs text-muted-foreground p-4 text-center">형식 오류가 없습니다.</p>
+                                        <p className="text-xs text-muted-foreground p-4 text-center">미연결 회원이 없습니다.</p>
                                     )}
                                 </div>
                             </div>
@@ -777,7 +954,7 @@ export default async function FinancePage({
                             <div>
                                 <h3 className="text-sm font-extrabold text-foreground">중복없는 Legacy - 등기제외 리스트</h3>
                                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                                    B(비등기 Legacy) 중 1회만 나온 번호에서 A(등기 조합번호)와 겹치는 번호를 제외한 목록
+                                    B(비등기 Legacy) 중 1회만 나온 번호에서 A(등기 권리증)와 겹치는 번호를 제외한 목록
                                 </p>
                             </div>
                             <a
@@ -987,6 +1164,30 @@ function KpiCard({
         <div className={`rounded-xl border p-3 lg:p-4 ${toneClass}`}>
             <p className="text-[10px] lg:text-xs font-bold uppercase tracking-wider opacity-80">{title}</p>
             <p className="text-lg lg:text-2xl font-black mt-1 tracking-tight">{value}</p>
+        </div>
+    );
+}
+
+function SummaryStat({
+    label,
+    value,
+    tone = 'default',
+}: {
+    label: string;
+    value: string;
+    tone?: 'default' | 'emerald' | 'amber';
+}) {
+    const toneClass =
+        tone === 'emerald'
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
+            : tone === 'amber'
+                ? 'border-amber-500/20 bg-amber-500/10 text-amber-200'
+                : 'border-white/[0.08] bg-[#161B22] text-slate-200';
+
+    return (
+        <div className={`rounded-lg border px-3 py-2 ${toneClass}`}>
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-75">{label}</p>
+            <p className="mt-1 text-base font-black">{value}</p>
         </div>
     );
 }

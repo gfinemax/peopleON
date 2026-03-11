@@ -14,11 +14,58 @@ import { PaymentStatusTab } from './PaymentStatusTab';
 import { logSystemInteraction, checkAndLogAssetRightConflicts } from '@/app/actions/interaction';
 import { createAuditLog } from '@/app/actions/audit';
 import { deleteMemberEntities } from '@/app/actions/member';
+import {
+    buildCertificateStorageFields,
+    classifyCertificateInput,
+    getCertificateDisplayText,
+    getConfirmedCertificateNumbers,
+    resolveCertificateRight,
+    RIGHT_NUMBER_STATUS_LABEL,
+    RIGHT_NUMBER_STATUS_OPTIONS,
+    type RightNumberStatus,
+} from '@/lib/certificates/rightNumbers';
+
+type AssetRight = {
+    id: string;
+    entity_id: string;
+    right_type?: string | null;
+    right_number?: string | null;
+    right_number_raw?: string | null;
+    right_number_status?: RightNumberStatus | null;
+    right_number_note?: string | null;
+    issued_at?: string | null;
+    principal_amount?: number | string | null;
+    holder_name?: string | null;
+    issued_date?: string | null;
+    price_text?: string | null;
+    certificate_price?: number | string | null;
+    premium_price?: number | string | null;
+    broker_fee?: number | string | null;
+    acquisition_source?: string | null;
+    certificate_number_normalized?: string | null;
+    certificate_number_raw?: string | null;
+    certificate_status?: RightNumberStatus | null;
+    note?: any | null;
+    meta?: {
+        cert_name?: string;
+        [key: string]: any;
+    } | null;
+};
+
+type CertificateSummaryReviewStatus = 'pending' | 'reviewed' | 'manual_locked';
+
+const CERTIFICATE_SUMMARY_STATUS_LABEL: Record<CertificateSummaryReviewStatus, string> = {
+    pending: '검수대기',
+    reviewed: '검토완료',
+    manual_locked: '수동고정',
+};
 
 interface Member {
     id: string;
     name: string;
     member_number: string;
+    certificate_display?: string | null;
+    certificate_numbers?: string[] | null;
     phone: string | null;
     secondary_phone?: string | null;
     email: string | null;
@@ -43,12 +90,20 @@ interface Member {
         relation: string;
         phone: string | null;
     } | null;
-    assetRights?: any[] | null;
+    assetRights?: AssetRight[] | null;
     real_owner?: { id: string; name: string } | null;
     nominees?: { id: string; name: string }[] | null;
     birth_date?: string | null;
     resident_registration_number?: string | null;
     acts_as_agent_for?: { id: string; name: string; relation: string }[] | null;
+    owner_group?: 'registered' | 'others' | null;
+    provisional_certificate_count?: number | null;
+    manual_certificate_count?: number | null;
+    effective_certificate_count?: number | null;
+    certificate_summary_review_status?: CertificateSummaryReviewStatus | null;
+    certificate_summary_note?: string | null;
+    certificate_summary_conflict_count?: number | null;
+    certificate_summary_is_grouped?: boolean;
 }
 
 interface MemberDetailDialogProps {
@@ -98,6 +153,7 @@ export function MemberDetailDialog({
     const [ownerSearch, setOwnerSearch] = useState('');
     const [ownerResults, setOwnerResults] = useState<{ id: string, name: string, phone?: string }[]>([]);
     const [isSearchingOwner, setIsSearchingOwner] = useState(false);
+    const canEditCertificateSummary = (memberIds?.length || 0) <= 1;
 
     const handleAddRight = async () => {
         if (!rightInput.trim() || !member) return;
@@ -105,33 +161,41 @@ export function MemberDetailDialog({
         // Validation: Prevent date-like strings from being added as certificates
         const isDateLike = (v: string): boolean => {
             const s = v.trim();
-            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
+            const m = s.match(/^(19[2-9]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
             if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
-            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            const m2 = s.match(/^(19[2-9]\d)(\d{2})(\d{2})$/);
             if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
             return false;
         };
         if (isDateLike(rightInput)) {
             alert('이 입력값은 생년월일 형식입니다. 권리증 번호가 확실한지 확인하시거나, 생년월일 칸에 입력해 주세요.');
+            return;
         }
 
         setIsAddingRight(true);
         try {
             const supabase = createClient();
+            const classifiedRight = classifyCertificateInput(rightInput.trim());
             const { error } = await supabase
-                .from('asset_rights')
+                .from('certificate_registry')
                 .insert({
                     entity_id: member.id,
-                    right_number: rightInput.trim(),
-                    right_type: 'certificate'
+                    certificate_number_normalized: classifiedRight.confirmedNumber,
+                    certificate_number_raw: classifiedRight.rawValue,
+                    certificate_status: classifiedRight.status,
+                    note: JSON.stringify({ manual_add: true }),
+                    is_active: true,
+                    source_type: 'manual'
                 });
 
             if (error) throw error;
 
             // Check for conflict and log interaction
-            const newNumber = rightInput.trim();
+            const newNumber = classifiedRight.confirmedNumber;
             const currentIds = (memberIds && memberIds.length > 0) ? memberIds : (member.id ? [member.id] : []);
-            await checkAndLogAssetRightConflicts(currentIds, [newNumber]);
+            if (newNumber) {
+                await checkAndLogAssetRightConflicts(currentIds, [newNumber]);
+            }
 
             setRightInput('');
             if (memberIds && memberIds.length > 0) {
@@ -292,28 +356,25 @@ export function MemberDetailDialog({
         }
 
         const entity = entities[0];
-        const sanitizeNumber = (val: string | null | undefined) => {
-            if (!val) return null;
-            const v = val.trim();
-            if (v.startsWith('19')) return null;
-            if (/^\d{4}\.\d{2}\.\d{2}$/.test(v)) return null;
-            return v;
-        };
-
         const normalizePhone = (val: string | null | undefined) => (val || '').replace(/\D/g, '');
 
-        const [roleRes, relRes, revRelRes, rightsRes, privateInfoRes] = await Promise.all([
+        const [roleRes, relRes, revRelRes, rightsRes] = await Promise.all([
             supabase.from('membership_roles').select('role_code, is_registered').in('entity_id', ids),
             supabase.from('entity_relationships').select('from_entity_id, to_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name, phone)').in('to_entity_id', ids).eq('relation_type', 'agent'),
             supabase.from('entity_relationships').select('from_entity_id, to_entity_id, relation_type, relation_note, owner_entity:account_entities!to_entity_id(display_name, phone)').in('from_entity_id', ids).eq('relation_type', 'agent'),
-            supabase.from('asset_rights').select('*').in('entity_id', ids),
-            supabase.from('entity_private_info').select('resident_registration_number').in('entity_id', ids).maybeSingle()
+            supabase.from('certificate_registry').select('*').in('entity_id', ids).eq('is_active', true)
         ]);
 
-        // Deduplicate relationships by agent ID (from_entity_id) to avoid duplicates when merging multiple member records
         const uniqueRelations = relRes.data ? Array.from(new Map(relRes.data.map(r => [r.from_entity_id, r])).values()) : [];
 
-        const assetRights = rightsRes.data || [];
+        const assetRights = ((rightsRes.data || []) as AssetRight[]).map((right) => ({
+            ...right,
+            right_number: right.certificate_number_normalized || right.certificate_number_raw,
+            right_number_raw: right.certificate_number_raw,
+            right_number_status: (right.certificate_status || 'review_required') as RightNumberStatus,
+            right_number_note: typeof right.note === 'object' ? JSON.stringify(right.note) : (right.note || ''),
+        }));
+
         const normalizeTierLabel = (rawTier?: string | null, isRegistered = false) => {
             if (!rawTier) return isRegistered ? '등기조합원' : null;
             const t = rawTier.replace(/\s+/g, '').toLowerCase();
@@ -333,19 +394,14 @@ export function MemberDetailDialog({
         const rolesData = roleRes.data || [];
         const tiers = Array.from(new Set(rolesData.map(r => normalizeTierLabel(r.role_code, r.is_registered)).filter(Boolean))) as string[];
 
-        const certNumbers = assetRights.filter(r => r.right_type === 'certificate').map(r => sanitizeNumber(r.right_number)).filter(Boolean) as string[];
-        let displayMemberNumber = sanitizeNumber(entity.member_number);
+        let certNumbers = getConfirmedCertificateNumbers(assetRights);
+        let certificateDisplay = getCertificateDisplayText(assetRights, { includeFallbackStatus: true });
 
-        if (certNumbers.length > 0) {
-            const firstCert = certNumbers[0];
-            if (!displayMemberNumber) {
-                displayMemberNumber = certNumbers.length > 1 ? `${firstCert} 외 ${certNumbers.length - 1}건` : firstCert;
-            } else if (certNumbers.some(cn => cn !== displayMemberNumber)) {
-                displayMemberNumber = `${displayMemberNumber} 외 ${certNumbers.length}건`;
-            }
-        } else {
-            displayMemberNumber = displayMemberNumber || '-';
-        }
+        const effectiveSummaryCount = certNumbers.length;
+        const provisionalSummaryCount = certNumbers.length;
+        const summaryReviewStatus: CertificateSummaryReviewStatus = 'reviewed';
+        const summaryNote = '';
+        const ownerGroup = (rolesData.some(r => r.is_registered) ? 'registered' : 'others');
 
         const allPhonesNumeric = new Set<string>();
         const uniqueDisplayPhones: string[] = [];
@@ -363,25 +419,22 @@ export function MemberDetailDialog({
             }
         });
 
-        // Try to extract birth_date from certificate numbers if the primary field is empty
-        const isDateLike = (v: string): boolean => {
+        const isDateLikeValue = (v: string): boolean => {
             const s = v.trim();
-            const m = s.match(/^(19[2-9]\d|20[0-1]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
+            const m = s.match(/^(19[2-9]\d)[\.\-](\d{1,2})[\.\-](\d{1,2})$/);
             if (m) return +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31;
-            const m2 = s.match(/^(19[2-9]\d|20[0-1]\d)(\d{2})(\d{2})$/);
+            const m2 = s.match(/^(19[2-9]\d)(\d{2})(\d{2})$/);
             if (m2) return +m2[2] >= 1 && +m2[2] <= 12 && +m2[3] >= 1 && +m2[3] <= 31;
             return false;
         };
+
         let derivedBirthDate = entity.birth_date || null;
         if (!derivedBirthDate) {
-            // Check raw right_numbers (before sanitization) and member_number
-            const rawRightNumbers = assetRights.filter(r => r.right_type === 'certificate').map(r => r.right_number?.trim()).filter(Boolean) as string[];
-            const allPossibleCerts = [entity.member_number, ...rawRightNumbers].filter(Boolean) as string[];
-            const dateLikeValue = allPossibleCerts.find(cn => isDateLike(cn));
+            const allPossibleCerts = certNumbers.filter(Boolean);
+            const dateLikeValue = allPossibleCerts.find(cn => isDateLikeValue(cn));
             if (dateLikeValue) derivedBirthDate = dateLikeValue;
         }
 
-        const residentNumber = privateInfoRes.data?.resident_registration_number || null;
         const uniqueSecondaryPhones: string[] = [];
         const secondaryPhoneDigits = new Set<string>();
         entities.forEach((e) => {
@@ -402,7 +455,9 @@ export function MemberDetailDialog({
             name: entity.display_name,
             phone: uniqueDisplayPhones.join(', '),
             secondary_phone: uniqueSecondaryPhones.join(', ') || null,
-            member_number: displayMemberNumber,
+            member_number: entity.member_number || '-',
+            certificate_display: certificateDisplay,
+            certificate_numbers: certNumbers,
             tiers: tiers,
             role_code: rolesData[0]?.role_code || null,
             representative: uniqueRelations.length > 0 ? {
@@ -424,42 +479,31 @@ export function MemberDetailDialog({
             })) : null,
             assetRights: assetRights,
             birth_date: derivedBirthDate,
-            resident_registration_number: residentNumber
+            owner_group: ownerGroup,
+            provisional_certificate_count: provisionalSummaryCount,
+            manual_certificate_count: null,
+            effective_certificate_count: effectiveSummaryCount,
+            certificate_summary_review_status: summaryReviewStatus,
+            certificate_summary_note: summaryNote || null,
+            certificate_summary_conflict_count: 0,
+            certificate_summary_is_grouped: ids.length > 1,
         };
-
-        // Conflict check
-        let conflicts: string[] = [];
-        if (certNumbers.length > 0) {
-            const { data: allSameRights } = await supabase
-                .from('asset_rights')
-                .select('right_number, entity_id')
-                .in('right_number', certNumbers);
-
-            if (allSameRights) {
-                conflicts = Array.from(new Set(
-                    allSameRights
-                        .filter(c => !ids.includes(c.entity_id))
-                        .map(c => c.right_number)
-                ));
-            }
-        }
-        setConflictRightNumbers(conflicts);
-        setDeletedRightsIds([]);
 
         setMember(combinedData);
         setFormData(combinedData);
         setLoading(false);
+
+        // Conflict check
+        if (certNumbers.length > 0) {
+            await checkAndLogAssetRightConflicts(ids, certNumbers);
+        }
     }
 
     useEffect(() => {
         if (open && memberIds && memberIds.length > 0) {
-            const timer = window.setTimeout(() => {
-                void fetchMember(memberIds);
-            }, 0);
-            return () => window.clearTimeout(timer);
+            void fetchMember(memberIds);
         }
     }, [open, memberIds]);
-
     const handleRightChange = (rightId: string, field: string, value: string) => {
         setFormData(prev => {
             if (!prev.assetRights) return prev;
@@ -470,8 +514,33 @@ export function MemberDetailDialog({
                     if (field === 'cert_name') {
                         return { ...r, meta: { ...(r.meta || {}), cert_name: value } };
                     }
+                    if (field === 'right_number') {
+                        const classified = classifyCertificateInput(value);
+                        return {
+                            ...r,
+                            right_number: classified.confirmedNumber,
+                            right_number_raw: value,
+                            right_number_status: classified.status,
+                        };
+                    }
                     return { ...r, [field]: value };
                 })
+            };
+        });
+    };
+
+    const handleRightStatusChange = (rightId: string, status: RightNumberStatus) => {
+        setFormData(prev => {
+            if (!prev.assetRights) return prev;
+            return {
+                ...prev,
+                assetRights: prev.assetRights.map((r) => {
+                    if (r.id !== rightId) return r;
+                    return {
+                        ...r,
+                        right_number_status: status,
+                    };
+                }),
             };
         });
     };
@@ -494,7 +563,6 @@ export function MemberDetailDialog({
 
     const handleDeleteMember = async () => {
         if (!member) return;
-
         const targetIds = memberIds && memberIds.length > 0 ? memberIds : [member.id];
         const label = targetIds.length > 1 ? `${member.name || '선택한 인물'} 포함 ${targetIds.length}건` : (member.name || '선택한 인물');
         const confirmed = confirm(
@@ -534,6 +602,8 @@ export function MemberDetailDialog({
             return rep;
         };
 
+        const canEditCertificateReview = (memberIds?.length || 0) <= 1;
+
         const response = await fetch('/api/members/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -550,7 +620,10 @@ export function MemberDetailDialog({
                 representative: cleanRep(formData.representative),
                 representative2: cleanRep(formData.representative2),
                 birth_date: formData.birth_date,
-                resident_registration_number: formData.resident_registration_number
+                resident_registration_number: formData.resident_registration_number,
+                manual_certificate_count: canEditCertificateReview ? formData.manual_certificate_count : undefined,
+                certificate_summary_review_status: canEditCertificateReview ? formData.certificate_summary_review_status : undefined,
+                certificate_summary_note: canEditCertificateReview ? formData.certificate_summary_note : undefined,
             }),
         }).catch(() => null);
 
@@ -562,7 +635,7 @@ export function MemberDetailDialog({
             return;
         }
 
-        // Save asset rights changes if needed
+        // Save asset rights changes
         let rightsSaveError: any = null;
         let newlyChangedRightNumbers: string[] = [];
 
@@ -570,12 +643,21 @@ export function MemberDetailDialog({
             const supabase = createClient();
             for (const r of formData.assetRights) {
                 const original = member.assetRights.find(o => o.id === r.id);
-                if (original && (original.right_number !== r.right_number || original.issued_at !== r.issued_at || original.principal_amount !== r.principal_amount || original.meta?.cert_name !== r.meta?.cert_name)) {
+                if (original && (
+                    original.right_number_raw !== r.right_number_raw ||
+                    original.right_number_status !== r.right_number_status ||
+                    original.right_number_note !== r.right_number_note ||
+                    original.issued_at !== r.issued_at ||
+                    original.principal_amount !== r.principal_amount ||
+                    original.meta?.cert_name !== r.meta?.cert_name
+                )) {
                     const amountToSave = r.principal_amount === '' ? 0 : Number(r.principal_amount) || 0;
 
-                    // Update only if values changed
-                    const { error: rightError } = await supabase.from('asset_rights').update({
-                        right_number: r.right_number || '',
+                    const { error: rightError } = await supabase.from('certificate_registry').update({
+                        certificate_number_normalized: r.right_number,
+                        certificate_number_raw: r.right_number_raw,
+                        certificate_status: r.right_number_status,
+                        note: r.right_number_note,
                         issued_at: r.issued_at || null,
                         principal_amount: amountToSave,
                         meta: r.meta
@@ -589,12 +671,12 @@ export function MemberDetailDialog({
                         newlyChangedRightNumbers.push(r.right_number);
                     }
                     // Audit logging for certificate number change
-                    if (original.right_number !== r.right_number) {
+                    if (original.right_number_raw !== (r.right_number_raw || '')) {
                         const targetIds = memberIds && memberIds.length > 0 ? memberIds : (memberId ? [memberId] : []);
                         for (const tid of targetIds) {
                             await createAuditLog('UPDATE_CERTIFICATE_NUMBER', tid, {
-                                old_number: original.right_number || null,
-                                new_number: r.right_number || null
+                                old_number: original.right_number_raw || null,
+                                new_number: r.right_number_raw || null
                             });
                         }
                     }
@@ -605,7 +687,7 @@ export function MemberDetailDialog({
         // Process deletions
         if (deletedRightsIds.length > 0 && !rightsSaveError) {
             const supabase = createClient();
-            const { error: delError } = await supabase.from('asset_rights').delete().in('id', deletedRightsIds);
+            const { error: delError } = await supabase.from('certificate_registry').delete().in('id', deletedRightsIds);
             if (delError) {
                 rightsSaveError = delError;
             } else {
@@ -727,6 +809,7 @@ export function MemberDetailDialog({
                             </div>
                         </div>
                         <p className="text-gray-400 text-sm font-normal">회원번호: <span className="text-gray-300 font-mono">{member?.member_number}</span></p>
+                        <p className="text-gray-500 text-xs font-normal">권리증: <span className="text-gray-300 font-mono">{member?.certificate_display || '-'}</span></p>
                     </div>
                     <div className="flex items-center gap-2">
                         {isEditing ? (
@@ -884,10 +967,116 @@ export function MemberDetailDialog({
                                                 <div className="flex-1"><p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mb-1 text-left">신규 권리증 등록</p><Input value={rightInput} onChange={(e) => setRightInput(e.target.value)} placeholder="권리증 번호 입력" className="h-9 bg-slate-900 border-slate-700 text-sky-100 font-mono text-sm" onKeyDown={(e) => e.key === 'Enter' && handleAddRight()} /></div>
                                                 <Button onClick={handleAddRight} disabled={isAddingRight || !rightInput.trim()} className="mt-5 h-9 bg-sky-600 hover:bg-sky-500 text-white gap-1.5" size="sm"><MaterialIcon name="add_circle" size="xs" /><span className="text-xs font-bold whitespace-nowrap">추가</span></Button>
                                             </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                                                <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2">
+                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">등록 row 수</span>
+                                                    <span className="text-2xl font-black text-white font-mono">{member.assetRights?.length || 0} <span className="text-sm font-normal text-gray-400">개</span></span>
+                                                </div>
+                                                <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2">
+                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">사람별 잠정 개수</span>
+                                                    <span className="text-2xl font-black text-sky-300 font-mono">{member.provisional_certificate_count || 0} <span className="text-sm font-normal text-gray-400">개</span></span>
+                                                    <span className="text-[11px] text-gray-400">registry dedupe 기준</span>
+                                                </div>
+                                                <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2">
+                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">최종 권리증 개수</span>
+                                                    <span className="text-2xl font-black text-emerald-300 font-mono">{member.effective_certificate_count || 0} <span className="text-sm font-normal text-gray-400">개</span></span>
+                                                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                                                        <span className="rounded border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-200">
+                                                            {CERTIFICATE_SUMMARY_STATUS_LABEL[member.certificate_summary_review_status || 'pending']}
+                                                        </span>
+                                                        {(member.certificate_summary_conflict_count || 0) > 0 && (
+                                                            <span className="rounded border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 font-bold text-amber-200">
+                                                                충돌 {member.certificate_summary_conflict_count}건
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-[#1a2333] p-4 rounded-xl border border-emerald-500/15 space-y-3">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">사람별 확정 개수</p>
+                                                        <p className="text-xs text-gray-400">
+                                                            번호 row 수와 별개로, 실제 보유 개수를 수동 확정하는 영역입니다.
+                                                        </p>
+                                                    </div>
+                                                    {member.certificate_summary_is_grouped && (
+                                                        <span className="rounded border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-200">
+                                                            통합 인물 묶음: 직접 수정 비활성화
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">수동 최종 개수</span>
+                                                        {isEditing && canEditCertificateSummary ? (
+                                                            <Input
+                                                                type="number"
+                                                                min={0}
+                                                                className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-mono"
+                                                                value={formData.manual_certificate_count ?? ''}
+                                                                onChange={(e) => setFormData({
+                                                                    ...formData,
+                                                                    manual_certificate_count: e.target.value === '' ? null : Math.max(0, Number(e.target.value) || 0),
+                                                                })}
+                                                                placeholder={String(member.provisional_certificate_count || 0)}
+                                                            />
+                                                        ) : (
+                                                            <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white font-mono">
+                                                                {member.manual_certificate_count ?? '-'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">검수 상태</span>
+                                                        {isEditing && canEditCertificateSummary ? (
+                                                            <select
+                                                                className="bg-[#1A2633] border border-white/10 h-8 text-sm text-white rounded-md px-2 w-full"
+                                                                value={formData.certificate_summary_review_status || 'pending'}
+                                                                onChange={(e) => setFormData({
+                                                                    ...formData,
+                                                                    certificate_summary_review_status: e.target.value as CertificateSummaryReviewStatus,
+                                                                })}
+                                                            >
+                                                                {Object.entries(CERTIFICATE_SUMMARY_STATUS_LABEL).map(([value, label]) => (
+                                                                    <option key={value} value={value}>
+                                                                        {label}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white">
+                                                                {CERTIFICATE_SUMMARY_STATUS_LABEL[member.certificate_summary_review_status || 'pending']}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">소유 구분</span>
+                                                        <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white">
+                                                            {member.owner_group === 'registered' ? '등기조합원' : '기타'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">개수 메모</span>
+                                                    {isEditing && canEditCertificateSummary ? (
+                                                        <Input
+                                                            className="bg-[#1A2633] border-white/10 h-8 text-sm text-white"
+                                                            value={formData.certificate_summary_note || ''}
+                                                            onChange={(e) => setFormData({ ...formData, certificate_summary_note: e.target.value })}
+                                                            placeholder="예: 오학동 실보유 4개, 추가 확인 완료"
+                                                        />
+                                                    ) : (
+                                                        <div className="min-h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 py-2 text-sm font-medium text-white">
+                                                            {member.certificate_summary_note || '-'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                             {member.assetRights && member.assetRights.length > 0 ? (
                                                 <div className="space-y-6">
                                                     <div className="grid grid-cols-2 gap-4 text-left">
-                                                        <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">총 보유 권리증</span><span className="text-2xl font-black text-white font-mono text-left">{member.assetRights.length} <span className="text-sm font-normal text-gray-400">개</span></span></div>
+                                                        <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 row</span><span className="text-2xl font-black text-white font-mono text-left">{member.assetRights.length} <span className="text-sm font-normal text-gray-400">개</span></span></div>
                                                         <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 총액</span><span className="text-2xl font-black text-blue-400 font-mono text-left">₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.certificate_price) || Number(r.principal_amount) || 0), 0).toLocaleString()}</span>{member.assetRights.some((r: any) => Number(r.premium_price) > 0) && <span className="text-[11px] font-bold text-amber-400">+ 프리미엄 ₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.premium_price) || 0), 0).toLocaleString()}</span>}</div>
                                                     </div>
                                                     <div className="space-y-4">
@@ -902,11 +1091,19 @@ export function MemberDetailDialog({
                                                                                 {conflictRightNumbers.includes(right.right_number || '') && (
                                                                                     <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-500 rounded border border-rose-500/20 text-[10px] font-black shrink-0">⚠️ 중복(경합)</span>
                                                                                 )}
+                                                                                {right.right_number_status && (
+                                                                                    <span className="px-1.5 py-0.5 bg-sky-500/10 text-sky-300 rounded border border-sky-500/20 text-[10px] font-black shrink-0">
+                                                                                        {RIGHT_NUMBER_STATUS_LABEL[right.right_number_status]}
+                                                                                    </span>
+                                                                                )}
                                                                             </div>
                                                                             {isEditing ? (
-                                                                                <Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-mono font-bold" value={right.right_number || ''} onChange={e => handleRightChange(right.id, 'right_number', e.target.value)} placeholder="번호 없음" />
+                                                                                <Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-mono font-bold" value={right.right_number_raw || right.right_number || ''} onChange={e => handleRightChange(right.id, 'right_number', e.target.value)} placeholder="번호 또는 원문 입력" />
                                                                             ) : (
-                                                                                <span className="text-lg font-black text-white font-mono tracking-tight text-left truncate">{right.right_number || '번호 없음'}</span>
+                                                                                <span className="text-lg font-black text-white font-mono tracking-tight text-left truncate">{right.right_number || right.right_number_raw || '번호 없음'}</span>
+                                                                            )}
+                                                                            {!isEditing && right.right_number_status && right.right_number_status !== 'confirmed' && right.right_number_raw && (
+                                                                                <span className="text-[11px] text-gray-400 text-left truncate">원문: {right.right_number_raw}</span>
                                                                             )}
                                                                         </div>
                                                                         <div className="text-right flex flex-col gap-1 w-[120px] shrink-0 pt-1">
@@ -947,6 +1144,41 @@ export function MemberDetailDialog({
                                                                                     <span className="truncate">{right.meta?.cert_name || member.name}</span>
                                                                                     {(right.meta?.cert_name && right.meta.cert_name !== member.name) && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 font-black shrink-0">성명 상이</span>}
                                                                                 </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-white/5 text-left">
+                                                                        <div className="flex flex-col gap-1 text-left min-w-0">
+                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">권리증 상태</span>
+                                                                            {isEditing ? (
+                                                                                <select
+                                                                                    className="bg-[#1A2633] border border-white/10 h-8 text-sm text-white rounded-md px-2"
+                                                                                    value={right.right_number_status || 'review_required'}
+                                                                                    onChange={(e) => handleRightStatusChange(right.id, e.target.value as RightNumberStatus)}
+                                                                                >
+                                                                                    {RIGHT_NUMBER_STATUS_OPTIONS.map((status) => (
+                                                                                        <option key={status} value={status}>
+                                                                                            {RIGHT_NUMBER_STATUS_LABEL[status]}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            ) : (
+                                                                                <span className="text-sm font-bold text-white text-left">
+                                                                                    {right.right_number_status ? RIGHT_NUMBER_STATUS_LABEL[right.right_number_status] : '-'}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-1 text-left min-w-0">
+                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">검수 메모</span>
+                                                                            {isEditing ? (
+                                                                                <Input
+                                                                                    className="bg-[#1A2633] border-white/10 h-8 text-sm text-white w-full"
+                                                                                    value={right.right_number_note || ''}
+                                                                                    onChange={e => handleRightChange(right.id, 'right_number_note', e.target.value)}
+                                                                                    placeholder="검수 메모"
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="text-sm font-bold text-white text-left truncate">{right.right_number_note || '-'}</span>
                                                                             )}
                                                                         </div>
                                                                     </div>

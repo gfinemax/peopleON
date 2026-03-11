@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { extractCertificateNumbers, normalizeCertificateNumber } from '@/lib/legacy/certificateNumbers';
 import {
     LEGACY_MEMBER_SEGMENT_LABEL_MAP,
     type LegacyMemberSegment,
@@ -9,6 +8,7 @@ import {
     isRegisteredProxyMatch,
     type RegisteredMemberProxyReference,
 } from '@/lib/legacy/registeredProxyMatcher';
+import { getConfirmedCertificateNumbers, normalizeCertificateNumber } from '@/lib/certificates/rightNumbers';
 
 interface MemberReference {
     id: string;
@@ -119,6 +119,8 @@ export async function GET() {
             .select(`
                 id,
                 right_number,
+                right_number_raw,
+                right_number_status,
                 status,
                 meta,
                 entity_id,
@@ -174,7 +176,7 @@ export async function GET() {
         else if (activeRoleCode.includes('지주')) segment = 'landlord_member';
         else if (activeRoleCode.includes('일반')) segment = 'general_sale';
 
-        const certNumbers = [right.right_number].filter(Boolean);
+        const certNumbers = getConfirmedCertificateNumbers([right as any]);
 
         return {
             id: right.id,
@@ -190,11 +192,11 @@ export async function GET() {
     });
 
     const registeredMemberNumberSet = new Set<string>();
-    for (const member of registeredMembers) {
-        const rawNumber = member.member_number?.trim() || '';
-        if (!rawNumber) continue;
-        const normalized = normalizeCertificateNumber(rawNumber);
-        if (normalized) registeredMemberNumberSet.add(normalized);
+    for (const record of enrichedRecords.filter((item) => item.member_segment === 'registered_116')) {
+        for (const number of record.certificate_numbers) {
+            const normalized = normalizeCertificateNumber(number);
+            if (normalized) registeredMemberNumberSet.add(normalized);
+        }
     }
 
     const legacyBaseRecords = enrichedRecords.filter((record) => record.member_segment !== 'registered_116');

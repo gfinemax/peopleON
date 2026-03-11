@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { extractCertificateNumbers } from '@/lib/legacy/certificateNumbers';
 import {
     LEGACY_MEMBER_SEGMENT_LABEL_MAP,
     LEGACY_MEMBER_SEGMENT_OPTIONS,
@@ -10,6 +9,7 @@ import {
     isRegisteredProxyMatch,
     type RegisteredMemberProxyReference,
 } from '@/lib/legacy/registeredProxyMatcher';
+import { getConfirmedCertificateNumbers, resolveCertificateRight } from '@/lib/certificates/rightNumbers';
 
 type StatusFilter = 'all' | LegacyMemberSegment;
 
@@ -41,6 +41,8 @@ interface EnrichedLegacyRecord {
     member_segment: LegacyMemberSegment;
     certificate_numbers: string[];
     certificate_count: number;
+    certificate_raw: string;
+    certificate_status: string;
     contact: string;
 }
 
@@ -146,6 +148,8 @@ export async function GET(request: Request) {
             .select(`
                 id,
                 right_number,
+                right_number_raw,
+                right_number_status,
                 principal_amount,
                 status,
                 meta,
@@ -202,7 +206,8 @@ export async function GET(request: Request) {
         else if (activeRoleCode.includes('지주')) segment = 'landlord_member';
         else if (activeRoleCode.includes('일반')) segment = 'general_sale';
 
-        const certNumbers = [right.right_number].filter(Boolean);
+        const resolvedRight = resolveCertificateRight(right as any);
+        const certNumbers = getConfirmedCertificateNumbers([right as any]);
 
         return {
             id: right.id,
@@ -213,6 +218,8 @@ export async function GET(request: Request) {
             member_segment: segment,
             certificate_numbers: certNumbers,
             certificate_count: certNumbers.length,
+            certificate_raw: resolvedRight.rawValue || '-',
+            certificate_status: resolvedRight.status,
             contact,
         };
     });
@@ -222,6 +229,7 @@ export async function GET(request: Request) {
         ? enrichedRecords.filter((record) => {
             if (record.original_name.toLowerCase().includes(lowerQuery)) return true;
             if (record.contact !== '-' && record.contact.toLowerCase().includes(lowerQuery)) return true;
+            if (record.certificate_raw !== '-' && record.certificate_raw.toLowerCase().includes(lowerQuery)) return true;
             return record.certificate_numbers.some((number) => number.toLowerCase().includes(lowerQuery));
         })
         : enrichedRecords;
@@ -241,7 +249,7 @@ export async function GET(request: Request) {
         return String(left).localeCompare(String(right), 'ko') * direction;
     });
 
-    const header = ['No', '이름', '연락처', '권리증번호', '보유 권리증(번호기준)', '조합원 상태', '출처 파일'];
+    const header = ['No', '이름', '연락처', '권리증번호', '원문값', '상태', '보유 권리증(번호기준)', '조합원 상태', '출처 파일'];
     const lines = [
         header.map(escapeCsvCell).join(','),
         ...sortedRecords.map((record, index) =>
@@ -250,6 +258,8 @@ export async function GET(request: Request) {
                 record.original_name,
                 record.contact,
                 record.certificate_numbers.join(', ') || '-',
+                record.certificate_raw,
+                record.certificate_status,
                 `${record.certificate_count}개`,
                 LEGACY_MEMBER_SEGMENT_LABEL_MAP[record.member_segment],
                 record.source_file,

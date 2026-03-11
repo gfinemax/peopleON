@@ -10,6 +10,7 @@ import { SettlementStatusSyncForm } from '@/components/features/settlements/Sett
 import { SettlementOpsChecklistCard } from '@/components/features/settlements/SettlementOpsChecklistCard';
 import { SettlementAlertCenterCard } from '@/components/features/settlements/SettlementAlertCenterCard';
 import { AccountingCompatReadyCard } from '@/components/features/settlements/AccountingCompatReadyCard';
+import { CertificateAnalysisCard } from '@/components/features/settlements/CertificateAnalysisCard';
 import {
     buildSettlementPartyOwnershipMap,
     ownerTypeLabel,
@@ -458,6 +459,7 @@ export default async function SettlementsPage({
                     <SettlementAlertCenterCard />
                     <SettlementOpsChecklistCard />
                     <AccountingCompatReadyCard />
+                    <CertificateAnalysisCard />
 
                     <section className="rounded-xl border border-white/[0.08] bg-[#101725] p-3">
                         <div className="flex flex-wrap items-center gap-2">
