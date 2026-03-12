@@ -17,7 +17,7 @@ interface Member {
     member_id: string | null;
     party_id?: string | null;
     name: string;
-    member_number: string | null;
+    member_number?: string | null;
     certificate_display?: string | null;
     phone: string | null;
     tier: string | null;

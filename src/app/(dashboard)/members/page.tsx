@@ -249,7 +249,7 @@ export default async function MembersPage({
         if (query) {
             const queryLower = query.toLowerCase();
             const certificateText = `${p.certificate_display || ''} ${(p.certificate_search_tokens || []).join(' ')}`;
-            const isTextMatch = `${p.name} ${p.member_number || ''} ${certificateText} ${p.phone} ${p.notes || ''}`
+            const isTextMatch = `${p.name} ${certificateText} ${p.phone} ${p.notes || ''}`
                 .toLowerCase()
                 .includes(queryLower);
             const isLogMatch = Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id));
