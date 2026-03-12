@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { MembersTable } from '@/components/features/members/MembersTable';
 import { MembersFilter } from '@/components/features/members/MembersFilter';
 import { MembersKpiStrip } from '@/components/features/members/MembersKpiStrip';
+import { MembersExportPrintButtons } from '@/components/features/members/MembersExportPrintButtons';
 import { DashboardManager } from '@/components/features/members/DashboardManager';
 import { MemberActions } from '@/components/features/members/MemberActions';
 import { LinkedOperationPanel } from '@/components/features/members/OperationPanel';
@@ -425,6 +426,10 @@ export default async function MembersPage({
                 }}
             >
                 <div className="flex flex-col lg:rounded-xl lg:border lg:border-white/[0.08] lg:bg-card lg:shadow-sm mb-4 lg:mb-6">
+                    <div className="flex items-center justify-between px-3 pt-3 pb-2 mb-1 border-b border-white/[0.04]">
+                        <h2 className="text-sm font-bold text-slate-200">데이터 리스트</h2>
+                        <MembersExportPrintButtons data={filteredPeople} />
+                    </div>
                     <div className="p-2 lg:p-3">
                         <div className="flex gap-3">
                             <div className="min-w-0 flex-1 rounded-lg border border-white/[0.06] bg-[#0f1725] overflow-hidden max-h-[68vh]">

@@ -360,9 +360,22 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         }
 
         const entityRights = rightsByEntity.get(entity.id) || [];
-        const certificateNumbers = getConfirmedCertificateNumbers(entityRights);
-        const certificateDisplay = getCertificateDisplayText(entityRights, { includeFallbackStatus: true });
-        const certificateSearchTokens = getCertificateSearchTokens(entityRights);
+
+        // --- 대리인(agent) 권리증 합산 ---
+        // 이 인물에게 연결된 대리인들의 entity_id를 찾아서 그들의 권리증도 포함
+        const myAgents = agentsByEntity.get(entity.id) || [];
+        const agentRights: any[] = [];
+        for (const agent of myAgents) {
+            if (agent.id) {
+                const aRights = rightsByEntity.get(agent.id) || [];
+                agentRights.push(...aRights);
+            }
+        }
+        const combinedRights = agentRights.length > 0 ? [...entityRights, ...agentRights] : entityRights;
+
+        const certificateNumbers = getConfirmedCertificateNumbers(combinedRights);
+        const certificateDisplay = getCertificateDisplayText(combinedRights, { includeFallbackStatus: true });
+        const certificateSearchTokens = getCertificateSearchTokens(combinedRights);
 
         const isDateLike = (v: string): boolean => {
             const s = v.trim();
@@ -386,7 +399,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             }
         }
 
-        const hasLiveCertData = entityRights.some((right: any) => right.right_type === 'certificate');
+        const hasLiveCertData = combinedRights.some((right: any) => right.right_type === 'certificate');
         const hasNumericCert = certificateNumbers.length > 0;
         if (roleTypes.has('certificate_holder')) {
             if (hasNumericCert) {

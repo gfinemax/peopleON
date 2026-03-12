@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { MaterialIcon } from "@/components/ui/icon"
 import { MemberCreateDialog } from "./MemberCreateDialog"
 import { MemberBulkUploadDialog } from "./MemberBulkUploadDialog"
-import { exportToExcel } from "./MemberExportExcel"
+import { MembersExportDialog } from "./MembersExportDialog"
 
 interface MemberActionsProps {
     data: any[]
@@ -14,10 +14,7 @@ interface MemberActionsProps {
 export function MemberActions({ data }: MemberActionsProps) {
     const [isAddOpen, setIsAddOpen] = React.useState(false)
     const [isBulkOpen, setIsBulkOpen] = React.useState(false)
-
-    const handleExport = () => {
-        exportToExcel(data)
-    }
+    const [isExportOpen, setIsExportOpen] = React.useState(false)
 
     return (
         <div className="flex items-center gap-2">
@@ -42,10 +39,10 @@ export function MemberActions({ data }: MemberActionsProps) {
             </Button>
 
             <Button
-                onClick={handleExport}
+                onClick={() => setIsExportOpen(true)}
                 variant="outline"
                 size="sm"
-                className="h-9 gap-1.5 bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
+                className="h-9 gap-1.5 bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm"
             >
                 <MaterialIcon name="download" size="xs" />
                 <span className="text-xs font-bold">엑셀 저장</span>
@@ -53,6 +50,7 @@ export function MemberActions({ data }: MemberActionsProps) {
 
             <MemberCreateDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
             <MemberBulkUploadDialog open={isBulkOpen} onOpenChange={setIsBulkOpen} />
+            <MembersExportDialog isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} data={data} />
         </div>
     )
 }
