@@ -30,6 +30,14 @@ type MemberUpdatePayload = {
     certificate_summary_review_status?: 'pending' | 'reviewed' | 'manual_locked' | null;
     certificate_summary_note?: string | null;
     certificate_summary_owner_group?: 'registered' | 'others' | null;
+    deleted_rights_ids?: string[];
+    merged_rights_payload?: {
+        source_ids: string[];
+        target_number: string;
+        integration_type: 'consolidated' | 'unified_new';
+        original_owner_id?: string;
+        original_owner_name?: string;
+    };
 };
 
 export async function POST(request: Request) {
@@ -223,6 +231,91 @@ export async function POST(request: Request) {
         }));
         const ssnError = results.find(e => e);
         if (ssnError) console.error('SSN update error:', ssnError);
+    }
+    // 4-1. Soft delete certificate_registry records if requested
+    if (body?.deleted_rights_ids && Array.isArray(body.deleted_rights_ids) && body.deleted_rights_ids.length > 0) {
+        const { error: delError } = await supabase
+            .from('certificate_registry')
+            .update({ is_active: false })
+            .in('id', body.deleted_rights_ids);
+        
+        if (delError) {
+            console.error('Certificate soft delete error:', delError);
+        } else {
+            await createAuditLog('DELETE_ASSET_RIGHTS', targetIds[0], {
+                deleted_ids: body.deleted_rights_ids
+            });
+        }
+    }
+
+    // 4-2. Handle Certificate Consolidation (Merge)
+    if (body?.merged_rights_payload && targetIds.length === 1) {
+        const { source_ids, target_number, integration_type, original_owner_id, original_owner_name } = body.merged_rights_payload;
+        
+        // 1) 생성될 상위(관리) 권리증 레코드 생성
+        const { data: newRight, error: createRightError } = await supabase
+            .from('certificate_registry')
+            .insert({
+                entity_id: targetIds[0],
+                certificate_number_raw: target_number,
+                certificate_number_normalized: target_number
+                    .replace(/[./]/g, '-')
+                    .replace(/\s+/g, '')
+                    .toLowerCase(),
+                certificate_status: 'confirmed',
+                source_type: 'manual',
+                is_confirmed_for_count: true,
+                is_active: true,
+                note: JSON.stringify({
+                    node_type: 'derivative',
+                    integration_type: integration_type,
+                    merged_at: new Date().toISOString(),
+                    merged_by: user.id
+                })
+            })
+            .select('id')
+            .single();
+
+        if (createRightError) {
+            console.error('New merged certificate creation error:', createRightError);
+            return NextResponse.json({ success: false, message: `통합 권리증 생성 실패: ${createRightError.message}` }, { status: 500 });
+        } else if (newRight) {
+            // 2) 소스 권리증들에 부모 링크 및 메타데이터 업데이트
+            for (const sid of source_ids) {
+                const { data: existing } = await supabase.from('certificate_registry').select('note, entity_id').eq('id', sid).single();
+                let existingMeta: Record<string, any> = {};
+                try {
+                    if (existing?.note) {
+                        if (typeof existing.note === 'object') {
+                            existingMeta = existing.note;
+                        } else if (typeof existing.note === 'string' && existing.note.trim().startsWith('{')) {
+                            existingMeta = JSON.parse(existing.note);
+                        }
+                    }
+                } catch(e) {}
+
+                const updatedMeta = {
+                    ...existingMeta,
+                    node_type: 'raw',
+                    parent_right_id: newRight.id,
+                    original_owner_id: original_owner_id || existing?.entity_id,
+                    original_owner_name: original_owner_name
+                };
+
+                await supabase
+                    .from('certificate_registry')
+                    .update({ 
+                        note: JSON.stringify(updatedMeta)
+                    })
+                    .eq('id', sid);
+            }
+
+            await createAuditLog('MERGE_ASSET_RIGHTS', targetIds[0], {
+                target_id: newRight.id,
+                source_ids: source_ids,
+                integration_type: integration_type
+            });
+        }
     }
 
     // 5. Update person-level certificate summary (single target only)

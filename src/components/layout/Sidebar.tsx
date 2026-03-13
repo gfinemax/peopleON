@@ -14,6 +14,7 @@ const menuItems = [
     { name: '정산/환불', href: '/settlements', icon: 'currency_exchange' },
     { name: '활동 타임라인', href: '/timeline', icon: 'history' },
     { name: '부가관리기능', href: '/sms', icon: 'send' },
+    { name: '중복 인물 관리', href: '/admin/duplicates', icon: 'person_search' },
     { name: '감사 로그 (Admin)', href: '/admin/audit', icon: 'admin_panel_settings' },
 ];
 

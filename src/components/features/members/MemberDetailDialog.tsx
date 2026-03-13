@@ -131,6 +131,7 @@ export function MemberDetailDialog({
     const [deleting, setDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Member>>({});
+    const [isAdmin, setIsAdmin] = useState(false);
     const [saveFeedback, setSaveFeedback] = useState<{
         tone: 'success' | 'warn' | 'error';
         message: string;
@@ -149,10 +150,24 @@ export function MemberDetailDialog({
     const [deletedRightsIds, setDeletedRightsIds] = useState<string[]>([]);
     const [isSsnRevealed, setIsSsnRevealed] = useState(false);
 
+    useEffect(() => {
+        const checkAdmin = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email === 'gfinemax@gmail.com') {
+                setIsAdmin(true);
+            }
+        };
+        checkAdmin();
+    }, []);
+
     // Real Owner Search State
     const [ownerSearch, setOwnerSearch] = useState('');
     const [ownerResults, setOwnerResults] = useState<{ id: string, name: string, phone?: string }[]>([]);
     const [isSearchingOwner, setIsSearchingOwner] = useState(false);
+    const [selectedRightIds, setSelectedRightIds] = useState<string[]>([]);
+    const [isMerging, setIsMerging] = useState(false);
+    const [showLineageId, setShowLineageId] = useState<string | null>(null);
     const canEditCertificateSummary = (memberIds?.length || 0) <= 1;
 
     const handleAddRight = async () => {
@@ -343,6 +358,7 @@ export function MemberDetailDialog({
         setLoading(true);
         setIsEditing(false);
         setSaveFeedback(null);
+        setDeletedRightsIds([]);
         const supabase = createClient();
 
         const { data: entities, error: entitiesError } = await supabase
@@ -624,6 +640,7 @@ export function MemberDetailDialog({
                 manual_certificate_count: canEditCertificateReview ? formData.manual_certificate_count : undefined,
                 certificate_summary_review_status: canEditCertificateReview ? formData.certificate_summary_review_status : undefined,
                 certificate_summary_note: canEditCertificateReview ? formData.certificate_summary_note : undefined,
+                deleted_rights_ids: deletedRightsIds.length > 0 ? deletedRightsIds : undefined,
             }),
         }).catch(() => null);
 
@@ -684,18 +701,7 @@ export function MemberDetailDialog({
             }
         }
 
-        // Process deletions
-        if (deletedRightsIds.length > 0 && !rightsSaveError) {
-            const supabase = createClient();
-            const { error: delError } = await supabase.from('certificate_registry').delete().in('id', deletedRightsIds);
-            if (delError) {
-                rightsSaveError = delError;
-            } else {
-                await createAuditLog('DELETE_ASSET_RIGHTS', memberId || (memberIds && memberIds[0]) || undefined, {
-                    deleted_ids: deletedRightsIds
-                });
-            }
-        }
+        // deletions are now handled by /api/members/update 
 
         if (rightsSaveError) {
             console.error("Asset rights update error:", rightsSaveError, JSON.stringify(rightsSaveError));
@@ -1075,12 +1081,56 @@ export function MemberDetailDialog({
                                             </div>
                                             {member.assetRights && member.assetRights.length > 0 ? (
                                                 <div className="space-y-6">
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <h3 className="text-white text-base font-bold flex items-center gap-2"><span className="w-1 h-4 bg-sky-500 rounded-full"></span>상세 보유 내역</h3>
+                                                            {selectedRightIds.length > 1 && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={async () => {
+                                                                        const targetNum = prompt('통합 관리할 새 권리증 번호를 입력하거나 기존 번호를 입력하세요:');
+                                                                        if (!targetNum) return;
+                                                                        setIsMerging(true);
+                                                                        try {
+                                                                            const res = await fetch('/api/members/update', {
+                                                                                method: 'POST',
+                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                body: JSON.stringify({
+                                                                                    id: member.id,
+                                                                                    merged_rights_payload: {
+                                                                                        source_ids: selectedRightIds,
+                                                                                        target_number: targetNum,
+                                                                                        integration_type: 'consolidated'
+                                                                                    }
+                                                                                })
+                                                                            });
+                                                                            const data = await res.json();
+                                                                            if (data.success) {
+                                                                                alert('권리증이 성공적으로 통합되었습니다.');
+                                                                                setSelectedRightIds([]);
+                                                                                fetchMember(memberIds || [member.id]);
+                                                                            } else {
+                                                                                alert(`통합 중 오류가 발생했습니다: ${data.message || '알 수 없는 오류'}`);
+                                                                            }
+                                                                        } catch (e) {
+                                                                            alert('통합 중 오류가 발생했습니다.');
+                                                                        } finally {
+                                                                            setIsMerging(false);
+                                                                        }
+                                                                    }}
+                                                                    className="h-8 bg-blue-600 hover:bg-blue-500 text-[11px] font-bold"
+                                                                    disabled={isMerging}
+                                                                >
+                                                                    {isMerging ? '통합 중...' : `${selectedRightIds.length}개 선택됨 - 통합하기`}
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                     <div className="grid grid-cols-2 gap-4 text-left">
                                                         <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 row</span><span className="text-2xl font-black text-white font-mono text-left">{member.assetRights.length} <span className="text-sm font-normal text-gray-400">개</span></span></div>
                                                         <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 총액</span><span className="text-2xl font-black text-blue-400 font-mono text-left">₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.certificate_price) || Number(r.principal_amount) || 0), 0).toLocaleString()}</span>{member.assetRights.some((r: any) => Number(r.premium_price) > 0) && <span className="text-[11px] font-bold text-amber-400">+ 프리미엄 ₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.premium_price) || 0), 0).toLocaleString()}</span>}</div>
                                                     </div>
                                                     <div className="space-y-4">
-                                                        <h3 className="text-white text-base font-bold flex items-center gap-2"><span className="w-1 h-4 bg-sky-500 rounded-full"></span>상세 보유 내역</h3>
                                                         <div className="grid gap-3">
                                                             {(formData.assetRights || []).map((right) => (
                                                                 <div key={right.id} className="bg-[#233040] rounded-xl border border-white/5 p-5 hover:border-white/10 transition-colors">
@@ -1108,6 +1158,36 @@ export function MemberDetailDialog({
                                                                         </div>
                                                                         <div className="text-right flex flex-col gap-1 w-[120px] shrink-0 pt-1">
                                                                             <div className="flex items-center justify-end gap-2">
+                                                                                {(() => {
+                                                                                    let meta: any = {};
+                                                                                    try { if (typeof right.right_number_note === 'string' && (right.right_number_note.startsWith('{') || right.right_number_note.startsWith('['))) meta = JSON.parse(right.right_number_note); else if (typeof right.right_number_note === 'object') meta = right.right_number_note; } catch(e) {}
+                                                                                    if (meta?.node_type === 'derivative') {
+                                                                                        return (
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                size="sm"
+                                                                                                onClick={() => setShowLineageId(right.id)}
+                                                                                                className="h-6 px-1.5 text-[9px] bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/30 font-bold"
+                                                                                            >
+                                                                                                <MaterialIcon name="account_tree" size="xs" className="mr-1" />
+                                                                                                계보보기
+                                                                                            </Button>
+                                                                                        );
+                                                                                    }
+                                                                                    return null;
+                                                                                })()}
+                                                                                {!isEditing && member.assetRights && member.assetRights.length > 1 && (
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={selectedRightIds.includes(right.id)}
+                                                                                        onChange={(e) => {
+                                                                                            if (e.target.checked) setSelectedRightIds(prev => [...prev, right.id]);
+                                                                                            else setSelectedRightIds(prev => prev.filter(id => id !== right.id));
+                                                                                        }}
+                                                                                        className="size-4 rounded border-white/10 bg-white/5 accent-emerald-500"
+                                                                                        title="통합 처리를 위해 선택"
+                                                                                    />
+                                                                                )}
                                                                                 {isEditing && (
                                                                                     <button onClick={() => handleDeleteRight(right.id)} className="flex items-center justify-center px-1.5 py-0.5 text-rose-400 hover:bg-rose-500/20 bg-rose-500/10 rounded border border-rose-500/20 transition-colors gap-1 text-[10px]">
                                                                                         <MaterialIcon name="delete" size="xs" className="text-[12px]" />
@@ -1135,19 +1215,6 @@ export function MemberDetailDialog({
                                                                                 <span className="text-sm font-bold text-white font-mono text-left truncate">₩{(Number(right.principal_amount) || 0).toLocaleString()}</span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="flex flex-col gap-1 text-left min-w-0">
-                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">권리 명의자</span>
-                                                                            {isEditing ? (
-                                                                                <Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white w-full" value={right.meta?.cert_name || ''} onChange={e => handleRightChange(right.id, 'cert_name', e.target.value)} placeholder={member.name} />
-                                                                            ) : (
-                                                                                <span className="text-sm font-bold text-white flex items-center gap-1.5 text-left truncate">
-                                                                                    <span className="truncate">{right.meta?.cert_name || member.name}</span>
-                                                                                    {(right.meta?.cert_name && right.meta.cert_name !== member.name) && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 font-black shrink-0">성명 상이</span>}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-white/5 text-left">
                                                                         <div className="flex flex-col gap-1 text-left min-w-0">
                                                                             <span className="text-[10px] font-bold text-gray-500 uppercase text-left">권리증 상태</span>
                                                                             {isEditing ? (
@@ -1178,13 +1245,13 @@ export function MemberDetailDialog({
                                                                                     placeholder="검수 메모"
                                                                                 />
                                                                             ) : (
-                                                                                <span className="text-sm font-bold text-white text-left truncate">{right.right_number_note || '-'}</span>
+                                                                                <span className="text-sm font-bold text-white text-left truncate">{isAdmin ? (right.right_number_note || '-') : '***'}</span>
                                                                             )}
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* 취득 정보 (엑셀 마이그레이션 데이터) */}
-                                                                    {(right.holder_name || right.price_text || right.acquisition_source || right.issued_date) && (
+                                                                    {/* 취득 정보 (엑셀 마이그레이션 데이터) - 관리자만 노출 */}
+                                                                    {isAdmin && (right.holder_name || right.price_text || right.acquisition_source || right.issued_date) && (
                                                                         <div className="mt-3 pt-3 border-t border-white/5">
                                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                                 <MaterialIcon name="receipt_long" size="xs" className="text-amber-400/70" />
@@ -1250,6 +1317,109 @@ export function MemberDetailDialog({
                     </div>
                 </div>
             </DialogContent>
+            {/* --- Lineage Popover/Dialog --- */}
+            {showLineageId && (
+                <Dialog open={!!showLineageId} onOpenChange={(o) => !o && setShowLineageId(null)}>
+                    <DialogContent className="sm:max-w-md bg-[#1A2633] border-white/10 text-white p-6 shadow-2xl rounded-2xl z-[100]">
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2 mb-4">
+                            <MaterialIcon name="account_tree" className="text-purple-400" />
+                            권리증 계보 이력 (통합)
+                        </DialogTitle>
+                        <div className="space-y-4">
+                                {(() => {
+                                    if (!member) return null;
+                                    const targetRight = member.assetRights?.find(r => r.id === showLineageId);
+                                    let meta: any = {};
+                                    try { if (typeof targetRight?.right_number_note === 'string') meta = JSON.parse(targetRight.right_number_note); else if(typeof targetRight?.right_number_note === 'object') meta = targetRight.right_number_note;} catch(e) {}
+                                    
+                                    const sources = member.assetRights?.filter(r => {
+                                        let rMeta: any = {};
+                                        try { if (typeof r.right_number_note === 'string') rMeta = JSON.parse(r.right_number_note); else if (typeof r.right_number_note === 'object') rMeta = r.right_number_note;} catch(e) {}
+                                        return rMeta.parent_right_id === showLineageId;
+                                    }) || [];
+
+                                    return (
+                                    <>
+                                        <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-[40px] rounded-full pointer-events-none"></div>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">통합 관리 번호 (결과)</p>
+                                            <p className="text-xl font-mono font-black text-purple-400 drop-shadow-md">{targetRight?.right_number || targetRight?.right_number_raw}</p>
+                                            <p className="text-xs text-gray-400 mt-2 font-medium">통합일시: {meta.merged_at ? new Date(meta.merged_at).toLocaleString() : '정보 없음'}</p>
+                                        </div>
+                                        <div className="space-y-2 relative">
+                                            <div className="absolute left-4 top-[-10px] bottom-4 w-px bg-white/10 pointer-events-none"></div>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2 pl-2">
+                                                <MaterialIcon name="subdirectory_arrow_right" size="xs" className="text-gray-600" />
+                                                원천 권리증 (통합 전)
+                                            </p>
+                                            {sources.length > 0 ? sources.map(s => {
+                                                let sMeta: any = {};
+                                                try { if (typeof s.right_number_note === 'string') sMeta = JSON.parse(s.right_number_note); else if (typeof s.right_number_note === 'object') sMeta = s.right_number_note;} catch(e) {}
+                                                return (
+                                                    <div key={s.id} className="bg-white/5 rounded-lg p-3 flex items-center justify-between border border-white/5 relative ml-4">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-sm font-mono font-bold text-gray-200">{s.right_number || s.right_number_raw}</span>
+                                                            {sMeta.original_owner_name && (
+                                                                <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded w-fit">기존 소유자: {sMeta.original_owner_name}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-[9px] px-1.5 py-0.5 bg-sky-500/10 text-sky-300 rounded border border-sky-500/20 font-bold inline-block">원본보존</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }) : (
+                                                <p className="text-xs text-gray-500 py-4 text-center ml-4 border border-dashed border-white/10 rounded-lg">원천 정보(자식 노드)를 찾을 수 없습니다.</p>
+                                            )}
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                        <div className="mt-6 flex justify-between items-center pt-4 border-t border-white/10">
+                            <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={async () => {
+                                    if(!member || !confirm('정말 이 통합을 해제하시겠습니까? 원천 정보들이 독립적으로 분리됩니다.')) return;
+                                    try {
+                                        setIsMerging(true);
+                                        const res = await fetch('/api/members/update', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                id: member.id,
+                                                unmerge_right_id: showLineageId
+                                            })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                            alert('통합 해제가 완료되었습니다.');
+                                            setShowLineageId(null);
+                                            fetchMember(memberIds || [member.id]);
+                                        } else {
+                                            alert(`오류: ${data.message}`);
+                                        }
+                                    } catch (e) {
+                                        alert('서버 오류가 발생했습니다.');
+                                    } finally {
+                                        setIsMerging(false);
+                                    }
+                                }}
+                                className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 text-xs h-8"
+                                disabled={isMerging}
+                            >
+                                <MaterialIcon name="link_off" size="xs" className="mr-1" />
+                                통합 관리 해제
+                            </Button>
+
+                            <Button size="sm" onClick={() => setShowLineageId(null)} className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold h-8 px-5">
+                                닫기
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </Dialog>
     );
 }

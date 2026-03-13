@@ -3,7 +3,18 @@ import {
     getCertificateDisplayText,
     getCertificateSearchTokens,
     getConfirmedCertificateNumbers,
+    resolveCertificateRight,
 } from '@/lib/certificates/rightNumbers';
+
+export type CertificateMeta = {
+    node_type?: 'raw' | 'derivative';
+    parent_right_id?: string;
+    original_owner_id?: string;
+    original_owner_name?: string;
+    integration_type?: 'none' | 'consolidated' | 'unified_new';
+    merged_at?: string;
+    merged_by?: string;
+};
 
 export type RoleType = 'member' | 'certificate_holder' | 'related_party' | 'refund_applicant' | 'agent';
 
@@ -41,6 +52,9 @@ export type UnifiedPerson = {
     nominees?: { id: string; name: string }[] | null;
     _hasLiveCertData?: boolean;
     birth_date: string | null;
+    raw_certificate_count: number;
+    managed_certificate_count: number;
+    has_merged_certificates: boolean;
 };
 
 export const normalizeText = (value?: string | null) => (value || '').replace(/\s+/g, '').toLowerCase();
@@ -189,6 +203,8 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         right_number_raw: r.certificate_number_raw,
         right_number_status: r.certificate_status,
         right_number_note: r.note,
+        note: r.note,
+        is_active: r.is_active,
         is_confirmed_for_count: r.is_confirmed_for_count
     }));
     const settlementCases = (casesRes.data as any[] | null) || [];
@@ -361,21 +377,121 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
 
         const entityRights = rightsByEntity.get(entity.id) || [];
 
-        // --- 대리인(agent) 권리증 합산 ---
-        // 이 인물에게 연결된 대리인들의 entity_id를 찾아서 그들의 권리증도 포함
+        // --- 대리인(agent) 권리증 조건부 합산 ---
+        // 대리인으로 연결된 인물의 권리증을 합산하되, 해당 대리인이 본인 자격(등기조합원, 권리증보유자 등)을 가지고 있다면 합산하지 않음
         const myAgents = agentsByEntity.get(entity.id) || [];
         const agentRights: any[] = [];
         for (const agent of myAgents) {
             if (agent.id) {
-                const aRights = rightsByEntity.get(agent.id) || [];
-                agentRights.push(...aRights);
+                const aRoles = rolesByEntity.get(agent.id) || [];
+                const hasIndependentRole = aRoles.some(r => 
+                    r.role_status === 'active' && 
+                    (r.role_code.includes('조합원') || r.role_code.includes('차') || r.role_code.includes('권리증'))
+                );
+                
+                if (!hasIndependentRole) {
+                    const aRights = rightsByEntity.get(agent.id) || [];
+                    agentRights.push(...aRights);
+                }
             }
         }
         const combinedRights = agentRights.length > 0 ? [...entityRights, ...agentRights] : entityRights;
 
-        const certificateNumbers = getConfirmedCertificateNumbers(combinedRights);
-        const certificateDisplay = getCertificateDisplayText(combinedRights, { includeFallbackStatus: true });
-        const certificateSearchTokens = getCertificateSearchTokens(combinedRights);
+        // --- 권리증 계보 집계 (Dual Count) 로직 ---
+        let rawCount = 0;
+        let managedCount = 0;
+        let hasMerged = false;
+        const activeManagedRights: any[] = [];
+
+        combinedRights.forEach((r: any) => {
+            if (r.right_type !== 'certificate' || !r.is_active) return;
+
+            let meta: CertificateMeta = {};
+            try {
+                if (r.note) {
+                    if (typeof r.note === 'object') {
+                        meta = r.note;
+                    } else if (typeof r.note === 'string' && r.note.trim().startsWith('{')) {
+                        meta = JSON.parse(r.note);
+                    }
+                }
+            } catch (e) {
+                // ignore invalid JSON
+            }
+
+            // node_type이 없거나 'raw'인 것만 원천 개수로 산정
+            if (!meta.node_type || meta.node_type === 'raw') {
+                rawCount++;
+            }
+
+            // parent_right_id가 없는 것(최상위 노드)만 관리 건수로 산정
+            if (!meta.parent_right_id) {
+                managedCount++;
+                activeManagedRights.push(r);
+            }
+
+            if (meta.parent_right_id || meta.integration_type && meta.integration_type !== 'none') {
+                hasMerged = true;
+            }
+        });
+
+        // 만약 예전 데이터라 meta 정보가 전혀 없다면 기본적으로 1:1 매칭
+        if (rawCount === 0 && combinedRights.some((r: any) => r.right_type === 'certificate' && r.is_active)) {
+            const certs = combinedRights.filter((r: any) => r.right_type === 'certificate' && r.is_active);
+            rawCount = certs.length;
+            managedCount = certs.length;
+        }
+
+        const displayItems: string[] = [];
+        activeManagedRights.forEach(r => {
+            const resolved = resolveCertificateRight(r);
+            let text = resolved.confirmedNumber || resolved.rawValue || '-';
+            
+            let meta: CertificateMeta = {};
+            try {
+                if (r.note) {
+                    if (typeof r.note === 'object') meta = r.note;
+                    else if (typeof r.note === 'string' && r.note.trim().startsWith('{')) meta = JSON.parse(r.note);
+                }
+            } catch (e) {}
+
+            if (meta.node_type === 'derivative') {
+                const childRights = combinedRights.filter(cr => {
+                    if (!cr.is_active) return false;
+                    let cMeta: CertificateMeta = {};
+                    try {
+                        if (cr.note) {
+                            if (typeof cr.note === 'object') cMeta = cr.note;
+                            else if (typeof cr.note === 'string' && cr.note.trim().startsWith('{')) cMeta = JSON.parse(cr.note);
+                        }
+                    } catch(e) {}
+                    return cMeta.parent_right_id === r.id;
+                });
+                
+                const childrenCount = childRights.length;
+                const childrenNumbers = childRights
+                    .map(cr => cr.right_number || cr.right_number_raw)
+                    .filter(Boolean)
+                    .join(', ');
+                
+                text += ` [통합/${childrenCount}장: (${childrenNumbers})]`;
+            } else if (resolved.status !== 'confirmed') {
+                const statusLabelMap: Record<string, string> = {
+                    'declared_owned': '보유',
+                    'pending': '확인예정',
+                    'missing': '없음',
+                    'invalid': '오류',
+                    'review_required': '검수필요'
+                };
+                text = statusLabelMap[resolved.status] || text;
+            }
+            
+            displayItems.push(text);
+        });
+
+        const certificateNumbers = getConfirmedCertificateNumbers(activeManagedRights);
+        const certificateDisplay = displayItems.length > 0 ? displayItems.join(', ') : '-';
+        const certificateSearchTokens = getCertificateSearchTokens(activeManagedRights);
 
         const isDateLike = (v: string): boolean => {
             const s = v.trim();
@@ -399,7 +515,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             }
         }
 
-        const hasLiveCertData = combinedRights.some((right: any) => right.right_type === 'certificate');
+        const hasLiveCertData = entityRights.some((right: any) => right.right_type === 'certificate');
         const hasNumericCert = certificateNumbers.length > 0;
         if (roleTypes.has('certificate_holder')) {
             if (hasNumericCert) {
@@ -440,6 +556,9 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             notes: entity.memo,
             meta: entity.meta as any,
             real_owner: realOwnerByNominee.get(entity.id) || null,
+            raw_certificate_count: rawCount,
+            managed_certificate_count: managedCount,
+            has_merged_certificates: hasMerged,
             nominees: nomineesByOwner.get(entity.id) || null,
             acts_as_agent_for: (actsAsAgentFor.get(entity.id) || []).map(af => {
                 const ownerRoles = rolesByEntity.get(af.owner_id) || [];
@@ -511,7 +630,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
         person.certificate_numbers = uniqueNumbers;
 
         if (uniqueNumbers.length > 1) {
-            person.certificate_display = `${uniqueNumbers[0]} 외 ${uniqueNumbers.length - 1}건`;
+            person.certificate_display = uniqueNumbers.join(', ');
         } else if (uniqueNumbers.length === 1) {
             person.certificate_display = uniqueNumbers[0];
         } else if (!person.certificate_display || person.certificate_display === '-') {

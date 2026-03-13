@@ -40,6 +40,9 @@ interface Member {
     real_owner?: { id: string; name: string } | null;
     nominees?: { id: string; name: string }[] | null;
     _matchedLog?: boolean;
+    raw_certificate_count: number;
+    managed_certificate_count: number;
+    has_merged_certificates: boolean;
 }
 
 interface MembersTableProps {
@@ -195,6 +198,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                             <th className="px-2 py-2">구분</th>
                             <th className="px-2 py-2"><SortableHeader label="성명" field="name" className="justify-center" /></th>
                             <th className="px-2 py-2"><SortableHeader label="권리증번호" field="member_number" className="justify-center" /></th>
+                            <th className="px-2 py-2">현황 (원천/관리)</th>
                             <th className="px-2 py-2">관계</th>
                             <th className="px-2 py-2"><SortableHeader label="상태" field="status" className="justify-center" /></th>
                             <th className="px-2 py-2"><SortableHeader label="연락처" field="phone" className="justify-center" /></th>
@@ -344,7 +348,40 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-2 py-1.5 font-medium text-gray-200">{formatCertificateNumber(member.certificate_display || null)}</td>
+                                <td className="px-2 py-1.5 font-medium text-gray-200">
+                                    <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                                        {(member.certificate_display || '-').split(',').map((cert, idx) => {
+                                            const certStr = cert.trim();
+                                            const isMerged = certStr.includes('[통합');
+                                            return (
+                                                <span key={`${member.id}-cert-${idx}`} className="text-left font-mono flex items-center gap-1.5">
+                                                    {isMerged ? (
+                                                        <>
+                                                            <span className="text-slate-200">{certStr.split(' [')[0]}</span>
+                                                            <span className="px-1 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-black border border-blue-500/20 leading-none">
+                                                                통합({certStr.match(/(\d+)장/)?.[1] || ''})
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-slate-200">{certStr}</span>
+                                                    )}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </td>
+                                <td className="px-2 py-1.5 align-middle">
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <div className="text-[13px] font-bold text-slate-200 bg-white/[0.05] border border-white/10 px-2 py-0.5 rounded-md min-w-[60px] text-center">
+                                            {member.raw_certificate_count}장 / {member.managed_certificate_count}건
+                                        </div>
+                                        {member.has_merged_certificates && (
+                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 leading-none">
+                                                통합관리
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
                                 <td className="px-2 py-1.5 text-gray-400">{getRepresentativeDisplay(member.relationships)}</td>
                                 <td className="px-2 py-1.5 flex justify-center items-center h-[46px]">
                                     <InlineCellDropdown

@@ -401,7 +401,7 @@ export const getCertificateDisplayText = (
     options?: { includeFallbackStatus?: boolean },
 ) => {
     const confirmed = getConfirmedCertificateNumbers(rights);
-    if (confirmed.length > 1) return `${confirmed[0]} 외 ${confirmed.length - 1}건`;
+    if (confirmed.length > 1) return confirmed.join(', ');
     if (confirmed.length === 1) return confirmed[0];
 
     if (!options?.includeFallbackStatus) return '-';
