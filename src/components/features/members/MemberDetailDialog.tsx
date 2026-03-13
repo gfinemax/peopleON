@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { ActivityTimelineTab } from './ActivityTimelineTab';
 import { PaymentStatusTab } from './PaymentStatusTab';
 import { logSystemInteraction, checkAndLogAssetRightConflicts } from '@/app/actions/interaction';
-import { createAuditLog } from '@/app/actions/audit';
 import { deleteMemberEntities } from '@/app/actions/member';
 import {
     buildCertificateStorageFields,
@@ -117,6 +116,122 @@ interface MemberDetailDialogProps {
 
 type TabType = 'info' | 'timeline' | 'payment' | 'admin';
 
+type HeaderCertificateDisplayItem = {
+    value: string;
+    isManaged: boolean;
+};
+
+const parseCertificateMeta = (note: unknown): Record<string, unknown> => {
+    if (!note) return {};
+    if (typeof note === 'object' && !Array.isArray(note)) return note as Record<string, unknown>;
+    if (typeof note === 'string' && (note.startsWith('{') || note.startsWith('['))) {
+        try {
+            return JSON.parse(note) as Record<string, unknown>;
+        } catch {
+            return {};
+        }
+    }
+    return {};
+};
+
+const isJsonLikeNote = (note: unknown) => {
+    if (typeof note === 'object' && note && !Array.isArray(note)) return true;
+    if (typeof note === 'string') {
+        const trimmed = note.trim();
+        return trimmed.startsWith('{') || trimmed.startsWith('[');
+    }
+    return false;
+};
+
+const syncCertificateNoteNumber = (note: unknown, rightNumberRaw: string | null, fallbackNote: string | null) => {
+    if (!isJsonLikeNote(note)) {
+        return fallbackNote;
+    }
+
+    const meta = parseCertificateMeta(note);
+    if (Object.keys(meta).length === 0) {
+        return fallbackNote;
+    }
+
+    return JSON.stringify({
+        ...meta,
+        권리증번호: rightNumberRaw || null,
+    });
+};
+
+const parseHeaderCertificateDisplay = (value?: string | null): HeaderCertificateDisplayItem[] =>
+    (value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .filter((item) => item !== '-')
+        .map((item) => ({
+            value: item.replace(/\s*\[통합\]\s*$/u, ''),
+            isManaged: item.includes('[통합]'),
+        }));
+
+const summarizeHeaderCertificateValues = (values: string[]) => {
+    if (values.length === 0) return '-';
+    return values.join(', ');
+};
+
+const getRightsFlowSummary = (rights?: AssetRight[] | null) => {
+    const activeRights = (rights || []).filter((right) => (right.right_type || 'certificate') === 'certificate');
+    let rawCount = 0;
+    let managedCount = 0;
+
+    for (const right of activeRights) {
+        const meta = parseCertificateMeta(right.right_number_note);
+        if (meta.node_type !== 'derivative') {
+            rawCount += 1;
+        }
+        if (typeof meta.parent_right_id !== 'string') {
+            managedCount += 1;
+        }
+    }
+
+    return {
+        rawCount,
+        managedCount,
+    };
+};
+
+const getRightsFlowHeadline = (rawCount: number, managedCount: number) => {
+    if (rawCount === 1 && managedCount === 1) return '유지';
+    if (rawCount > managedCount) return `통합됨 (${rawCount}→${managedCount})`;
+    return `${rawCount}원천 → ${managedCount}관리`;
+};
+
+const getReadableRightNote = (note: unknown) => {
+    if (!note) return '-';
+    if (!isJsonLikeNote(note)) return String(note);
+
+    const meta = parseCertificateMeta(note);
+    if (meta.node_type === 'derivative') return '통합 흐름 메타 저장됨';
+    if (meta.node_type === 'raw' || typeof meta.parent_right_id === 'string') return '원천 흐름 메타 저장됨';
+    return '권리 흐름 메타 저장됨';
+};
+
+const getManagedCertificateNumbers = (rights: AssetRight[] | null | undefined) => {
+    const managedNumbers = new Map<string, string>();
+
+    for (const right of rights || []) {
+        const meta = parseCertificateMeta(right.right_number_note);
+        if (meta.node_type !== 'derivative') continue;
+
+        const value = (right.right_number_raw || right.right_number || '').trim();
+        if (!value) continue;
+
+        const key = right.right_number || value;
+        const previous = managedNumbers.get(key);
+        if (!previous || value.length > previous.length) {
+            managedNumbers.set(key, value);
+        }
+    }
+
+    return Array.from(managedNumbers.values());
+};
+
 export function MemberDetailDialog({
     memberId,
     memberIds,
@@ -169,6 +284,60 @@ export function MemberDetailDialog({
     const [isMerging, setIsMerging] = useState(false);
     const [showLineageId, setShowLineageId] = useState<string | null>(null);
     const canEditCertificateSummary = (memberIds?.length || 0) <= 1;
+    const rightsFlowSummary = getRightsFlowSummary(formData.assetRights);
+    const managedCertificateNumbers = getManagedCertificateNumbers(formData.assetRights);
+    const sortedAssetRights = [...(formData.assetRights || [])].sort((left, right) => {
+        const leftMeta = parseCertificateMeta(left.right_number_note);
+        const rightMeta = parseCertificateMeta(right.right_number_note);
+        const leftPriority = leftMeta.node_type === 'derivative' ? 0 : 1;
+        const rightPriority = rightMeta.node_type === 'derivative' ? 0 : 1;
+        if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+        return 0;
+    });
+    const manageableRights = (formData.assetRights || []).filter((right) => {
+        if (right.right_type && right.right_type !== 'certificate') return false;
+        const meta = parseCertificateMeta(right.right_number_note);
+        return typeof meta.parent_right_id !== 'string';
+    });
+
+    useEffect(() => {
+        setSelectedRightIds((prev) => prev.filter((id) => manageableRights.some((right) => right.id === id)));
+    }, [formData.assetRights]);
+
+    const handleMergeSelectedRights = async () => {
+        if (!member || selectedRightIds.length < 2) return;
+
+        const targetNum = prompt('선택한 권리증을 묶을 통합 관리번호를 입력하세요:');
+        if (!targetNum) return;
+
+        setIsMerging(true);
+        try {
+            const res = await fetch('/api/members/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: member.id,
+                    merged_rights_payload: {
+                        source_ids: selectedRightIds,
+                        target_number: targetNum,
+                        integration_type: 'consolidated'
+                    }
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('선택한 권리증이 하나의 통합 관리번호로 묶였습니다.');
+                setSelectedRightIds([]);
+                await fetchMember(memberIds || [member.id]);
+            } else {
+                alert(`통합 관리번호 생성 중 오류가 발생했습니다: ${data.message || '알 수 없는 오류'}`);
+            }
+        } catch {
+            alert('통합 관리번호 생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsMerging(false);
+        }
+    };
 
     const handleAddRight = async () => {
         if (!rightInput.trim() || !member) return;
@@ -531,12 +700,17 @@ export function MemberDetailDialog({
                         return { ...r, meta: { ...(r.meta || {}), cert_name: value } };
                     }
                     if (field === 'right_number') {
-                        const classified = classifyCertificateInput(value);
+                        const storage = buildCertificateStorageFields(
+                            value,
+                            (r.right_number_status || null) as RightNumberStatus | null,
+                            null,
+                        );
                         return {
                             ...r,
-                            right_number: classified.confirmedNumber,
-                            right_number_raw: value,
-                            right_number_status: classified.status,
+                            right_number: storage.right_number,
+                            right_number_raw: storage.right_number_raw,
+                            right_number_status: storage.right_number_status,
+                            right_number_note: syncCertificateNoteNumber(r.right_number_note, storage.right_number_raw, storage.right_number_note),
                         };
                     }
                     return { ...r, [field]: value };
@@ -552,9 +726,17 @@ export function MemberDetailDialog({
                 ...prev,
                 assetRights: prev.assetRights.map((r) => {
                     if (r.id !== rightId) return r;
+                    const storage = buildCertificateStorageFields(
+                        r.right_number_raw || r.right_number || null,
+                        status,
+                        null,
+                    );
                     return {
                         ...r,
-                        right_number_status: status,
+                        right_number: storage.right_number,
+                        right_number_raw: storage.right_number_raw,
+                        right_number_status: storage.right_number_status,
+                        right_number_note: syncCertificateNoteNumber(r.right_number_note, storage.right_number_raw, storage.right_number_note),
                     };
                 }),
             };
@@ -619,6 +801,37 @@ export function MemberDetailDialog({
         };
 
         const canEditCertificateReview = (memberIds?.length || 0) <= 1;
+        const updatedRights = (formData.assetRights && member?.assetRights)
+            ? formData.assetRights
+                .map((r) => {
+                    const original = member.assetRights?.find((o) => o.id === r.id);
+                    if (!original) return null;
+
+                    const hasChanged =
+                        original.right_number_raw !== r.right_number_raw ||
+                        original.right_number_status !== r.right_number_status ||
+                        original.right_number_note !== r.right_number_note ||
+                        original.issued_at !== r.issued_at ||
+                        original.principal_amount !== r.principal_amount ||
+                        original.meta?.cert_name !== r.meta?.cert_name;
+
+                    if (!hasChanged) return null;
+
+                    return {
+                        id: r.id,
+                        certificate_number_normalized: r.right_number ?? null,
+                        certificate_number_raw: r.right_number_raw ?? null,
+                        certificate_status: r.right_number_status ?? null,
+                        note: r.right_number_note ?? null,
+                        issued_at: r.issued_at || null,
+                        principal_amount: r.principal_amount === '' ? 0 : Number(r.principal_amount) || 0,
+                        meta: r.meta || null,
+                        old_number: original.right_number_raw || null,
+                        new_number: r.right_number_raw || null,
+                    };
+                })
+                .filter((right): right is NonNullable<typeof right> => Boolean(right))
+            : [];
 
         const response = await fetch('/api/members/update', {
             method: 'POST',
@@ -641,6 +854,7 @@ export function MemberDetailDialog({
                 certificate_summary_review_status: canEditCertificateReview ? formData.certificate_summary_review_status : undefined,
                 certificate_summary_note: canEditCertificateReview ? formData.certificate_summary_note : undefined,
                 deleted_rights_ids: deletedRightsIds.length > 0 ? deletedRightsIds : undefined,
+                updated_rights: updatedRights.length > 0 ? updatedRights : undefined,
             }),
         }).catch(() => null);
 
@@ -652,90 +866,14 @@ export function MemberDetailDialog({
             return;
         }
 
-        // Save asset rights changes
-        let rightsSaveError: any = null;
-        let newlyChangedRightNumbers: string[] = [];
-
-        if (formData.assetRights && member?.assetRights) {
-            const supabase = createClient();
-            for (const r of formData.assetRights) {
-                const original = member.assetRights.find(o => o.id === r.id);
-                if (original && (
-                    original.right_number_raw !== r.right_number_raw ||
-                    original.right_number_status !== r.right_number_status ||
-                    original.right_number_note !== r.right_number_note ||
-                    original.issued_at !== r.issued_at ||
-                    original.principal_amount !== r.principal_amount ||
-                    original.meta?.cert_name !== r.meta?.cert_name
-                )) {
-                    const amountToSave = r.principal_amount === '' ? 0 : Number(r.principal_amount) || 0;
-
-                    const { error: rightError } = await supabase.from('certificate_registry').update({
-                        certificate_number_normalized: r.right_number,
-                        certificate_number_raw: r.right_number_raw,
-                        certificate_status: r.right_number_status,
-                        note: r.right_number_note,
-                        issued_at: r.issued_at || null,
-                        principal_amount: amountToSave,
-                        meta: r.meta
-                    }).eq('id', r.id);
-
-                    if (rightError) {
-                        rightsSaveError = rightError;
-                        break;
-                    }
-                    if (original.right_number !== r.right_number && r.right_number) {
-                        newlyChangedRightNumbers.push(r.right_number);
-                    }
-                    // Audit logging for certificate number change
-                    if (original.right_number_raw !== (r.right_number_raw || '')) {
-                        const targetIds = memberIds && memberIds.length > 0 ? memberIds : (memberId ? [memberId] : []);
-                        for (const tid of targetIds) {
-                            await createAuditLog('UPDATE_CERTIFICATE_NUMBER', tid, {
-                                old_number: original.right_number_raw || null,
-                                new_number: r.right_number_raw || null
-                            });
-                        }
-                    }
-                }
-            }
+        setIsEditing(false);
+        if (memberIds && memberIds.length > 0) {
+            await fetchMember(memberIds);
+        } else if (memberId) {
+            await fetchMember([memberId]);
         }
-
-        // deletions are now handled by /api/members/update 
-
-        if (rightsSaveError) {
-            console.error("Asset rights update error:", rightsSaveError, JSON.stringify(rightsSaveError));
-            const isDuplicate = rightsSaveError.message?.toLowerCase().includes('duplicate') || rightsSaveError.code === '23505';
-            setSaveFeedback({
-                tone: 'error',
-                message: isDuplicate ? '이미 등록된 권리증 번호입니다. 중복 여부를 확인해주세요.' : `저장 실패: ${rightsSaveError.message || '알 수 없는 오류'}`
-            });
-            setSaving(false);
-            return;
-        }
-
-        // --- Audit Log ---
-        await createAuditLog('UPDATE_ASSET_RIGHTS', memberId || (memberIds && memberIds[0]) || undefined, {
-            rightsInfo: formData.assetRights
-        });
-        // ------------------
-
-        // Check and log conflicts for newly changed rights
-        if (newlyChangedRightNumbers.length > 0) {
-            const currentIds = (memberIds && memberIds.length > 0) ? memberIds : (memberId ? [memberId] : []);
-            await checkAndLogAssetRightConflicts(currentIds, newlyChangedRightNumbers);
-        }
-
+        if (onSaved) onSaved();
         setSaveFeedback({ tone: 'success', message: '성공적으로 저장되었습니다.' });
-        setTimeout(() => {
-            setIsEditing(false);
-            if (memberIds && memberIds.length > 0) {
-                void fetchMember(memberIds);
-            } else if (memberId) {
-                void fetchMember([memberId]);
-            }
-            if (onSaved) onSaved();
-        }, 1000);
         setSaving(false);
     };
 
@@ -743,7 +881,7 @@ export function MemberDetailDialog({
         { id: 'info' as TabType, label: '기본', icon: 'person' },
         { id: 'timeline' as TabType, label: '이력', icon: 'history' },
         { id: 'payment' as TabType, label: '납부', icon: 'payments' },
-        { id: 'admin' as TabType, label: '행정/권리증', icon: 'description' },
+        { id: 'admin' as TabType, label: '권리증', icon: 'description' },
     ];
 
     if (!member && !loading) {
@@ -814,8 +952,6 @@ export function MemberDetailDialog({
                                 })()}
                             </div>
                         </div>
-                        <p className="text-gray-400 text-sm font-normal">회원번호: <span className="text-gray-300 font-mono">{member?.member_number}</span></p>
-                        <p className="text-gray-500 text-xs font-normal">권리증: <span className="text-gray-300 font-mono">{member?.certificate_display || '-'}</span></p>
                     </div>
                     <div className="flex items-center gap-2">
                         {isEditing ? (
@@ -968,199 +1104,183 @@ export function MemberDetailDialog({
                                     )}
 
                                     {activeTab === 'admin' && member && (
-                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-left">
-                                            <div className="bg-[#1a2333] p-4 rounded-xl border border-sky-500/20 flex items-center gap-3">
-                                                <div className="flex-1"><p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mb-1 text-left">신규 권리증 등록</p><Input value={rightInput} onChange={(e) => setRightInput(e.target.value)} placeholder="권리증 번호 입력" className="h-9 bg-slate-900 border-slate-700 text-sky-100 font-mono text-sm" onKeyDown={(e) => e.key === 'Enter' && handleAddRight()} /></div>
-                                                <Button onClick={handleAddRight} disabled={isAddingRight || !rightInput.trim()} className="mt-5 h-9 bg-sky-600 hover:bg-sky-500 text-white gap-1.5" size="sm"><MaterialIcon name="add_circle" size="xs" /><span className="text-xs font-bold whitespace-nowrap">추가</span></Button>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-                                                <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2">
-                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">등록 row 수</span>
-                                                    <span className="text-2xl font-black text-white font-mono">{member.assetRights?.length || 0} <span className="text-sm font-normal text-gray-400">개</span></span>
-                                                </div>
-                                                <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2">
-                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">사람별 잠정 개수</span>
-                                                    <span className="text-2xl font-black text-sky-300 font-mono">{member.provisional_certificate_count || 0} <span className="text-sm font-normal text-gray-400">개</span></span>
-                                                    <span className="text-[11px] text-gray-400">registry dedupe 기준</span>
-                                                </div>
-                                                <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2">
-                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">최종 권리증 개수</span>
-                                                    <span className="text-2xl font-black text-emerald-300 font-mono">{member.effective_certificate_count || 0} <span className="text-sm font-normal text-gray-400">개</span></span>
-                                                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                                                        <span className="rounded border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-200">
-                                                            {CERTIFICATE_SUMMARY_STATUS_LABEL[member.certificate_summary_review_status || 'pending']}
-                                                        </span>
-                                                        {(member.certificate_summary_conflict_count || 0) > 0 && (
-                                                            <span className="rounded border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 font-bold text-amber-200">
-                                                                충돌 {member.certificate_summary_conflict_count}건
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-[#1a2333] p-4 rounded-xl border border-emerald-500/15 space-y-3">
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div>
-                                                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">사람별 확정 개수</p>
-                                                        <p className="text-xs text-gray-400">
-                                                            번호 row 수와 별개로, 실제 보유 개수를 수동 확정하는 영역입니다.
-                                                        </p>
-                                                    </div>
-                                                    {member.certificate_summary_is_grouped && (
-                                                        <span className="rounded border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-200">
-                                                            통합 인물 묶음: 직접 수정 비활성화
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">수동 최종 개수</span>
-                                                        {isEditing && canEditCertificateSummary ? (
-                                                            <Input
-                                                                type="number"
-                                                                min={0}
-                                                                className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-mono"
-                                                                value={formData.manual_certificate_count ?? ''}
-                                                                onChange={(e) => setFormData({
-                                                                    ...formData,
-                                                                    manual_certificate_count: e.target.value === '' ? null : Math.max(0, Number(e.target.value) || 0),
-                                                                })}
-                                                                placeholder={String(member.provisional_certificate_count || 0)}
-                                                            />
-                                                        ) : (
-                                                            <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white font-mono">
-                                                                {member.manual_certificate_count ?? '-'}
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 text-left">
+                                            <div className="sticky top-0 z-20 -mx-6 px-6 py-4 bg-[#1A2633]/95 backdrop-blur-md border-b border-white/5">
+                                                <div className="space-y-3">
+                                                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-400">권리증 작업</span>
+                                                                <span className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-sm font-bold text-white">
+                                                                    {getRightsFlowHeadline(rightsFlowSummary.rawCount, rightsFlowSummary.managedCount)}
+                                                                </span>
+                                                                <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300">원천 {rightsFlowSummary.rawCount}</span>
+                                                                <span className="rounded-md border border-emerald-400/15 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-200">관리 {rightsFlowSummary.managedCount}</span>
+                                                                <span className="rounded-md border border-sky-500/15 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-200">등록 {member.assetRights?.length || 0} row</span>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">검수 상태</span>
-                                                        {isEditing && canEditCertificateSummary ? (
-                                                            <select
-                                                                className="bg-[#1A2633] border border-white/10 h-8 text-sm text-white rounded-md px-2 w-full"
-                                                                value={formData.certificate_summary_review_status || 'pending'}
-                                                                onChange={(e) => setFormData({
-                                                                    ...formData,
-                                                                    certificate_summary_review_status: e.target.value as CertificateSummaryReviewStatus,
-                                                                })}
+                                                            <p className="text-xs text-slate-400">먼저 권리증번호를 수정하고 저장한 뒤, 아래에서 원천과 관리번호 흐름을 검토합니다.</p>
+                                                        </div>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setIsEditing(true)}
+                                                                disabled={isEditing}
+                                                                className="h-8 border-white/10 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 text-[11px] font-bold disabled:opacity-50"
                                                             >
-                                                                {Object.entries(CERTIFICATE_SUMMARY_STATUS_LABEL).map(([value, label]) => (
-                                                                    <option key={value} value={value}>
-                                                                        {label}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        ) : (
-                                                            <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white">
-                                                                {CERTIFICATE_SUMMARY_STATUS_LABEL[member.certificate_summary_review_status || 'pending']}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">소유 구분</span>
-                                                        <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white">
-                                                            {member.owner_group === 'registered' ? '등기조합원' : '기타'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">개수 메모</span>
-                                                    {isEditing && canEditCertificateSummary ? (
-                                                        <Input
-                                                            className="bg-[#1A2633] border-white/10 h-8 text-sm text-white"
-                                                            value={formData.certificate_summary_note || ''}
-                                                            onChange={(e) => setFormData({ ...formData, certificate_summary_note: e.target.value })}
-                                                            placeholder="예: 오학동 실보유 4개, 추가 확인 완료"
-                                                        />
-                                                    ) : (
-                                                        <div className="min-h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 py-2 text-sm font-medium text-white">
-                                                            {member.certificate_summary_note || '-'}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {member.assetRights && member.assetRights.length > 0 ? (
-                                                <div className="space-y-6">
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center justify-between">
-                                                            <h3 className="text-white text-base font-bold flex items-center gap-2"><span className="w-1 h-4 bg-sky-500 rounded-full"></span>상세 보유 내역</h3>
-                                                            {selectedRightIds.length > 1 && (
+                                                                <MaterialIcon name="edit" size="xs" className="mr-1.5" />
+                                                                권리 수정
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => setIsEditing(false)}
+                                                                disabled={!isEditing}
+                                                                className="h-8 px-3 text-[11px] text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-40"
+                                                            >
+                                                                취소
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={handleSave}
+                                                                disabled={!isEditing || saving || deleting}
+                                                                className="h-8 px-3 text-[11px] bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/20 disabled:opacity-50"
+                                                            >
+                                                                {saving ? '저장...' : '저장'}
+                                                            </Button>
+                                                            {manageableRights.length > 1 && (
                                                                 <Button
                                                                     size="sm"
-                                                                    onClick={async () => {
-                                                                        const targetNum = prompt('통합 관리할 새 권리증 번호를 입력하거나 기존 번호를 입력하세요:');
-                                                                        if (!targetNum) return;
-                                                                        setIsMerging(true);
-                                                                        try {
-                                                                            const res = await fetch('/api/members/update', {
-                                                                                method: 'POST',
-                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                body: JSON.stringify({
-                                                                                    id: member.id,
-                                                                                    merged_rights_payload: {
-                                                                                        source_ids: selectedRightIds,
-                                                                                        target_number: targetNum,
-                                                                                        integration_type: 'consolidated'
-                                                                                    }
-                                                                                })
-                                                                            });
-                                                                            const data = await res.json();
-                                                                            if (data.success) {
-                                                                                alert('권리증이 성공적으로 통합되었습니다.');
-                                                                                setSelectedRightIds([]);
-                                                                                fetchMember(memberIds || [member.id]);
-                                                                            } else {
-                                                                                alert(`통합 중 오류가 발생했습니다: ${data.message || '알 수 없는 오류'}`);
-                                                                            }
-                                                                        } catch (e) {
-                                                                            alert('통합 중 오류가 발생했습니다.');
-                                                                        } finally {
-                                                                            setIsMerging(false);
-                                                                        }
-                                                                    }}
+                                                                    onClick={handleMergeSelectedRights}
                                                                     className="h-8 bg-blue-600 hover:bg-blue-500 text-[11px] font-bold"
-                                                                    disabled={isMerging}
+                                                                    disabled={isMerging || selectedRightIds.length < 2}
                                                                 >
-                                                                    {isMerging ? '통합 중...' : `${selectedRightIds.length}개 선택됨 - 통합하기`}
+                                                                    {isMerging ? '통합 중...' : selectedRightIds.length >= 2 ? `${selectedRightIds.length}개 선택 - 통합하기` : '선택 권리증 통합'}
                                                                 </Button>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4 text-left">
-                                                        <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 row</span><span className="text-2xl font-black text-white font-mono text-left">{member.assetRights.length} <span className="text-sm font-normal text-gray-400">개</span></span></div>
-                                                        <div className="bg-[#233040] p-5 rounded-xl border border-white/5 flex flex-col gap-2"><span className="text-xs font-bold text-gray-500 uppercase tracking-wider text-left">권리증 총액</span><span className="text-2xl font-black text-blue-400 font-mono text-left">₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.certificate_price) || Number(r.principal_amount) || 0), 0).toLocaleString()}</span>{member.assetRights.some((r: any) => Number(r.premium_price) > 0) && <span className="text-[11px] font-bold text-amber-400">+ 프리미엄 ₩{member.assetRights.reduce((acc: number, r: any) => acc + (Number(r.premium_price) || 0), 0).toLocaleString()}</span>}</div>
+                                                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                                                        <div className="rounded-xl border border-sky-500/20 bg-[#162234] px-4 py-3">
+                                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-sky-400">권리증 추가</p>
+                                                            <div className="flex gap-3">
+                                                                <Input value={rightInput} onChange={(e) => setRightInput(e.target.value)} placeholder="권리증 번호 입력" className="h-9 bg-slate-900 border-slate-700 text-sky-100 font-mono text-sm" onKeyDown={(e) => e.key === 'Enter' && handleAddRight()} />
+                                                                <Button onClick={handleAddRight} disabled={isAddingRight || !rightInput.trim()} className="h-9 bg-sky-600 hover:bg-sky-500 text-white gap-1.5 shrink-0" size="sm"><MaterialIcon name="add_circle" size="xs" /><span className="text-xs font-bold whitespace-nowrap">추가</span></Button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="rounded-xl border border-white/10 bg-[#162234] px-4 py-3 flex flex-col justify-center min-w-[220px]">
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">관리 수 상태</span>
+                                                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                                                                <span className="rounded border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-200">{CERTIFICATE_SUMMARY_STATUS_LABEL[member.certificate_summary_review_status || 'pending']}</span>
+                                                                <span className="rounded border border-white/10 bg-white/[0.03] px-2 py-0.5 font-bold text-slate-300">최종 {member.effective_certificate_count || 0}개</span>
+                                                                {(member.certificate_summary_conflict_count || 0) > 0 && (
+                                                                    <span className="rounded border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 font-bold text-amber-200">충돌 {member.certificate_summary_conflict_count}건</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {isEditing && (
+                                                        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-100">
+                                                            권리증번호를 우선 수정하고 저장하세요. 저장 후 목록과 상세 번호가 다시 계산됩니다.
+                                                        </div>
+                                                    )}
+                                                    {saveFeedback && (
+                                                        <div className={cn(
+                                                            "rounded-xl border px-4 py-3 text-xs font-semibold",
+                                                            saveFeedback.tone === 'success' && 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200',
+                                                            saveFeedback.tone === 'warn' && 'border-amber-400/20 bg-amber-500/10 text-amber-200',
+                                                            saveFeedback.tone === 'error' && 'border-rose-400/20 bg-rose-500/10 text-rose-200',
+                                                        )}>
+                                                            {saveFeedback.message}
+                                                        </div>
+                                                    )}
+                                                    {manageableRights.length > 1 && (
+                                                        <div className="rounded-xl border border-blue-500/15 bg-blue-500/5 px-4 py-3 text-xs text-blue-100">
+                                                            통합할 권리증을 체크한 뒤 `선택 권리증 통합`을 누르세요. 이미 다른 통합에 포함된 원천 권리증은 선택 대상에서 제외됩니다.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+                                                <div className="bg-[#233040] px-4 py-4 rounded-xl border border-white/5 flex flex-col gap-1.5 min-h-[104px]">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">권리 흐름</span>
+                                                    <span className="text-xl font-black text-white font-mono break-all">{getRightsFlowHeadline(rightsFlowSummary.rawCount, rightsFlowSummary.managedCount)}</span>
+                                                    <span className="text-[11px] text-gray-400">원천과 현재 관리번호 기준</span>
+                                                </div>
+                                                <div className="rounded-xl border border-purple-500/15 bg-[linear-gradient(135deg,rgba(91,33,182,0.18),rgba(35,48,64,1))] px-4 py-4 flex flex-col gap-2 min-h-[104px]">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-[10px] font-bold text-purple-200/80 uppercase tracking-wider">통합 관리번호</span>
+                                                        <span className="rounded border border-purple-400/15 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-200">
+                                                            {managedCertificateNumbers.length}건
+                                                        </span>
+                                                    </div>
+                                                    {managedCertificateNumbers.length > 0 ? (
+                                                        <div className="space-y-1">
+                                                            {managedCertificateNumbers.map((number) => (
+                                                                <div key={number} className="font-mono text-base font-black text-purple-100 break-all leading-tight">
+                                                                    {number}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-1 items-center">
+                                                            <span className="text-xl font-black text-gray-500">없음</span>
+                                                        </div>
+                                                    )}
+                                                    <span className="text-[11px] text-purple-100/60">통합 결과로 생성된 관리번호만 표시</span>
+                                                </div>
+                                                <div className="bg-[#233040] px-4 py-4 rounded-xl border border-white/5 flex flex-col gap-1.5 min-h-[104px]">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">등록 금액 합계</span>
+                                                    <span className="text-xl font-black text-blue-400 font-mono">₩{(member.assetRights || []).reduce((acc: number, r: any) => acc + (Number(r.certificate_price) || Number(r.principal_amount) || 0), 0).toLocaleString()}</span>
+                                                    <span className="text-[11px] text-gray-400">원천과 관리번호 전체 기준</span>
+                                                </div>
+                                            </div>
+                                            {member.assetRights && member.assetRights.length > 0 ? (
+                                                <div className="space-y-6">
+                                                <div className="space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <h3 className="text-white text-base font-bold flex items-center gap-2"><span className="w-1 h-4 bg-sky-500 rounded-full"></span>권리 흐름 상세</h3>
+                                                            <span className="text-[11px] font-bold text-slate-400">{member.assetRights?.length || 0}개 항목</span>
+                                                        </div>
                                                     </div>
                                                     <div className="space-y-4">
                                                         <div className="grid gap-3">
-                                                            {(formData.assetRights || []).map((right) => (
-                                                                <div key={right.id} className="bg-[#233040] rounded-xl border border-white/5 p-5 hover:border-white/10 transition-colors">
+                                                            {sortedAssetRights.map((right) => (
+                                                                <div key={right.id} className="bg-[#233040] rounded-xl border border-white/5 p-4 hover:border-white/10 transition-colors">
                                                                     <div className="flex items-start justify-between mb-3 text-left gap-4">
                                                                         <div className="flex flex-col gap-1 text-left flex-1 min-w-0">
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest text-left">{right.right_type === 'certificate' ? '권리증' : right.right_type || '권리증'}</span>
+                                                                                <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest text-left">
+                                                                                    {(() => {
+                                                                                        const meta = parseCertificateMeta(right.right_number_note);
+                                                                                        if (meta.node_type === 'derivative') return '통합 관리번호';
+                                                                                        return right.right_type === 'certificate' ? '원천 권리증' : right.right_type || '원천 권리증';
+                                                                                    })()}
+                                                                                </span>
+                                                                                {(() => {
+                                                                                    const meta = parseCertificateMeta(right.right_number_note);
+                                                                                    if (meta?.node_type === 'derivative') {
+                                                                                        return <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded border border-purple-500/20 text-[10px] font-black shrink-0">관리번호</span>
+                                                                                    }
+                                                                                    return null;
+                                                                                })()}
                                                                                 {conflictRightNumbers.includes(right.right_number || '') && (
                                                                                     <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-500 rounded border border-rose-500/20 text-[10px] font-black shrink-0">⚠️ 중복(경합)</span>
-                                                                                )}
-                                                                                {right.right_number_status && (
-                                                                                    <span className="px-1.5 py-0.5 bg-sky-500/10 text-sky-300 rounded border border-sky-500/20 text-[10px] font-black shrink-0">
-                                                                                        {RIGHT_NUMBER_STATUS_LABEL[right.right_number_status]}
-                                                                                    </span>
                                                                                 )}
                                                                             </div>
                                                                             {isEditing ? (
                                                                                 <Input className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-mono font-bold" value={right.right_number_raw || right.right_number || ''} onChange={e => handleRightChange(right.id, 'right_number', e.target.value)} placeholder="번호 또는 원문 입력" />
                                                                             ) : (
-                                                                                <span className="text-lg font-black text-white font-mono tracking-tight text-left truncate">{right.right_number || right.right_number_raw || '번호 없음'}</span>
+                                                                                <span className="text-base font-black text-white font-mono tracking-tight text-left break-all">{resolveCertificateRight(right).confirmedNumber || right.right_number_raw || right.right_number || '번호 없음'}</span>
                                                                             )}
                                                                             {!isEditing && right.right_number_status && right.right_number_status !== 'confirmed' && right.right_number_raw && (
-                                                                                <span className="text-[11px] text-gray-400 text-left truncate">원문: {right.right_number_raw}</span>
+                                                                                <span className="text-[11px] text-gray-400 text-left break-all">원문: {right.right_number_raw}</span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="text-right flex flex-col gap-1 w-[120px] shrink-0 pt-1">
+                                                                        <div className="text-right flex flex-col gap-1 shrink-0 pt-1">
                                                                             <div className="flex items-center justify-end gap-2">
                                                                                 {(() => {
-                                                                                    let meta: any = {};
-                                                                                    try { if (typeof right.right_number_note === 'string' && (right.right_number_note.startsWith('{') || right.right_number_note.startsWith('['))) meta = JSON.parse(right.right_number_note); else if (typeof right.right_number_note === 'object') meta = right.right_number_note; } catch(e) {}
+                                                                                    const meta = parseCertificateMeta(right.right_number_note);
                                                                                     if (meta?.node_type === 'derivative') {
                                                                                         return (
                                                                                             <Button
@@ -1170,13 +1290,13 @@ export function MemberDetailDialog({
                                                                                                 className="h-6 px-1.5 text-[9px] bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/30 font-bold"
                                                                                             >
                                                                                                 <MaterialIcon name="account_tree" size="xs" className="mr-1" />
-                                                                                                계보보기
+                                                                                                흐름보기
                                                                                             </Button>
                                                                                         );
                                                                                     }
                                                                                     return null;
                                                                                 })()}
-                                                                                {!isEditing && member.assetRights && member.assetRights.length > 1 && (
+                                                                                {!isEditing && manageableRights.some((item) => item.id === right.id) && manageableRights.length > 1 && (
                                                                                     <input
                                                                                         type="checkbox"
                                                                                         checked={selectedRightIds.includes(right.id)}
@@ -1185,7 +1305,7 @@ export function MemberDetailDialog({
                                                                                             else setSelectedRightIds(prev => prev.filter(id => id !== right.id));
                                                                                         }}
                                                                                         className="size-4 rounded border-white/10 bg-white/5 accent-emerald-500"
-                                                                                        title="통합 처리를 위해 선택"
+                                                                                        title="통합 관리번호로 묶을 권리증 선택"
                                                                                     />
                                                                                 )}
                                                                                 {isEditing && (
@@ -1194,16 +1314,18 @@ export function MemberDetailDialog({
                                                                                         삭제
                                                                                     </button>
                                                                                 )}
-                                                                                <span className="text-[10px] font-bold text-gray-500 uppercase">발급일</span>
                                                                             </div>
-                                                                            {isEditing ? (
-                                                                                <Input className="bg-[#1A2633] border-white/10 h-8 text-xs text-white font-mono px-2 text-right" value={right.issued_at || ''} onChange={e => handleRightChange(right.id, 'issued_at', e.target.value)} placeholder="YYYY-MM-DD" />
-                                                                            ) : (
-                                                                                <span className="text-xs font-bold text-gray-300 font-mono">{right.issued_at || '미상'}</span>
-                                                                            )}
                                                                         </div>
                                                                     </div>
-                                                                    <div className="grid grid-cols-[1fr_1fr] gap-4 pt-3 border-t border-white/5 text-left">
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-white/5 text-left">
+                                                                        <div className="flex flex-col gap-1 text-left min-w-0">
+                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">발급일</span>
+                                                                            {isEditing ? (
+                                                                                <Input className="bg-[#1A2633] border-white/10 h-8 text-xs text-white font-mono px-2" value={right.issued_at || ''} onChange={e => handleRightChange(right.id, 'issued_at', e.target.value)} placeholder="YYYY-MM-DD" />
+                                                                            ) : (
+                                                                                <span className="text-sm font-bold text-white font-mono text-left">{right.issued_at || '미상'}</span>
+                                                                            )}
+                                                                        </div>
                                                                         <div className="flex flex-col gap-1 text-left min-w-0">
                                                                             <span className="text-[10px] font-bold text-gray-500 uppercase text-left">가액 / 납부액</span>
                                                                             {isEditing ? (
@@ -1216,36 +1338,16 @@ export function MemberDetailDialog({
                                                                             )}
                                                                         </div>
                                                                         <div className="flex flex-col gap-1 text-left min-w-0">
-                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">권리증 상태</span>
-                                                                            {isEditing ? (
-                                                                                <select
-                                                                                    className="bg-[#1A2633] border border-white/10 h-8 text-sm text-white rounded-md px-2"
-                                                                                    value={right.right_number_status || 'review_required'}
-                                                                                    onChange={(e) => handleRightStatusChange(right.id, e.target.value as RightNumberStatus)}
-                                                                                >
-                                                                                    {RIGHT_NUMBER_STATUS_OPTIONS.map((status) => (
-                                                                                        <option key={status} value={status}>
-                                                                                            {RIGHT_NUMBER_STATUS_LABEL[status]}
-                                                                                        </option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : (
-                                                                                <span className="text-sm font-bold text-white text-left">
-                                                                                    {right.right_number_status ? RIGHT_NUMBER_STATUS_LABEL[right.right_number_status] : '-'}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex flex-col gap-1 text-left min-w-0">
-                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">검수 메모</span>
+                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase text-left">관리 메모</span>
                                                                             {isEditing ? (
                                                                                 <Input
                                                                                     className="bg-[#1A2633] border-white/10 h-8 text-sm text-white w-full"
                                                                                     value={right.right_number_note || ''}
                                                                                     onChange={e => handleRightChange(right.id, 'right_number_note', e.target.value)}
-                                                                                    placeholder="검수 메모"
+                                                                                    placeholder="관리 메모"
                                                                                 />
                                                                             ) : (
-                                                                                <span className="text-sm font-bold text-white text-left truncate">{isAdmin ? (right.right_number_note || '-') : '***'}</span>
+                                                                                <span className="text-sm font-bold text-white text-left">{isAdmin ? getReadableRightNote(right.right_number_note) : '***'}</span>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -1305,8 +1407,99 @@ export function MemberDetailDialog({
                                                             ))}
                                                         </div>
                                                     </div>
+                                                    <details className="rounded-xl border border-emerald-500/15 bg-[#162234] p-4 group">
+                                                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                                                            <div>
+                                                                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">관리 수 검토</p>
+                                                                <p className="text-xs text-gray-400">자동 계산된 관리 수를 확인하고 필요하면 최종 인정 수를 조정합니다.</p>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="rounded border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300">
+                                                                    자동 {member.provisional_certificate_count || 0}개
+                                                                </span>
+                                                                <span className="rounded border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-200">
+                                                                    최종 {member.manual_certificate_count ?? member.effective_certificate_count ?? 0}개
+                                                                </span>
+                                                                <span className="text-xs font-bold text-slate-500 group-open:hidden">열기</span>
+                                                                <span className="text-xs font-bold text-slate-500 hidden group-open:inline">닫기</span>
+                                                            </div>
+                                                        </summary>
+                                                        <div className="mt-4 space-y-3">
+                                                            {member.certificate_summary_is_grouped && (
+                                                                <div className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-200">
+                                                                    인물 통합 묶음: 직접 수정 비활성화
+                                                                </div>
+                                                            )}
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                                <div className="space-y-1.5">
+                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">최종 인정 관리 수</span>
+                                                                    {isEditing && canEditCertificateSummary ? (
+                                                                        <Input
+                                                                            type="number"
+                                                                            min={0}
+                                                                            className="bg-[#1A2633] border-white/10 h-8 text-sm text-white font-mono"
+                                                                            value={formData.manual_certificate_count ?? ''}
+                                                                            onChange={(e) => setFormData({
+                                                                                ...formData,
+                                                                                manual_certificate_count: e.target.value === '' ? null : Math.max(0, Number(e.target.value) || 0),
+                                                                            })}
+                                                                            placeholder={String(member.provisional_certificate_count || 0)}
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white font-mono">
+                                                                            {member.manual_certificate_count ?? '-'}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="space-y-1.5">
+                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">검토 상태</span>
+                                                                    {isEditing && canEditCertificateSummary ? (
+                                                                        <select
+                                                                            className="bg-[#1A2633] border border-white/10 h-8 text-sm text-white rounded-md px-2 w-full"
+                                                                            value={formData.certificate_summary_review_status || 'pending'}
+                                                                            onChange={(e) => setFormData({
+                                                                                ...formData,
+                                                                                certificate_summary_review_status: e.target.value as CertificateSummaryReviewStatus,
+                                                                            })}
+                                                                        >
+                                                                            {Object.entries(CERTIFICATE_SUMMARY_STATUS_LABEL).map(([value, label]) => (
+                                                                                <option key={value} value={value}>
+                                                                                    {label}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    ) : (
+                                                                        <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white">
+                                                                            {CERTIFICATE_SUMMARY_STATUS_LABEL[member.certificate_summary_review_status || 'pending']}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="space-y-1.5">
+                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">소유 구분</span>
+                                                                    <div className="h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 flex items-center text-sm font-bold text-white">
+                                                                        {member.owner_group === 'registered' ? '등기조합원' : '기타'}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <span className="text-[10px] font-bold text-gray-500 uppercase">검토 메모</span>
+                                                                {isEditing && canEditCertificateSummary ? (
+                                                                    <Input
+                                                                        className="bg-[#1A2633] border-white/10 h-8 text-sm text-white"
+                                                                        value={formData.certificate_summary_note || ''}
+                                                                        onChange={(e) => setFormData({ ...formData, certificate_summary_note: e.target.value })}
+                                                                        placeholder="예: 최종 관리번호 1건으로 인정"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="min-h-8 rounded-md border border-white/10 bg-[#1A2633] px-3 py-2 text-sm font-medium text-white">
+                                                                        {member.certificate_summary_note || '-'}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </details>
                                                 </div>
-                                            ) : <div className="flex flex-col items-center justify-center py-10 text-muted-foreground opacity-50 gap-3 border border-dashed border-white/10 rounded-2xl"><MaterialIcon name="database_off" size="xl" /><p className="text-sm font-bold">연동된 권리증 데이터가 없습니다.</p></div>}
+                                            ) : <div className="flex flex-col items-center justify-center py-10 text-muted-foreground opacity-50 gap-3 border border-dashed border-white/10 rounded-2xl"><MaterialIcon name="database_off" size="xl" /><p className="text-sm font-bold">등록된 권리 흐름 데이터가 없습니다.</p></div>}
                                         </div>
                                     )}
                                     {activeTab === 'timeline' && memberIds && <div className="animate-in fade-in slide-in-from-bottom-2 duration-300"><ActivityTimelineTab memberIds={memberIds} /></div>}
@@ -1320,10 +1513,10 @@ export function MemberDetailDialog({
             {/* --- Lineage Popover/Dialog --- */}
             {showLineageId && (
                 <Dialog open={!!showLineageId} onOpenChange={(o) => !o && setShowLineageId(null)}>
-                    <DialogContent className="sm:max-w-md bg-[#1A2633] border-white/10 text-white p-6 shadow-2xl rounded-2xl z-[100]">
+                        <DialogContent className="sm:max-w-md bg-[#1A2633] border-white/10 text-white p-6 shadow-2xl rounded-2xl z-[100]">
                         <DialogTitle className="text-xl font-bold flex items-center gap-2 mb-4">
                             <MaterialIcon name="account_tree" className="text-purple-400" />
-                            권리증 계보 이력 (통합)
+                            권리 흐름
                         </DialogTitle>
                         <div className="space-y-4">
                                 {(() => {
@@ -1342,15 +1535,23 @@ export function MemberDetailDialog({
                                     <>
                                         <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-[40px] rounded-full pointer-events-none"></div>
-                                            <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">통합 관리 번호 (결과)</p>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">통합 관리번호</p>
                                             <p className="text-xl font-mono font-black text-purple-400 drop-shadow-md">{targetRight?.right_number || targetRight?.right_number_raw}</p>
+                                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/80">
+                                                    {sources.length}원천 → 1관리번호
+                                                </span>
+                                                <span className="rounded border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold text-sky-200">
+                                                    원천 {sources.length}개
+                                                </span>
+                                            </div>
                                             <p className="text-xs text-gray-400 mt-2 font-medium">통합일시: {meta.merged_at ? new Date(meta.merged_at).toLocaleString() : '정보 없음'}</p>
                                         </div>
                                         <div className="space-y-2 relative">
                                             <div className="absolute left-4 top-[-10px] bottom-4 w-px bg-white/10 pointer-events-none"></div>
                                             <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2 pl-2">
                                                 <MaterialIcon name="subdirectory_arrow_right" size="xs" className="text-gray-600" />
-                                                원천 권리증 (통합 전)
+                                                원천 권리증 목록
                                             </p>
                                             {sources.length > 0 ? sources.map(s => {
                                                 let sMeta: any = {};
@@ -1360,11 +1561,14 @@ export function MemberDetailDialog({
                                                         <div className="flex flex-col gap-1">
                                                             <span className="text-sm font-mono font-bold text-gray-200">{s.right_number || s.right_number_raw}</span>
                                                             {sMeta.original_owner_name && (
-                                                                <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded w-fit">기존 소유자: {sMeta.original_owner_name}</span>
+                                                                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-300 font-bold bg-emerald-500/10 px-2 py-1 rounded w-fit border border-emerald-500/20">
+                                                                    <MaterialIcon name="person" size="xs" />
+                                                                    기존 소유자 {sMeta.original_owner_name}
+                                                                </span>
                                                             )}
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className="text-[9px] px-1.5 py-0.5 bg-sky-500/10 text-sky-300 rounded border border-sky-500/20 font-bold inline-block">원본보존</span>
+                                                            <span className="text-[9px] px-1.5 py-0.5 bg-sky-500/10 text-sky-300 rounded border border-sky-500/20 font-bold inline-block">원천 보존</span>
                                                         </div>
                                                     </div>
                                                 );
@@ -1376,12 +1580,29 @@ export function MemberDetailDialog({
                                 );
                             })()}
                         </div>
-                        <div className="mt-6 flex justify-between items-center pt-4 border-t border-white/10">
-                            <Button 
+                        <div className="mt-6 flex justify-between items-center gap-3 pt-4 border-t border-white/10">
+                            <div className="text-[11px] text-gray-400 font-medium">
+                                {(() => {
+                                    const sourceCount = (member?.assetRights || []).filter((right) => {
+                                        const meta = parseCertificateMeta(right.right_number_note);
+                                        return meta.parent_right_id === showLineageId;
+                                    }).length;
+
+                                    return sourceCount > 0
+                                        ? `통합 해제 시 원천 권리증 ${sourceCount}개가 다시 분리됩니다.`
+                                        : '통합 해제 시 원천 권리증이 다시 분리됩니다.';
+                                })()}
+                            </div>
+                            <Button
                                 size="sm" 
                                 variant="outline"
                                 onClick={async () => {
-                                    if(!member || !confirm('정말 이 통합을 해제하시겠습니까? 원천 정보들이 독립적으로 분리됩니다.')) return;
+                                    const sourceCount = (member?.assetRights || []).filter((right) => {
+                                        const meta = parseCertificateMeta(right.right_number_note);
+                                        return meta.parent_right_id === showLineageId;
+                                    }).length;
+
+                                    if(!member || !confirm(`정말 이 통합 관리번호를 해제하시겠습니까?\n원천 권리증 ${sourceCount || 0}개가 다시 독립적으로 분리됩니다.`)) return;
                                     try {
                                         setIsMerging(true);
                                         const res = await fetch('/api/members/update', {
@@ -1394,14 +1615,14 @@ export function MemberDetailDialog({
                                         });
                                         const data = await res.json();
                                         if (data.success) {
-                                            alert('통합 해제가 완료되었습니다.');
+                                            alert('통합 관리번호 해제가 완료되었습니다.');
                                             setShowLineageId(null);
                                             fetchMember(memberIds || [member.id]);
                                         } else {
-                                            alert(`오류: ${data.message}`);
+                                            alert(`통합 해제 중 오류가 발생했습니다: ${data.message || '알 수 없는 오류'}`);
                                         }
-                                    } catch (e) {
-                                        alert('서버 오류가 발생했습니다.');
+                                    } catch {
+                                        alert('통합 해제 중 서버 오류가 발생했습니다.');
                                     } finally {
                                         setIsMerging(false);
                                     }
@@ -1410,7 +1631,7 @@ export function MemberDetailDialog({
                                 disabled={isMerging}
                             >
                                 <MaterialIcon name="link_off" size="xs" className="mr-1" />
-                                통합 관리 해제
+                                통합 해제
                             </Button>
 
                             <Button size="sm" onClick={() => setShowLineageId(null)} className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold h-8 px-5">

@@ -31,6 +31,18 @@ type MemberUpdatePayload = {
     certificate_summary_note?: string | null;
     certificate_summary_owner_group?: 'registered' | 'others' | null;
     deleted_rights_ids?: string[];
+    updated_rights?: Array<{
+        id: string;
+        certificate_number_normalized?: string | null;
+        certificate_number_raw?: string | null;
+        certificate_status?: string | null;
+        note?: string | null;
+        issued_at?: string | null;
+        principal_amount?: number | null;
+        meta?: Record<string, unknown> | null;
+        old_number?: string | null;
+        new_number?: string | null;
+    }>;
     merged_rights_payload?: {
         source_ids: string[];
         target_number: string;
@@ -78,6 +90,19 @@ export async function POST(request: Request) {
             return item;
         });
         return formatted.join(', ');
+    };
+
+    const parseRightMeta = (note: unknown): Record<string, unknown> => {
+        if (!note) return {};
+        if (typeof note === 'object' && !Array.isArray(note)) return note as Record<string, unknown>;
+        if (typeof note === 'string' && note.trim().startsWith('{')) {
+            try {
+                return JSON.parse(note) as Record<string, unknown>;
+            } catch {
+                return {};
+            }
+        }
+        return {};
     };
 
     // 1. Update basic info in account_entities
@@ -234,6 +259,57 @@ export async function POST(request: Request) {
     }
     // 4-1. Soft delete certificate_registry records if requested
     if (body?.deleted_rights_ids && Array.isArray(body.deleted_rights_ids) && body.deleted_rights_ids.length > 0) {
+        const { data: deletingRights, error: deletingRightsError } = await supabase
+            .from('certificate_registry')
+            .select('id, note')
+            .in('id', body.deleted_rights_ids);
+
+        if (deletingRightsError) {
+            console.error('Certificate delete prefetch error:', deletingRightsError);
+        }
+
+        const derivativeIdsToDelete = ((deletingRights || []) as Array<{ id: string; note: unknown }>)
+            .filter((right) => parseRightMeta(right.note).node_type === 'derivative')
+            .map((right) => right.id);
+
+        if (derivativeIdsToDelete.length > 0) {
+            const { data: siblingRights, error: siblingRightsError } = await supabase
+                .from('certificate_registry')
+                .select('id, note')
+                .in('entity_id', targetIds)
+                .eq('is_active', true);
+
+            if (siblingRightsError) {
+                console.error('Certificate unlink prefetch error:', siblingRightsError);
+            } else {
+                for (const right of (siblingRights || []) as Array<{ id: string; note: unknown }>) {
+                    const meta = parseRightMeta(right.note);
+                    const parentRightId = typeof meta.parent_right_id === 'string' ? meta.parent_right_id : null;
+                    if (!parentRightId || !derivativeIdsToDelete.includes(parentRightId)) continue;
+
+                    delete meta.parent_right_id;
+                    delete meta.integration_type;
+                    delete meta.merged_at;
+                    delete meta.merged_by;
+                    delete meta.original_owner_id;
+                    delete meta.original_owner_name;
+                    if (!meta.node_type) {
+                        meta.node_type = 'raw';
+                    }
+
+                    const nextNote = Object.keys(meta).length > 0 ? JSON.stringify(meta) : null;
+                    const { error: unlinkError } = await supabase
+                        .from('certificate_registry')
+                        .update({ note: nextNote })
+                        .eq('id', right.id);
+
+                    if (unlinkError) {
+                        console.error('Certificate unlink update error:', unlinkError);
+                    }
+                }
+            }
+        }
+
         const { error: delError } = await supabase
             .from('certificate_registry')
             .update({ is_active: false })
@@ -283,16 +359,16 @@ export async function POST(request: Request) {
             // 2) 소스 권리증들에 부모 링크 및 메타데이터 업데이트
             for (const sid of source_ids) {
                 const { data: existing } = await supabase.from('certificate_registry').select('note, entity_id').eq('id', sid).single();
-                let existingMeta: Record<string, any> = {};
+                let existingMeta: Record<string, unknown> = {};
                 try {
                     if (existing?.note) {
                         if (typeof existing.note === 'object') {
-                            existingMeta = existing.note;
+                            existingMeta = existing.note as Record<string, unknown>;
                         } else if (typeof existing.note === 'string' && existing.note.trim().startsWith('{')) {
-                            existingMeta = JSON.parse(existing.note);
+                            existingMeta = JSON.parse(existing.note) as Record<string, unknown>;
                         }
                     }
-                } catch(e) {}
+                } catch {}
 
                 const updatedMeta = {
                     ...existingMeta,
@@ -316,6 +392,38 @@ export async function POST(request: Request) {
                 integration_type: integration_type
             });
         }
+    }
+
+    if (body?.updated_rights && Array.isArray(body.updated_rights) && body.updated_rights.length > 0) {
+        for (const right of body.updated_rights) {
+            const { error: rightError } = await supabase
+                .from('certificate_registry')
+                .update({
+                    certificate_number_normalized: right.certificate_number_normalized ?? null,
+                    certificate_number_raw: right.certificate_number_raw ?? null,
+                    certificate_status: right.certificate_status ?? null,
+                    note: right.note ?? null,
+                })
+                .eq('id', right.id);
+
+            if (rightError) {
+                return NextResponse.json({ success: false, error: rightError.message }, { status: 500 });
+            }
+
+            if (right.old_number !== right.new_number) {
+                await Promise.all(targetIds.map((tid) =>
+                    createAuditLog('UPDATE_CERTIFICATE_NUMBER', tid, {
+                        old_number: right.old_number ?? null,
+                        new_number: right.new_number ?? null,
+                    })
+                ));
+            }
+        }
+
+        await createAuditLog('UPDATE_ASSET_RIGHTS', targetIds[0], {
+            rights_count: body.updated_rights.length,
+            right_ids: body.updated_rights.map((right) => right.id),
+        });
     }
 
     // 5. Update person-level certificate summary (single target only)
@@ -366,14 +474,24 @@ export async function POST(request: Request) {
             .upsert(summaryPatch, { onConflict: 'entity_id' });
 
         if (summaryError) {
-            return NextResponse.json({ success: false, error: summaryError.message }, { status: 500 });
+            const missingSummaryTable =
+                summaryError.message.includes("Could not find the table 'public.person_certificate_summaries'") ||
+                summaryError.message.includes('person_certificate_summaries');
+
+            if (missingSummaryTable) {
+                console.warn('Skipping person_certificate_summaries upsert because the table is unavailable.');
+            } else {
+                return NextResponse.json({ success: false, error: summaryError.message }, { status: 500 });
+            }
         }
 
-        await createAuditLog('UPDATE_PERSON_CERTIFICATE_SUMMARY', targetIds[0], {
-            manual_certificate_count: summaryPatch.manual_certificate_count ?? null,
-            review_status: summaryPatch.review_status ?? null,
-            summary_note: summaryPatch.summary_note ?? null,
-        });
+        if (!summaryError) {
+            await createAuditLog('UPDATE_PERSON_CERTIFICATE_SUMMARY', targetIds[0], {
+                manual_certificate_count: summaryPatch.manual_certificate_count ?? null,
+                review_status: summaryPatch.review_status ?? null,
+                summary_note: summaryPatch.summary_note ?? null,
+            });
+        }
     }
 
     return NextResponse.json({

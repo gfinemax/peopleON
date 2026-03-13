@@ -29,6 +29,7 @@ export type UnifiedPerson = {
     certificate_numbers?: string[];
     certificate_search_tokens?: string[];
     phone: string | null;
+    address_legal?: string | null;
     tier: string | null;
     status: string | null;
     is_registered: boolean;
@@ -52,6 +53,7 @@ export type UnifiedPerson = {
     nominees?: { id: string; name: string }[] | null;
     _hasLiveCertData?: boolean;
     birth_date: string | null;
+    source_certificate_row_count: number;
     raw_certificate_count: number;
     managed_certificate_count: number;
     has_merged_certificates: boolean;
@@ -60,6 +62,12 @@ export type UnifiedPerson = {
 export const normalizeText = (value?: string | null) => (value || '').replace(/\s+/g, '').toLowerCase();
 export const normalizePhone = (value?: string | null) => (value || '').replace(/\D/g, '');
 const normalizeCertificateNumber = (value: string) => value.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/[\s]/g, '').toLowerCase();
+const splitCertificateDisplay = (value?: string | null) =>
+    (value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .filter((item) => item !== '-');
 
 const isLikelyPersonName = (value?: string | null) => {
     const candidate = (value || '').trim().replace(/\s+/g, '');
@@ -442,8 +450,11 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             managedCount = certs.length;
         }
 
+        // 표시용: 모든 활성 권리증을 개별 표시 (derivative는 [통합] 태그 부착)
         const displayItems: string[] = [];
-        activeManagedRights.forEach(r => {
+        const allActiveCerts = combinedRights.filter((r: any) => r.right_type === 'certificate' && r.is_active);
+        
+        allActiveCerts.forEach(r => {
             const resolved = resolveCertificateRight(r);
             let text = resolved.confirmedNumber || resolved.rawValue || '-';
             
@@ -456,25 +467,9 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             } catch (e) {}
 
             if (meta.node_type === 'derivative') {
-                const childRights = combinedRights.filter(cr => {
-                    if (!cr.is_active) return false;
-                    let cMeta: CertificateMeta = {};
-                    try {
-                        if (cr.note) {
-                            if (typeof cr.note === 'object') cMeta = cr.note;
-                            else if (typeof cr.note === 'string' && cr.note.trim().startsWith('{')) cMeta = JSON.parse(cr.note);
-                        }
-                    } catch(e) {}
-                    return cMeta.parent_right_id === r.id;
-                });
-                
-                const childrenCount = childRights.length;
-                const childrenNumbers = childRights
-                    .map(cr => cr.right_number || cr.right_number_raw)
-                    .filter(Boolean)
-                    .join(', ');
-                
-                text += ` [통합/${childrenCount}장: (${childrenNumbers})]`;
+                text += ` [통합]`;
+            } else if (meta.parent_right_id) {
+                // 소스(원천) 권리증 — 부모에 속해 있으므로 별도의 표시 없이 번호만
             } else if (resolved.status !== 'confirmed') {
                 const statusLabelMap: Record<string, string> = {
                     'declared_owned': '보유',
@@ -491,7 +486,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
 
         const certificateNumbers = getConfirmedCertificateNumbers(activeManagedRights);
         const certificateDisplay = displayItems.length > 0 ? displayItems.join(', ') : '-';
-        const certificateSearchTokens = getCertificateSearchTokens(activeManagedRights);
+        const certificateSearchTokens = getCertificateSearchTokens(allActiveCerts);
 
         const isDateLike = (v: string): boolean => {
             const s = v.trim();
@@ -537,6 +532,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             certificate_search_tokens: certificateSearchTokens,
             birth_date: derivedBirthDate,
             phone: entity.phone,
+            address_legal: entity.address_legal,
             tier,
             tiers,
             status: entity.status || (isLitigation ? '제명' : (isWithdrawn ? '탈퇴' : ((activeRole?.role_status === 'active' || hasMemberRoleCode) ? '정상' : (isAgent ? '정상' : '미정')))),
@@ -556,6 +552,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             notes: entity.memo,
             meta: entity.meta as any,
             real_owner: realOwnerByNominee.get(entity.id) || null,
+            source_certificate_row_count: rawCount,
             raw_certificate_count: rawCount,
             managed_certificate_count: managedCount,
             has_merged_certificates: hasMerged,
@@ -613,6 +610,9 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
     const mergeCertificateTokens = (left: string[] | undefined, right: string[] | undefined) =>
         Array.from(new Set([...(left || []), ...(right || [])].filter(Boolean)));
 
+    const mergeCertificateDisplay = (left?: string | null, right?: string | null) =>
+        Array.from(new Set([...splitCertificateDisplay(left), ...splitCertificateDisplay(right)])).join(', ');
+
     const mergeRelationships = (
         left: { id?: string; name: string; relation: string; phone?: string }[] | null | undefined,
         right: { id?: string; name: string; relation: string; phone?: string }[] | null | undefined,
@@ -628,16 +628,24 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
     const finalizeCertificateFields = (person: UnifiedPerson) => {
         const uniqueNumbers = mergeCertificateNumbers([], person.certificate_numbers);
         person.certificate_numbers = uniqueNumbers;
+        const fallbackDisplay =
+            uniqueNumbers.length > 1
+                ? uniqueNumbers.join(', ')
+                : uniqueNumbers.length === 1
+                    ? uniqueNumbers[0]
+                    : '-';
+        const existingDisplayItems = splitCertificateDisplay(person.certificate_display);
 
-        if (uniqueNumbers.length > 1) {
-            person.certificate_display = uniqueNumbers.join(', ');
-        } else if (uniqueNumbers.length === 1) {
-            person.certificate_display = uniqueNumbers[0];
-        } else if (!person.certificate_display || person.certificate_display === '-') {
-            person.certificate_display = '-';
-        }
-
-        person.certificate_search_tokens = mergeCertificateTokens(person.certificate_search_tokens, uniqueNumbers);
+        // Keep source/managed roles from the aggregated display. Re-merging managed fallback
+        // numbers here causes derivative numbers to leak into the source-number list.
+        person.certificate_display =
+            existingDisplayItems.length > 0
+                ? existingDisplayItems.join(', ')
+                : fallbackDisplay;
+        person.certificate_search_tokens = mergeCertificateTokens(
+            mergeCertificateTokens(person.certificate_search_tokens, uniqueNumbers),
+            splitCertificateDisplay(person.certificate_display).map((value) => value.replace(/\s*\[통합\]\s*$/u, '')),
+        );
     };
 
     const unifiedPeople: UnifiedPerson[] = [];
@@ -678,13 +686,16 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             target.tiers = Array.from(new Set([...(target.tiers || []), ...(p.tiers || [])]));
             target.role_types = Array.from(new Set([...target.role_types, ...p.role_types]));
             target.tier = target.tiers[0];
-            if ((!target.certificate_display || target.certificate_display === '-') && p.certificate_display && p.certificate_display !== '-') {
-                target.certificate_display = p.certificate_display;
-            }
+            target.certificate_display = mergeCertificateDisplay(target.certificate_display, p.certificate_display);
             target.certificate_numbers = mergeCertificateNumbers(target.certificate_numbers, p.certificate_numbers);
             target.certificate_search_tokens = mergeCertificateTokens(target.certificate_search_tokens, p.certificate_search_tokens);
             target.relationships = mergeRelationships(target.relationships, p.relationships);
+            target.source_certificate_row_count += p.source_certificate_row_count;
+            target.raw_certificate_count += p.raw_certificate_count;
+            target.managed_certificate_count += p.managed_certificate_count;
+            target.has_merged_certificates = target.has_merged_certificates || p.has_merged_certificates;
             if (p.is_registered) target.is_registered = true;
+            if (!target.address_legal && p.address_legal) target.address_legal = p.address_legal;
             if (!target.birth_date && p.birth_date) target.birth_date = p.birth_date;
 
             const statusPriority: Record<string, number> = {
@@ -721,9 +732,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
                     target.certificate_numbers = mergeCertificateNumbers(target.certificate_numbers, np.certificate_numbers);
                     target.certificate_search_tokens = mergeCertificateTokens(target.certificate_search_tokens, np.certificate_search_tokens);
                     target.relationships = mergeRelationships(target.relationships, np.relationships);
-                    if ((!target.certificate_display || target.certificate_display === '-') && np.certificate_display && np.certificate_display !== '-') {
-                        target.certificate_display = np.certificate_display;
-                    }
+                    target.certificate_display = mergeCertificateDisplay(target.certificate_display, np.certificate_display);
                     if (np.acts_as_agent_for) {
                         target.acts_as_agent_for = [...(target.acts_as_agent_for || []), ...np.acts_as_agent_for];
                     }
@@ -773,9 +782,7 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
             target.certificate_numbers = mergeCertificateNumbers(target.certificate_numbers, p.certificate_numbers);
             target.certificate_search_tokens = mergeCertificateTokens(target.certificate_search_tokens, p.certificate_search_tokens);
             target.relationships = mergeRelationships(target.relationships, p.relationships);
-            if ((!target.certificate_display || target.certificate_display === '-') && p.certificate_display && p.certificate_display !== '-') {
-                target.certificate_display = p.certificate_display;
-            }
+            target.certificate_display = mergeCertificateDisplay(target.certificate_display, p.certificate_display);
             if (p.acts_as_agent_for) {
                 target.acts_as_agent_for = [...(target.acts_as_agent_for || []), ...p.acts_as_agent_for];
             }
@@ -841,12 +848,31 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
                 ? `${inheritedNumbers[0]} 외 ${inheritedNumbers.length - 1}건`
                 : inheritedNumbers[0];
 
+        // When a registered member inherits visible certificate numbers from linked records,
+        // keep the rights-flow counters aligned with what the UI shows.
+        if (person.raw_certificate_count === 0 && person.managed_certificate_count === 0) {
+            person.raw_certificate_count = inheritedNumbers.length;
+            person.managed_certificate_count = inheritedNumbers.length;
+            person.has_merged_certificates = inheritedNumbers.length > 1;
+        }
+
         if (person.tiers) {
             person.tiers = person.tiers.filter((tier) => tier !== '권리증번호없음');
             if (!person.tiers.includes('권리증번호있음')) {
                 person.tiers.push('권리증번호있음');
             }
         }
+    }
+
+    for (const person of unifiedPeople) {
+        if (person.raw_certificate_count !== 0 || person.managed_certificate_count !== 0) continue;
+
+        const visibleCount = (person.certificate_numbers || []).length || splitCertificateDisplay(person.certificate_display).length;
+        if (visibleCount <= 0) continue;
+
+        person.raw_certificate_count = visibleCount;
+        person.managed_certificate_count = visibleCount;
+        person.has_merged_certificates = visibleCount > 1;
     }
 
     return { unifiedPeople, fetchError };

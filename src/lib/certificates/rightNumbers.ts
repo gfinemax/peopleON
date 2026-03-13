@@ -337,14 +337,19 @@ export const resolveCertificateRight = (right: AssetRightCertificateRow): Resolv
     const note = (right.right_number_note || '').trim() || null;
 
     if (storedStatus) {
+        const normalizedSource = (right.right_number || '').trim() || null;
+        const extractedFromRaw = extractConfirmedCertificateNumber(rawValue);
         const confirmedNumber = storedStatus === 'confirmed'
-            ? ((right.right_number || extractConfirmedCertificateNumber(rawValue) || '').trim() || null)
+            ? ((rawValue || normalizedSource || extractedFromRaw || '').trim() || null)
+            : null;
+        const normalizedKey = storedStatus === 'confirmed'
+            ? normalizeCertificateNumber(normalizedSource || extractedFromRaw || confirmedNumber)
             : null;
 
         return {
             rawValue,
             confirmedNumber,
-            normalizedKey: confirmedNumber ? normalizeCertificateNumber(confirmedNumber) : null,
+            normalizedKey: normalizedKey || null,
             status: storedStatus,
             note,
         };

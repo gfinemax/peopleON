@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SortableHeader } from './SortableHeader';
 import { MemberDetailDialog } from './MemberDetailDialog';
-import { InlineCellDropdown, DropdownOption } from './InlineCellDropdown';
+import { InlineCellDropdown } from './InlineCellDropdown';
 import { cn } from '@/lib/utils';
 
 import { MaterialIcon } from '@/components/ui/icon';
 import { toggleFavoriteMember } from '@/app/actions/members';
 
 type RoleType = 'member' | 'certificate_holder' | 'related_party' | 'refund_applicant' | 'agent';
+type DetailTab = 'info' | 'timeline' | 'payment' | 'admin';
 
 interface Member {
     id: string;
@@ -51,6 +52,11 @@ interface MembersTableProps {
     startIndex: number;
 }
 
+type CertificateDisplayItem = {
+    value: string;
+    isManaged: boolean;
+};
+
 const roleLabel: Record<RoleType, string> = {
     member: '조합원',
     certificate_holder: '권리증보유',
@@ -68,13 +74,40 @@ const roleStyle: Record<RoleType, string> = {
 
 const formatAmount = (value?: number) => `₩${Math.round(value || 0).toLocaleString('ko-KR')}`;
 
+const parseCertificateDisplay = (value?: string | null): CertificateDisplayItem[] =>
+    (value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .filter((item) => item !== '-')
+        .map((item) => ({
+            value: item.replace(/\s*\[통합\]\s*$/u, ''),
+            isManaged: item.includes('[통합]'),
+        }));
+
+const getRightsFlowText = (member: Member) => {
+    const raw = member.raw_certificate_count;
+    const managed = member.managed_certificate_count;
+
+    if (raw === 1 && managed === 1) {
+        return '유지';
+    }
+
+    if (raw > managed) {
+        return `통합됨 (${raw}→${managed})`;
+    }
+
+    return `${raw}원천 → ${managed}관리`;
+};
+
 export function MembersTable({ members, tableKey, startIndex }: MembersTableProps) {
     const router = useRouter();
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+    const [selectedInitialTab, setSelectedInitialTab] = useState<DetailTab>('info');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [creatingCaseById, setCreatingCaseById] = useState<Record<string, boolean>>({});
 
-    const handleInlineUpdate = async (id: string, field: 'tier' | 'status' | 'role', value: any, entityIds?: string[]) => {
+    const handleInlineUpdate = async (id: string, field: 'tier' | 'status' | 'role', value: unknown, entityIds?: string[]) => {
         const res = await fetch('/api/members/inline-update', {
             method: 'POST',
             body: JSON.stringify({ id, field, value, entity_ids: entityIds }),
@@ -87,10 +120,15 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
         router.refresh();
     };
 
+    const openMemberDetail = (memberId: string, initialTab: DetailTab = 'info') => {
+        setSelectedMemberId(memberId);
+        setSelectedInitialTab(initialTab);
+        setDialogOpen(true);
+    };
+
     const handleRowClick = (member: Member) => {
         if (!member.member_id) return;
-        setSelectedMemberId(member.member_id);
-        setDialogOpen(true);
+        openMemberDetail(member.member_id, member._matchedLog ? 'timeline' : 'info');
     };
 
     const handleToggleFavorite = async (e: React.MouseEvent, member: Member) => {
@@ -161,8 +199,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedMemberId(rel.id!);
-                                    setDialogOpen(true);
+                                    openMemberDetail(rel.id!, 'info');
                                 }}
                                 className="text-[13px] font-bold text-slate-100 hover:text-blue-400 hover:underline transition-colors"
                             >
@@ -182,11 +219,6 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
         );
     };
 
-    const formatCertificateNumber = (num: string | null) => {
-        if (!num) return '-';
-        return num;
-    };
-
     return (
         <>
             <div className="hidden md:block w-full h-full overflow-auto scrollbar-thin scrollbar-thumb-border/30">
@@ -198,7 +230,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                             <th className="px-2 py-2">구분</th>
                             <th className="px-2 py-2"><SortableHeader label="성명" field="name" className="justify-center" /></th>
                             <th className="px-2 py-2"><SortableHeader label="권리증번호" field="member_number" className="justify-center" /></th>
-                            <th className="px-2 py-2">현황 (원천/관리)</th>
+                            <th className="px-2 py-2">권리 흐름</th>
                             <th className="px-2 py-2">관계</th>
                             <th className="px-2 py-2"><SortableHeader label="상태" field="status" className="justify-center" /></th>
                             <th className="px-2 py-2"><SortableHeader label="연락처" field="phone" className="justify-center" /></th>
@@ -348,38 +380,66 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-2 py-1.5 font-medium text-gray-200">
-                                    <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                                        {(member.certificate_display || '-').split(',').map((cert, idx) => {
-                                            const certStr = cert.trim();
-                                            const isMerged = certStr.includes('[통합');
-                                            return (
-                                                <span key={`${member.id}-cert-${idx}`} className="text-left font-mono flex items-center gap-1.5">
-                                                    {isMerged ? (
-                                                        <>
-                                                            <span className="text-slate-200">{certStr.split(' [')[0]}</span>
-                                                            <span className="px-1 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-black border border-blue-500/20 leading-none">
-                                                                통합({certStr.match(/(\d+)장/)?.[1] || ''})
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-slate-200">{certStr}</span>
-                                                    )}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
+                                <td
+                                    className="px-2 py-1.5 font-medium text-gray-200"
+                                    onClick={(e) => e.stopPropagation()}
+                                    suppressHydrationWarning
+                                >
+                                    {(() => {
+                                        const items = parseCertificateDisplay(member.certificate_display);
+                                        const managedItems = items.filter((item) => item.isManaged);
+                                        const sourceItems = items.filter((item) => !item.isManaged);
+                                        const sourceValues = sourceItems.map((item) => item.value);
+                                        const managedValues = managedItems.map((item) => item.value);
+
+                                        if (sourceValues.length === 0 && managedValues.length === 0) {
+                                            return <span className="text-slate-600">-</span>;
+                                        }
+
+                                        return (
+                                            <div className="flex flex-col gap-1">
+                                                {sourceValues.map((value, idx) => (
+                                                    <button
+                                                        key={`${member.id}-source-cert-${idx}`}
+                                                        type="button"
+                                                        onClick={() => member.member_id && openMemberDetail(member.member_id, 'admin')}
+                                                        className="text-left font-mono flex items-center gap-1.5 hover:text-blue-300 transition-colors disabled:cursor-default disabled:hover:text-inherit break-all"
+                                                        disabled={!member.member_id}
+                                                        title={value}
+                                                    >
+                                                        <span className="text-slate-200">{value}</span>
+                                                    </button>
+                                                ))}
+                                                {managedValues.map((value, idx) => (
+                                                    <button
+                                                        key={`${member.id}-managed-cert-${idx}`}
+                                                        type="button"
+                                                        onClick={() => member.member_id && openMemberDetail(member.member_id, 'admin')}
+                                                        className="text-left font-mono flex items-center gap-1.5 hover:text-blue-300 transition-colors disabled:cursor-default disabled:hover:text-inherit break-all"
+                                                        disabled={!member.member_id}
+                                                        title={value}
+                                                    >
+                                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 leading-none">
+                                                            관리번호
+                                                        </span>
+                                                        <span className="text-purple-300">{value}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </td>
-                                <td className="px-2 py-1.5 align-middle">
+                                <td className="px-2 py-1.5 align-middle" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex flex-col items-center justify-center gap-1">
-                                        <div className="text-[13px] font-bold text-slate-200 bg-white/[0.05] border border-white/10 px-2 py-0.5 rounded-md min-w-[60px] text-center">
-                                            {member.raw_certificate_count}장 / {member.managed_certificate_count}건
-                                        </div>
-                                        {member.has_merged_certificates && (
-                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 leading-none">
-                                                통합관리
-                                            </span>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => member.member_id && openMemberDetail(member.member_id, 'admin')}
+                                            className="text-[13px] font-bold text-slate-200 bg-white/[0.05] border border-white/10 px-2 py-0.5 rounded-md min-w-[92px] text-center hover:text-blue-300 hover:border-blue-400/30 transition-colors disabled:cursor-default disabled:hover:text-slate-200 disabled:hover:border-white/10"
+                                            title={`원천 ${member.raw_certificate_count}장, 현재 관리 ${member.managed_certificate_count}건`}
+                                            disabled={!member.member_id}
+                                        >
+                                            {getRightsFlowText(member)}
+                                        </button>
                                     </div>
                                 </td>
                                 <td className="px-2 py-1.5 text-gray-400">{getRepresentativeDisplay(member.relationships)}</td>
@@ -463,8 +523,56 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                                         {member.status === '차명' && (
                                             <span className="text-[9px] font-black bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1 rounded">명의</span>
                                         )}
-                                        <span className="text-[11px] text-muted-foreground/60 font-mono">{formatCertificateNumber(member.certificate_display || null)}</span>
                                     </div>
+                                    {(() => {
+                                        const items = parseCertificateDisplay(member.certificate_display);
+                                        const managedItems = items.filter((item) => item.isManaged).map((item) => item.value);
+                                        const sourceItems = items
+                                            .filter((item) => !item.isManaged)
+                                            .map((item) => item.value);
+
+                                        if (sourceItems.length === 0 && managedItems.length === 0) {
+                                            return <span className="text-[11px] text-muted-foreground/60 font-mono">-</span>;
+                                        }
+
+                                        return (
+                                            <div className="flex flex-col items-start gap-0.5 mt-0.5">
+                                                {sourceItems.map((value, idx) => (
+                                                    <button
+                                                        key={`${member.id}-mobile-source-${idx}`}
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (member.member_id) openMemberDetail(member.member_id, 'admin');
+                                                        }}
+                                                        className="text-[11px] text-muted-foreground/60 font-mono hover:text-blue-300 transition-colors disabled:cursor-default disabled:hover:text-inherit text-left break-all"
+                                                        disabled={!member.member_id}
+                                                        title={value}
+                                                    >
+                                                        {value}
+                                                    </button>
+                                                ))}
+                                                {managedItems.map((value, idx) => (
+                                                    <button
+                                                        key={`${member.id}-mobile-managed-${idx}`}
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (member.member_id) openMemberDetail(member.member_id, 'admin');
+                                                        }}
+                                                        className="inline-flex items-center gap-1 text-[11px] font-mono text-purple-300 hover:text-purple-200 transition-colors disabled:cursor-default disabled:hover:text-inherit text-left break-all"
+                                                        disabled={!member.member_id}
+                                                        title={value}
+                                                    >
+                                                        <span className="rounded border border-purple-500/20 bg-purple-500/10 px-1 py-0.5 text-[9px] font-black leading-none">
+                                                            관리번호
+                                                        </span>
+                                                        <span>{value}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                     {member.status === '차명' && member.real_owner && (
                                         <div className="text-[10px] text-sky-400 font-bold mt-0.5 flex items-center gap-1">
                                             <MaterialIcon name="link" size="xs" className="opacity-50" />
@@ -515,7 +623,19 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                             })}
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="grid grid-cols-2 gap-2 text-center">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (member.member_id) openMemberDetail(member.member_id, 'admin');
+                                }}
+                                className="rounded-md border border-white/[0.06] bg-[#0d1523] p-2 hover:border-blue-400/20 hover:bg-[#122033] transition-colors text-center disabled:cursor-default disabled:hover:border-white/[0.06] disabled:hover:bg-[#0d1523]"
+                                disabled={!member.member_id}
+                            >
+                                <p className="text-[10px] text-slate-400">권리 흐름</p>
+                                <p className="text-xs font-mono text-slate-200">{getRightsFlowText(member)}</p>
+                            </button>
                             <div className="rounded-md border border-white/[0.06] bg-[#0d1523] p-2">
                                 <p className="text-[10px] text-slate-400">정산예정</p>
                                 <p className="text-xs font-mono text-slate-200">{formatAmount(member.settlement_expected)}</p>
@@ -565,7 +685,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSaved={() => router.refresh()}
-                initialTab={members.find(m => m.id === selectedMemberId)?._matchedLog ? 'timeline' : 'info'}
+                initialTab={selectedInitialTab}
             />
         </>
     );

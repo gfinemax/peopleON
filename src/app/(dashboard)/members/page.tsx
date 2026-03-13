@@ -138,6 +138,17 @@ const sanitizeNumber = (val: string | null | undefined) => {
     return v;
 };
 
+const splitSourceCertificateDisplay = (value?: string | null) =>
+    (value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .filter((item) => item !== '-')
+        .filter((item) => !item.includes('[통합]'));
+
+const normalizeSourceCertificateKey = (value: string) =>
+    value.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/\s+/g, '').toLowerCase();
+
 function comparePeople(a: UnifiedPerson, b: UnifiedPerson, field: string, order: 'asc' | 'desc') {
     const multiplier = order === 'asc' ? 1 : -1;
     const valueOf = (person: UnifiedPerson): string | number => {
@@ -288,20 +299,163 @@ export default async function MembersPage({
     const totalPaidRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_paid, 0);
     const totalRemainingRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_remaining, 0);
     const registeredCount = unifiedPeople.filter(p => p.is_registered).length;
-    const allCertificateNumbers = new Set<string>();
-    const memberCertificateNumbers = new Set<string>();
-    for (const person of unifiedPeople) {
-        const uniqueNumbers = person.certificate_numbers || [];
-        for (const certificateNumber of uniqueNumbers) {
-            allCertificateNumbers.add(certificateNumber);
-            if (person.is_registered) {
-                memberCertificateNumbers.add(certificateNumber);
-            }
+    const sourceCertificateOccurrences = unifiedPeople.flatMap((person) =>
+        splitSourceCertificateDisplay(person.certificate_display).map((number) => ({
+            personId: person.id,
+            name: person.name,
+            isRegistered: person.is_registered,
+            phone: person.phone,
+            address: person.address_legal || null,
+            number,
+            key: normalizeSourceCertificateKey(number),
+            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
+        })),
+    );
+
+    const occurrencesByKey = new Map<string, typeof sourceCertificateOccurrences>();
+    for (const occurrence of sourceCertificateOccurrences) {
+        const list = occurrencesByKey.get(occurrence.key) || [];
+        list.push(occurrence);
+        occurrencesByKey.set(occurrence.key, list);
+    }
+
+    const uniqueSourceOccurrences = Array.from(occurrencesByKey.values())
+        .filter((occurrences) => occurrences.length === 1)
+        .map(([occurrence]) => occurrence);
+    const duplicateSourceOccurrences = Array.from(occurrencesByKey.values())
+        .filter((occurrences) => occurrences.length > 1);
+    const registeredSourceOccurrences = sourceCertificateOccurrences.filter((occurrence) => occurrence.isRegistered);
+    const registeredInternalDistinctCount = new Set(registeredSourceOccurrences.map((occurrence) => occurrence.key)).size;
+
+    const registeredCertificateHolderCount = uniqueSourceOccurrences.filter((occurrence) => occurrence.isRegistered).length;
+    const certificateTotalCount = uniqueSourceOccurrences.length;
+    const refundCertificateCount = uniqueSourceOccurrences.filter((occurrence) => !occurrence.isRegistered).length;
+
+    const includedSourceNumbersByPerson = new Map<string, string[]>();
+    for (const occurrence of uniqueSourceOccurrences) {
+        const list = includedSourceNumbersByPerson.get(occurrence.personId) || [];
+        list.push(occurrence.number);
+        includedSourceNumbersByPerson.set(occurrence.personId, list);
+    }
+
+    const excludedSourceNumbersByPerson = new Map<string, string[]>();
+    for (const duplicateGroup of duplicateSourceOccurrences) {
+        for (const occurrence of duplicateGroup) {
+            const list = excludedSourceNumbersByPerson.get(occurrence.personId) || [];
+            list.push(occurrence.number);
+            excludedSourceNumbersByPerson.set(occurrence.personId, list);
         }
     }
-    const registeredCertificateHolderCount = memberCertificateNumbers.size;
-    const certificateTotalCount = allCertificateNumbers.size;
-    const refundCertificateCount = Math.max(certificateTotalCount - registeredCertificateHolderCount, 0);
+
+    const memberHeldDetails = unifiedPeople
+        .filter((person) => person.is_registered)
+        .map((person) => ({
+            id: person.id,
+            name: person.name,
+            phone: person.phone,
+            address: person.address_legal || null,
+            sourceCount: (includedSourceNumbersByPerson.get(person.id) || []).length,
+            sourceNumbers: includedSourceNumbersByPerson.get(person.id) || [],
+            excludedSourceNumbers: excludedSourceNumbersByPerson.get(person.id) || [],
+            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
+        }))
+        .filter((person) => person.sourceCount > 0 || person.excludedSourceNumbers.length > 0)
+        .sort((left, right) => {
+            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
+            if (right.excludedSourceNumbers.length !== left.excludedSourceNumbers.length) {
+                return right.excludedSourceNumbers.length - left.excludedSourceNumbers.length;
+            }
+            return left.name.localeCompare(right.name, 'ko-KR');
+        });
+    const allSourceDetails = unifiedPeople
+        .map((person) => ({
+            id: person.id,
+            name: person.name,
+            sourceCount: (includedSourceNumbersByPerson.get(person.id) || []).length,
+            sourceNumbers: includedSourceNumbersByPerson.get(person.id) || [],
+            excludedSourceNumbers: excludedSourceNumbersByPerson.get(person.id) || [],
+            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
+        }))
+        .filter((person) => person.sourceCount > 0 || person.excludedSourceNumbers.length > 0)
+        .sort((left, right) => {
+            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
+            if (right.excludedSourceNumbers.length !== left.excludedSourceNumbers.length) {
+                return right.excludedSourceNumbers.length - left.excludedSourceNumbers.length;
+            }
+            return left.name.localeCompare(right.name, 'ko-KR');
+        });
+    const registeredInternalNumbersByPerson = new Map<string, string[]>();
+    for (const occurrence of registeredSourceOccurrences) {
+        const list = registeredInternalNumbersByPerson.get(occurrence.personId) || [];
+        if (!list.some((item) => normalizeSourceCertificateKey(item) === occurrence.key)) {
+            list.push(occurrence.number);
+            registeredInternalNumbersByPerson.set(occurrence.personId, list);
+        }
+    }
+    const memberHeldDetailsInternal = unifiedPeople
+        .filter((person) => person.is_registered)
+        .map((person) => ({
+            id: person.id,
+            name: person.name,
+            phone: person.phone,
+            address: person.address_legal || null,
+            sourceCount: (registeredInternalNumbersByPerson.get(person.id) || []).length,
+            sourceNumbers: registeredInternalNumbersByPerson.get(person.id) || [],
+            excludedSourceNumbers: [],
+            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
+        }))
+        .filter((person) => person.sourceCount > 0)
+        .sort((left, right) => {
+            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
+            return left.name.localeCompare(right.name, 'ko-KR');
+        });
+    const refundSourceDetails = unifiedPeople
+        .filter((person) => !person.is_registered)
+        .map((person) => ({
+            id: person.id,
+            name: person.name,
+            phone: person.phone,
+            address: person.address_legal || null,
+            sourceCount: (includedSourceNumbersByPerson.get(person.id) || []).length,
+            sourceNumbers: includedSourceNumbersByPerson.get(person.id) || [],
+            excludedSourceNumbers: excludedSourceNumbersByPerson.get(person.id) || [],
+            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
+        }))
+        .filter((person) => person.sourceCount > 0 || person.excludedSourceNumbers.length > 0)
+        .sort((left, right) => {
+            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
+            if (right.excludedSourceNumbers.length !== left.excludedSourceNumbers.length) {
+                return right.excludedSourceNumbers.length - left.excludedSourceNumbers.length;
+            }
+            return left.name.localeCompare(right.name, 'ko-KR');
+        });
+    const duplicateSourceDetails = duplicateSourceOccurrences
+        .map((occurrences, index) => {
+            const holders = [...occurrences].sort((left, right) => {
+                if (left.isRegistered !== right.isRegistered) return left.isRegistered ? -1 : 1;
+                return left.name.localeCompare(right.name, 'ko-KR');
+            });
+            const representative = [...occurrences].sort((left, right) => right.number.length - left.number.length)[0];
+            return {
+                id: `${representative.key}-${index}`,
+                number: representative.number,
+                duplicateCount: occurrences.length,
+                registeredCount: occurrences.filter((occurrence) => occurrence.isRegistered).length,
+                refundCount: occurrences.filter((occurrence) => !occurrence.isRegistered).length,
+                holders: holders.map((holder) => ({
+                    id: holder.personId,
+                    name: holder.name,
+                    isRegistered: holder.isRegistered,
+                    phone: holder.phone,
+                    address: holder.address,
+                })),
+            };
+        })
+        .sort((left, right) => {
+            if (right.duplicateCount !== left.duplicateCount) return right.duplicateCount - left.duplicateCount;
+            return left.number.localeCompare(right.number, 'ko-KR');
+        });
+    const duplicateExcludedCount = duplicateSourceOccurrences.length;
     const additionalRecruitmentCount = Math.max(TOTAL_HOUSEHOLDS - registeredCount, 0);
     const relationPeople = unifiedPeople.filter(p => p.role_types.includes('agent') || p.role_types.includes('related_party'));
     const agentCount = relationPeople.filter(p => p.role_types.includes('agent')).length;
@@ -380,6 +534,7 @@ export default async function MembersPage({
             <DashboardManager
                 kpiSection={(
                     <MembersKpiStrip
+                        key="members-kpi-section"
                         households={{
                             total: TOTAL_HOUSEHOLDS,
                             members: registeredCount,
@@ -390,7 +545,14 @@ export default async function MembersPage({
                             memberHeld: registeredCertificateHolderCount,
                             externalHeld: refundCertificateCount,
                             refundEligible: refundCertificateCount,
+                            duplicateExcluded: duplicateExcludedCount,
+                            registeredInternalDistinct: registeredInternalDistinctCount,
                         }}
+                        allSourceDetails={allSourceDetails}
+                        memberHeldDetails={memberHeldDetails}
+                        memberHeldDetailsInternal={memberHeldDetailsInternal}
+                        refundSourceDetails={refundSourceDetails}
+                        duplicateSourceDetails={duplicateSourceDetails}
                         relations={{
                             total: relationPeopleCount,
                             agents: agentCount,
@@ -399,7 +561,7 @@ export default async function MembersPage({
                     />
                 )}
                 qualitySection={(
-                    <section className="rounded-xl border border-white/[0.08] bg-[#101725] px-3 py-3">
+                    <section key="members-quality-section" className="rounded-xl border border-white/[0.08] bg-[#101725] px-3 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <MaterialIcon name="verified_user" size="sm" className="text-sky-300" />
