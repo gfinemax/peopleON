@@ -29,5 +29,10 @@ const loadUnifiedMembersSnapshot = unstable_cache(
 );
 
 export async function getUnifiedMembersSnapshot() {
-    return loadUnifiedMembersSnapshot();
+    try {
+        return await loadUnifiedMembersSnapshot();
+    } catch (error) {
+        console.error('Unified members snapshot error:', error);
+        return [];
+    }
 }
