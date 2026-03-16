@@ -86,15 +86,35 @@ export function partitionSourceCertificateOccurrences(occurrences: SourceCertifi
         occurrencesByKey.set(occurrence.key, list);
     }
 
-    const groups = Array.from(occurrencesByKey.values());
-    const uniqueSourceOccurrences = groups
-        .filter((group) => group.length === 1)
-        .map(([occurrence]) => occurrence);
-    const duplicateSourceOccurrences = groups.filter((group) => group.length > 1);
+    const uniqueSourceOccurrences: SourceCertificateOccurrence[] = [];
+    const duplicateSourceOccurrences: SourceCertificateOccurrence[][] = [];
+    const excludedSourceOccurrences: SourceCertificateOccurrence[] = [];
+
+    for (const group of occurrencesByKey.values()) {
+        if (group.length === 1) {
+            uniqueSourceOccurrences.push(group[0]);
+        } else {
+            // 중복 그룹에서 대표(Winner) 선정 로직
+            // 1순위: 등기조합원(isRegistered)
+            // 2순위: 이름 가나다순 (안정적인 선정 보장)
+            const sorted = [...group].sort((a, b) => {
+                if (a.isRegistered !== b.isRegistered) return a.isRegistered ? -1 : 1;
+                return a.name.localeCompare(b.name, 'ko-KR');
+            });
+
+            const winner = sorted[0];
+            const losers = sorted.slice(1);
+
+            uniqueSourceOccurrences.push(winner);
+            duplicateSourceOccurrences.push(group);
+            excludedSourceOccurrences.push(...losers);
+        }
+    }
 
     return {
         occurrencesByKey,
         uniqueSourceOccurrences,
         duplicateSourceOccurrences,
+        excludedSourceOccurrences,
     };
 }

@@ -69,7 +69,7 @@ function buildMemberHeldDetails(
 
 export function buildSourceCertificateSummary(people: UnifiedPerson[]): SourceCertificateSummary {
     const sourceCertificateOccurrences = collectSourceCertificateOccurrences(people);
-    const { uniqueSourceOccurrences, duplicateSourceOccurrences } =
+    const { uniqueSourceOccurrences, duplicateSourceOccurrences, excludedSourceOccurrences } =
         partitionSourceCertificateOccurrences(sourceCertificateOccurrences);
     const registeredSourceOccurrences = sourceCertificateOccurrences.filter((occurrence) => occurrence.isRegistered);
     const registeredInternalDistinctCount = new Set(registeredSourceOccurrences.map((occurrence) => occurrence.key)).size;
@@ -86,12 +86,10 @@ export function buildSourceCertificateSummary(people: UnifiedPerson[]): SourceCe
     }
 
     const excludedSourceNumbersByPerson = new Map<string, string[]>();
-    for (const duplicateGroup of duplicateSourceOccurrences) {
-        for (const occurrence of duplicateGroup) {
-            const list = excludedSourceNumbersByPerson.get(occurrence.personId) || [];
-            list.push(occurrence.number);
-            excludedSourceNumbersByPerson.set(occurrence.personId, list);
-        }
+    for (const occurrence of excludedSourceOccurrences) {
+        const list = excludedSourceNumbersByPerson.get(occurrence.personId) || [];
+        list.push(occurrence.number);
+        excludedSourceNumbersByPerson.set(occurrence.personId, list);
     }
 
     const allSourceDetails = buildMemberHeldDetails(
