@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAuditLog } from '@/app/actions/audit';
+import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -125,6 +126,7 @@ export async function POST(request: Request) {
         }
 
         revalidatePath('/members');
+        revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true });
     } catch (e: any) {
         console.error('Inline update failed:', e);

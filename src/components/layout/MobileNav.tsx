@@ -22,10 +22,10 @@ export function MobileNav() {
             activeIcon: 'person'
         },
         {
-            name: '자금',
-            href: '/finance',
-            icon: 'account_balance',
-            activeIcon: 'account_balance'
+            name: '분담금',
+            href: '/payments',
+            icon: 'payments',
+            activeIcon: 'payments'
         },
         {
             name: '정산',

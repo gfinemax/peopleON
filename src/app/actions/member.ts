@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
+import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 
 export interface MemberActionState {
     success?: boolean;
@@ -91,7 +92,8 @@ export async function updateMember(
         revalidatePath('/members');
         revalidatePath('/settlements');
         revalidatePath('/payments');
-        revalidatePath('/finance');
+        revalidatePath('/certificate-audit');
+        revalidateUnifiedMembersTag();
         return { success: true, syncStatus: 'ok', syncMessage: '저장 완료' };
     } catch (e) {
         console.error('Server Action Error:', e);
@@ -193,7 +195,8 @@ export async function deleteMemberEntities(entityIds: string[]): Promise<DeleteM
         revalidatePath('/members');
         revalidatePath('/settlements');
         revalidatePath('/payments');
-        revalidatePath('/finance');
+        revalidatePath('/certificate-audit');
+        revalidateUnifiedMembersTag();
 
         return { success: true, deletedIds: targetIds };
     } catch (error) {

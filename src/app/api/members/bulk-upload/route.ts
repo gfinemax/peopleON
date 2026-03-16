@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { classifyCertificateInput } from '@/lib/certificates/rightNumbers';
+import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
             successCount++;
         }
 
+        revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true, count: successCount });
     } catch (error: any) {
         console.error('Bulk upload error:', error);

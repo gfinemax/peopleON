@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 
 // ── Unit Types ──────────────────────────────────────────
 
@@ -54,12 +55,14 @@ export async function upsertUnitType(unitType: Partial<UnitType> & { name: strin
         const { error } = await supabase.from('unit_types').insert(payload);
         if (error) throw new Error(error.message);
     }
+    revalidateUnifiedMembersTag();
 }
 
 export async function deleteUnitType(id: string) {
     const supabase = await createClient();
     const { error } = await supabase.from('unit_types').update({ is_active: false }).eq('id', id);
     if (error) throw new Error(error.message);
+    revalidateUnifiedMembersTag();
 }
 
 // ── Deposit Accounts ────────────────────────────────────
@@ -108,12 +111,14 @@ export async function upsertDepositAccount(account: Partial<DepositAccount> & { 
         const { error } = await supabase.from('deposit_accounts').insert(payload);
         if (error) throw new Error(error.message);
     }
+    revalidateUnifiedMembersTag();
 }
 
 export async function deleteDepositAccount(id: string) {
     const supabase = await createClient();
     const { error } = await supabase.from('deposit_accounts').update({ is_active: false }).eq('id', id);
     if (error) throw new Error(error.message);
+    revalidateUnifiedMembersTag();
 }
 
 // ── Member Payments ─────────────────────────────────────
@@ -172,12 +177,14 @@ export async function upsertMemberPayment(payment: Partial<MemberPayment> & { en
         const { error } = await supabase.from('member_payments').insert(payload);
         if (error) throw new Error(error.message);
     }
+    revalidateUnifiedMembersTag();
 }
 
 export async function deleteMemberPayment(id: string) {
     const supabase = await createClient();
     const { error } = await supabase.from('member_payments').delete().eq('id', id);
     if (error) throw new Error(error.message);
+    revalidateUnifiedMembersTag();
 }
 
 /**
@@ -258,6 +265,7 @@ export async function assignUnitTypeToMember(entityId: string, unitTypeId: strin
 
     const { error: insertErr } = await supabase.from('member_payments').insert(paymentLines);
     if (insertErr) throw new Error(insertErr.message);
+    revalidateUnifiedMembersTag();
 }
 
 // ── Payment Statistics ──────────────────────────────────

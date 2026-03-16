@@ -6,15 +6,18 @@ import { MaterialIcon } from "@/components/ui/icon"
 import { MemberCreateDialog } from "./MemberCreateDialog"
 import { MemberBulkUploadDialog } from "./MemberBulkUploadDialog"
 import { MembersExportDialog } from "./MembersExportDialog"
+import { ResidentRegistryImportDialog } from "./ResidentRegistryImportDialog"
+import type { UnifiedPerson } from "@/services/memberAggregation"
 
 interface MemberActionsProps {
-    data: any[]
+    data: UnifiedPerson[]
 }
 
 export function MemberActions({ data }: MemberActionsProps) {
     const [isAddOpen, setIsAddOpen] = React.useState(false)
     const [isBulkOpen, setIsBulkOpen] = React.useState(false)
     const [isExportOpen, setIsExportOpen] = React.useState(false)
+    const [isResidentImportOpen, setIsResidentImportOpen] = React.useState(false)
 
     return (
         <div className="flex items-center gap-2">
@@ -48,9 +51,20 @@ export function MemberActions({ data }: MemberActionsProps) {
                 <span className="text-xs font-bold">엑셀 저장</span>
             </Button>
 
+            <Button
+                onClick={() => setIsResidentImportOpen(true)}
+                variant="outline"
+                size="sm"
+                className="h-9 gap-1.5 bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all shadow-lg shadow-amber-900/10"
+            >
+                <MaterialIcon name="badge" size="xs" />
+                <span className="text-xs font-bold">주민번호 반영</span>
+            </Button>
+
             <MemberCreateDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
             <MemberBulkUploadDialog open={isBulkOpen} onOpenChange={setIsBulkOpen} />
             <MembersExportDialog isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} data={data} />
+            <ResidentRegistryImportDialog open={isResidentImportOpen} onOpenChange={setIsResidentImportOpen} />
         </div>
     )
 }

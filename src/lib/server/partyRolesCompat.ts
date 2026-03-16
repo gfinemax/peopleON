@@ -13,12 +13,6 @@ type EntityRow = {
     source_party_id: string | null;
 };
 
-type LegacyRoleRow = {
-    party_id: string;
-    role_type: RoleType;
-    role_status: string;
-};
-
 export type PartyRoleCompatRow = {
     party_id: string;
     role_type: RoleType;

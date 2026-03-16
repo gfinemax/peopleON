@@ -11,12 +11,6 @@ type EntityRow = {
     source_party_id: string | null;
 };
 
-type LegacyRow = {
-    certificate_number: string;
-    status: string;
-    holder_party_id: string;
-};
-
 export type CertificateCompatRow = {
     certificate_number: string;
     status: string;

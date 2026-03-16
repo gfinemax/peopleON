@@ -82,7 +82,7 @@ function shortToken(value: string | null | undefined) {
 }
 
 function actionLabel(action: SettlementOpsEventDetail['action']) {
-    if (action === 'create_missing_cases') return '미생성 케이스 일괄 생성';
+    if (action === 'create_missing_cases') return '정산대상 일괄 시작';
     if (action === 'status_sync') return '상태 동기화';
     if (action === 'payment_register') return '지급 등록';
     if (action === 'permission_probe') return '권한/RLS 점검';

@@ -1,7 +1,35 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+function isInvalidRefreshTokenError(error: unknown) {
+    const message =
+        typeof error === 'object' && error && 'message' in error
+            ? String((error as { message?: unknown }).message || '')
+            : '';
+
+    return message.includes('Invalid Refresh Token') || message.includes('Refresh Token Not Found');
+}
+
+function buildLoginRedirect(request: NextRequest) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    return loginUrl;
+}
+
+function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
+    request.cookies.getAll()
+        .filter(({ name }) => name.startsWith('sb-'))
+        .forEach(({ name }) => {
+            request.cookies.delete(name);
+            response.cookies.set(name, '', {
+                maxAge: 0,
+                expires: new Date(0),
+                path: '/',
+            });
+        });
+}
+
+export async function proxy(request: NextRequest) {
     // Public paths that don't require authentication
     const publicPaths = ['/login', '/signup', '/forgot-password', '/debug'];
     const isPublicPath = publicPaths.some(path =>
@@ -46,19 +74,36 @@ export async function middleware(request: NextRequest) {
             }
         );
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError) {
+            if (isInvalidRefreshTokenError(authError)) {
+                const redirectResponse = NextResponse.redirect(buildLoginRedirect(request));
+                clearSupabaseAuthCookies(request, redirectResponse);
+                return redirectResponse;
+            }
+
+            throw authError;
+        }
 
         // If user is not authenticated, redirect to login
         if (!user) {
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
-            return NextResponse.redirect(loginUrl);
+            return NextResponse.redirect(buildLoginRedirect(request));
         }
 
         return response;
     } catch (error) {
+        if (isInvalidRefreshTokenError(error)) {
+            const redirectResponse = NextResponse.redirect(buildLoginRedirect(request));
+            clearSupabaseAuthCookies(request, redirectResponse);
+            return redirectResponse;
+        }
+
         // On error, allow access (fail-open for development)
-        console.error('Middleware auth error:', error);
+        console.error('Proxy auth error:', error);
         return NextResponse.next();
     }
 }

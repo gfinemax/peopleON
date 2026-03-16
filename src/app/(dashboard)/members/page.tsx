@@ -1,181 +1,34 @@
 import { createClient } from '@/lib/supabase/server';
 import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
-import Link from 'next/link';
-import { MembersTable } from '@/components/features/members/MembersTable';
-import { MembersFilter } from '@/components/features/members/MembersFilter';
 import { MembersKpiStrip } from '@/components/features/members/MembersKpiStrip';
-import { MembersExportPrintButtons } from '@/components/features/members/MembersExportPrintButtons';
 import { DashboardManager } from '@/components/features/members/DashboardManager';
 import { MemberActions } from '@/components/features/members/MemberActions';
-import { LinkedOperationPanel } from '@/components/features/members/OperationPanel';
-import React from 'react';
-import { getUnifiedMembers, UnifiedPerson, normalizeText } from '@/services/memberAggregation';
+import { MembersDataSection } from '@/components/features/members/MembersPageSections';
+import { fetchPersonCertificateSummarySnapshot } from '@/lib/server/personCertificateSummary';
+import { fetchRecentActivitySummariesSnapshotForPeople } from '@/lib/server/activityFeed';
+import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
+import {
+    getDisplayMemberStatus,
+    isSettlementTarget,
+} from '@/lib/members/unifiedPersonUtils';
+import { buildSourceCertificateSummary } from '@/lib/members/sourceCertificateSummary';
+import {
+    buildMembersPageLink,
+    comparePeople,
+    filterMembers,
+    getPageRange,
+    getRelationFilterData,
+    getRoleCounts,
+    getStatusCounts,
+    getTierCounts,
+    isRoleMatch,
+    MembersSearchParams,
+    normalizeTierFilter,
+} from '@/lib/members/membersPageUtils';
 
 export const dynamic = 'force-dynamic';
 const TOTAL_HOUSEHOLDS = 254;
-
-type MembersSearchParams = {
-    q?: string;
-    sort?: string;
-    order?: string;
-    page?: string;
-    role?: string;
-    tier?: string;
-    status?: string;
-    tag?: string;
-    rel?: string;
-};
-
-type RoleType = 'member' | 'certificate_holder' | 'related_party' | 'refund_applicant' | 'agent';
-
-type AccountEntityRow = {
-    id: string;
-    entity_type: string;
-    display_name: string;
-    phone: string | null;
-    member_number: string | null;
-    address_legal: string | null;
-    unit_group: string | null;
-    memo: string | null;
-    status: string | null;
-    is_favorite: boolean;
-    tags: string[] | null;
-    email: string | null;
-    meta: Record<string, unknown> | null;
-    birth_date: string | null;
-};
-
-type MembershipRoleRow = {
-    id: string;
-    entity_id: string;
-    role_code: string;
-    role_status: string;
-    is_registered: boolean;
-};
-
-type SettlementCaseRow = {
-    id: string;
-    entity_id: string;
-    case_status: 'draft' | 'review' | 'approved' | 'paid' | 'rejected';
-    created_at: string;
-};
-
-type SettlementLineRow = {
-    case_id: string;
-    line_type: 'capital' | 'debt' | 'loss' | 'certificate_base_refund' | 'premium_recognition' | 'already_paid' | 'adjustment' | 'final_refund';
-    amount: number | string;
-};
-
-type RefundPaymentRow = {
-    case_id: string;
-    paid_amount: number | string;
-    payment_status: 'requested' | 'paid' | 'failed' | 'cancelled';
-};
-
-type ExceptionQueueItem = { label: string; count: number; tone: 'danger' | 'warn' | 'info' };
-
-
-
-const tierOrder = ['등기조합원', '1차', '2차', '3차', '일반분양', '지주', '지주조합원', '대리인', '예비조합원', '권리증보유자', '관계인', '권리증환불', '권리증번호있음', '권리증번호없음'];
-
-const normalizeTierFilter = (raw?: string) => {
-    const value = (raw || '').trim();
-    if (!value || value === 'all') return 'all';
-    if (value === '1차') return '등기조합원';
-    if (value === '일반') return '일반분양';
-    if (value === '예비') return '예비조합원';
-    if (value === '3차') return '일반분양';
-    if (value === '4차') return 'all';
-    return value;
-};
-
-
-
-const isProxyRelationType = (relationType?: string | null) => {
-    const normalized = normalizeText(relationType);
-    return normalized === 'proxy' || normalized === 'agent' || normalized === 'attorney' || normalized === '대리' || normalized === '대리인';
-};
-
-const caseStatusLabelMap: Record<'draft' | 'review' | 'approved' | 'paid' | 'rejected', string> = {
-    draft: '작성중',
-    review: '검토중',
-    approved: '승인',
-    paid: '지급완료',
-    rejected: '반려',
-};
-
-const getErrorMessage = (error: unknown) => {
-    if (error instanceof Error) return error.message;
-    if (typeof error === 'object' && error !== null && 'message' in error) {
-        return String((error as { message?: unknown }).message || 'Unknown Error');
-    }
-    return 'Unknown Error';
-};
-
-const parseMoney = (value: number | string | null | undefined) => {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : 0;
-    }
-    return 0;
-};
-
-const formatAmount = (value: number) => `₩${Math.round(value).toLocaleString('ko-KR')}`;
-
-const getRange = (page: number, size: number) => {
-    const from = (page - 1) * size;
-    const to = from + size - 1;
-    return { from, to };
-};
-
-const sanitizeNumber = (val: string | null | undefined) => {
-    if (!val) return null;
-    const v = val.trim();
-    if (v.startsWith('19')) return null;
-    if (/^\d{4}\.\d{2}\.\d{2}$/.test(v)) return null;
-    return v;
-};
-
-const splitSourceCertificateDisplay = (value?: string | null) =>
-    (value || '')
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .filter((item) => item !== '-')
-        .filter((item) => !item.includes('[통합]'));
-
-const normalizeSourceCertificateKey = (value: string) =>
-    value.replace(/(^|[^0-9])0+(?=\d)/g, '$1').replace(/\s+/g, '').toLowerCase();
-
-function comparePeople(a: UnifiedPerson, b: UnifiedPerson, field: string, order: 'asc' | 'desc') {
-    const multiplier = order === 'asc' ? 1 : -1;
-    const valueOf = (person: UnifiedPerson): string | number => {
-        switch (field) {
-            case 'member_number':
-                return person.certificate_display || '';
-            case 'phone':
-                return person.phone || '';
-            case 'tier':
-                return person.tier || '';
-            case 'status':
-                return person.status || '';
-            case 'settlement_remaining':
-                return person.settlement_remaining;
-            case 'settlement_expected':
-                return person.settlement_expected;
-            case 'name':
-            default:
-                return person.name;
-        }
-    };
-
-    const left = valueOf(a);
-    const right = valueOf(b);
-    if (typeof left === 'number' && typeof right === 'number') return (left - right) * multiplier;
-    return String(left).localeCompare(String(right), 'ko-KR') * multiplier;
-}
 
 export default async function MembersPage({
     searchParams,
@@ -196,9 +49,9 @@ export default async function MembersPage({
 
     const supabase = await createClient();
 
-
-    const { unifiedPeople, fetchError: fetchErr } = await getUnifiedMembers(supabase);
-    let fetchError: unknown = fetchErr;
+    const unifiedPeople = await getUnifiedMembersSnapshot();
+    const personCertificateSnapshot = await fetchPersonCertificateSummarySnapshot(supabase);
+    const recentActivitiesByPerson = await fetchRecentActivitySummariesSnapshotForPeople(unifiedPeople);
 
     // --- Search History Integration ---
     const matchedEntityIds = new Set<string>();
@@ -213,308 +66,65 @@ export default async function MembersPage({
     }
     // -----------------------------------
 
-    const isTierMatch = (person: UnifiedPerson, targetTier: string) => {
-        const tierLabels = (person.tiers || []).map(t => normalizeText(t));
-        const tierText = normalizeText(person.tier);
-        const statusText = normalizeText(person.status);
-
-        switch (targetTier) {
-            case '등기조합원': return person.is_registered || tierLabels.includes('등기조합원');
-            case '2차': return tierLabels.includes('2차');
-            case '일반분양': return tierLabels.includes('일반분양') || tierLabels.includes('3차');
-            case '지주': return tierLabels.some(t => t.includes('지주'));
-            case '지주조합원': return tierLabels.includes('지주조합원') || (tierLabels.some(t => t.includes('지주')) && person.is_registered);
-            case '대리인': return tierLabels.includes('대리인') || tierLabels.includes('대리');
-            case '예비조합원': return statusText === '예비조합원' || statusText === '예비' || tierLabels.includes('예비조합원');
-            case '권리증보유자': return person.role_types.includes('certificate_holder');
-            case '권리증환불': return tierLabels.includes('권리증환불');
-            case '권리증번호있음': return tierLabels.includes('권리증번호있음');
-            case '권리증번호없음': return tierLabels.includes('권리증번호없음');
-            default: return tierText === normalizeText(targetTier);
-        }
-    };
-
-    const isRoleMatch = (person: UnifiedPerson, targetRole: string) => {
-        if (targetRole === 'all') return true;
-        if (targetRole === 'member' && person.role_types.includes('member')) return true;
-        if (targetRole === 'investor' && person.role_types.includes('certificate_holder')) return true;
-        if (targetRole === 'party' && person.role_types.includes('related_party')) return true;
-        if (!['member', 'investor', 'party'].includes(targetRole) && person.ui_role === targetRole) return true;
-        return false;
-    };
-
-    const peopleInCurrentRole = unifiedPeople.filter(p => isRoleMatch(p, roleFilter));
-
-    const tierCounts: Record<string, number> = { all: peopleInCurrentRole.length };
-    for (const tier of tierOrder) tierCounts[tier] = peopleInCurrentRole.filter((p) => isTierMatch(p, tier)).length;
-
-    const roleCounts: Record<string, number> = { all: unifiedPeople.length, member: 0, landowner: 0, general: 0, investor: 0, party: 0, other: 0 };
-    for (const p of unifiedPeople) {
-        if (p.role_types.includes('member')) roleCounts.member++;
-        if (p.ui_role === 'landowner') roleCounts.landowner++;
-        if (p.ui_role === 'general') roleCounts.general++;
-        if (p.role_types.includes('certificate_holder')) roleCounts.investor++;
-        if (p.role_types.includes('related_party')) roleCounts.party++;
-    }
-
-    const filteredPeople = peopleInCurrentRole.filter(p => {
-        if (query) {
-            const queryLower = query.toLowerCase();
-            const certificateText = `${p.certificate_display || ''} ${(p.certificate_search_tokens || []).join(' ')}`;
-            const isTextMatch = `${p.name} ${certificateText} ${p.phone} ${p.notes || ''}`
-                .toLowerCase()
-                .includes(queryLower);
-            const isLogMatch = Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id));
-            if (!isTextMatch && !isLogMatch) return false;
-        }
-        if (tierFilter !== 'all' && !isTierMatch(p, tierFilter)) return false;
-        if (statusFilter !== 'all') {
-            if (statusFilter === '정산대기' && p.settlement_remaining <= 0) return false;
-            if (statusFilter === '지급완료' && (p.settlement_expected <= 0 || p.settlement_remaining > 0)) return false;
-            if (statusFilter === '연결필요' && (p.source_type !== 'party_only' || p.member_id)) return false;
-            if (statusFilter === '케이스누락' && (!p.party_id || !p.role_types.some(rt => rt === 'member' || rt === 'certificate_holder') || p.settlement_status)) return false;
-            if (!['정산대기', '지급완료', '연결필요', '케이스누락'].includes(statusFilter) && p.status !== statusFilter) return false;
-        }
-        if (tagFilter && !(p.tags || []).includes(tagFilter)) return false;
-        if (relFilter !== 'all' && !(p.relationships || []).some(r => r.relation === relFilter)) return false;
-        return true;
+    const peopleInCurrentRole = unifiedPeople.filter((person) => isRoleMatch(person, roleFilter));
+    const tierCounts = getTierCounts(peopleInCurrentRole);
+    const roleCounts = getRoleCounts(unifiedPeople);
+    const filteredPeople = filterMembers({
+        peopleInCurrentRole,
+        query,
+        tierFilter,
+        statusFilter,
+        relFilter,
+        tagFilter,
+        matchedEntityIds,
     });
 
     const sortedPeople = [...filteredPeople].sort((a, b) => comparePeople(a, b, sortField, sortOrder));
     const totalCount = sortedPeople.length;
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const normalizedPage = Math.min(page, totalPages);
-    const { from, to } = getRange(normalizedPage, pageSize);
+    const { from, to } = getPageRange(normalizedPage, pageSize);
     const displayedMembers = sortedPeople.slice(from, to + 1).map(p => ({
         ...p,
-        _matchedLog: !!(query && Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id)))
+        is_settlement_eligible: isSettlementTarget(p),
+        display_status: getDisplayMemberStatus(p),
+        _matchedLog: !!(query && Array.isArray(p.entity_ids) && p.entity_ids.some(id => matchedEntityIds.has(id))),
+        recent_activity_summary: recentActivitiesByPerson.get(p.id)?.summary || null,
+        recent_activity_title: recentActivitiesByPerson.get(p.id)?.title || null,
+        recent_activity_time: recentActivitiesByPerson.get(p.id)?.relativeTime || null,
     }));
 
-    const allRelations = unifiedPeople.flatMap(p => p.relationships || []).map(r => r.relation);
-    const relationNames = Array.from(new Set(allRelations.filter(Boolean) as string[])).sort();
-    const relCounts: Record<string, number> = { all: unifiedPeople.length };
-    for (const relName of relationNames) relCounts[relName] = unifiedPeople.filter(p => (p.relationships || []).some(r => r.relation === relName)).length;
+    const { relationNames, relCounts } = getRelationFilterData(unifiedPeople);
 
     const totalExpectedRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_expected, 0);
     const totalPaidRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_paid, 0);
     const totalRemainingRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_remaining, 0);
     const registeredCount = unifiedPeople.filter(p => p.is_registered).length;
-    const sourceCertificateOccurrences = unifiedPeople.flatMap((person) =>
-        splitSourceCertificateDisplay(person.certificate_display).map((number) => ({
-            personId: person.id,
-            name: person.name,
-            isRegistered: person.is_registered,
-            phone: person.phone,
-            address: person.address_legal || null,
-            number,
-            key: normalizeSourceCertificateKey(number),
-            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
-        })),
-    );
-
-    const occurrencesByKey = new Map<string, typeof sourceCertificateOccurrences>();
-    for (const occurrence of sourceCertificateOccurrences) {
-        const list = occurrencesByKey.get(occurrence.key) || [];
-        list.push(occurrence);
-        occurrencesByKey.set(occurrence.key, list);
-    }
-
-    const uniqueSourceOccurrences = Array.from(occurrencesByKey.values())
-        .filter((occurrences) => occurrences.length === 1)
-        .map(([occurrence]) => occurrence);
-    const duplicateSourceOccurrences = Array.from(occurrencesByKey.values())
-        .filter((occurrences) => occurrences.length > 1);
-    const registeredSourceOccurrences = sourceCertificateOccurrences.filter((occurrence) => occurrence.isRegistered);
-    const registeredInternalDistinctCount = new Set(registeredSourceOccurrences.map((occurrence) => occurrence.key)).size;
-
-    const registeredCertificateHolderCount = uniqueSourceOccurrences.filter((occurrence) => occurrence.isRegistered).length;
-    const certificateTotalCount = uniqueSourceOccurrences.length;
-    const refundCertificateCount = uniqueSourceOccurrences.filter((occurrence) => !occurrence.isRegistered).length;
-
-    const includedSourceNumbersByPerson = new Map<string, string[]>();
-    for (const occurrence of uniqueSourceOccurrences) {
-        const list = includedSourceNumbersByPerson.get(occurrence.personId) || [];
-        list.push(occurrence.number);
-        includedSourceNumbersByPerson.set(occurrence.personId, list);
-    }
-
-    const excludedSourceNumbersByPerson = new Map<string, string[]>();
-    for (const duplicateGroup of duplicateSourceOccurrences) {
-        for (const occurrence of duplicateGroup) {
-            const list = excludedSourceNumbersByPerson.get(occurrence.personId) || [];
-            list.push(occurrence.number);
-            excludedSourceNumbersByPerson.set(occurrence.personId, list);
-        }
-    }
-
-    const memberHeldDetails = unifiedPeople
-        .filter((person) => person.is_registered)
-        .map((person) => ({
-            id: person.id,
-            name: person.name,
-            phone: person.phone,
-            address: person.address_legal || null,
-            sourceCount: (includedSourceNumbersByPerson.get(person.id) || []).length,
-            sourceNumbers: includedSourceNumbersByPerson.get(person.id) || [],
-            excludedSourceNumbers: excludedSourceNumbersByPerson.get(person.id) || [],
-            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
-        }))
-        .filter((person) => person.sourceCount > 0 || person.excludedSourceNumbers.length > 0)
-        .sort((left, right) => {
-            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
-            if (right.excludedSourceNumbers.length !== left.excludedSourceNumbers.length) {
-                return right.excludedSourceNumbers.length - left.excludedSourceNumbers.length;
-            }
-            return left.name.localeCompare(right.name, 'ko-KR');
-        });
-    const allSourceDetails = unifiedPeople
-        .map((person) => ({
-            id: person.id,
-            name: person.name,
-            sourceCount: (includedSourceNumbersByPerson.get(person.id) || []).length,
-            sourceNumbers: includedSourceNumbersByPerson.get(person.id) || [],
-            excludedSourceNumbers: excludedSourceNumbersByPerson.get(person.id) || [],
-            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
-        }))
-        .filter((person) => person.sourceCount > 0 || person.excludedSourceNumbers.length > 0)
-        .sort((left, right) => {
-            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
-            if (right.excludedSourceNumbers.length !== left.excludedSourceNumbers.length) {
-                return right.excludedSourceNumbers.length - left.excludedSourceNumbers.length;
-            }
-            return left.name.localeCompare(right.name, 'ko-KR');
-        });
-    const registeredInternalNumbersByPerson = new Map<string, string[]>();
-    for (const occurrence of registeredSourceOccurrences) {
-        const list = registeredInternalNumbersByPerson.get(occurrence.personId) || [];
-        if (!list.some((item) => normalizeSourceCertificateKey(item) === occurrence.key)) {
-            list.push(occurrence.number);
-            registeredInternalNumbersByPerson.set(occurrence.personId, list);
-        }
-    }
-    const memberHeldDetailsInternal = unifiedPeople
-        .filter((person) => person.is_registered)
-        .map((person) => ({
-            id: person.id,
-            name: person.name,
-            phone: person.phone,
-            address: person.address_legal || null,
-            sourceCount: (registeredInternalNumbersByPerson.get(person.id) || []).length,
-            sourceNumbers: registeredInternalNumbersByPerson.get(person.id) || [],
-            excludedSourceNumbers: [],
-            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
-        }))
-        .filter((person) => person.sourceCount > 0)
-        .sort((left, right) => {
-            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
-            return left.name.localeCompare(right.name, 'ko-KR');
-        });
-    const refundSourceDetails = unifiedPeople
-        .filter((person) => !person.is_registered)
-        .map((person) => ({
-            id: person.id,
-            name: person.name,
-            phone: person.phone,
-            address: person.address_legal || null,
-            sourceCount: (includedSourceNumbersByPerson.get(person.id) || []).length,
-            sourceNumbers: includedSourceNumbersByPerson.get(person.id) || [],
-            excludedSourceNumbers: excludedSourceNumbersByPerson.get(person.id) || [],
-            rightsFlow: `${person.raw_certificate_count}→${person.managed_certificate_count}`,
-        }))
-        .filter((person) => person.sourceCount > 0 || person.excludedSourceNumbers.length > 0)
-        .sort((left, right) => {
-            if (right.sourceCount !== left.sourceCount) return right.sourceCount - left.sourceCount;
-            if (right.excludedSourceNumbers.length !== left.excludedSourceNumbers.length) {
-                return right.excludedSourceNumbers.length - left.excludedSourceNumbers.length;
-            }
-            return left.name.localeCompare(right.name, 'ko-KR');
-        });
-    const duplicateSourceDetails = duplicateSourceOccurrences
-        .map((occurrences, index) => {
-            const holders = [...occurrences].sort((left, right) => {
-                if (left.isRegistered !== right.isRegistered) return left.isRegistered ? -1 : 1;
-                return left.name.localeCompare(right.name, 'ko-KR');
-            });
-            const representative = [...occurrences].sort((left, right) => right.number.length - left.number.length)[0];
-            return {
-                id: `${representative.key}-${index}`,
-                number: representative.number,
-                duplicateCount: occurrences.length,
-                registeredCount: occurrences.filter((occurrence) => occurrence.isRegistered).length,
-                refundCount: occurrences.filter((occurrence) => !occurrence.isRegistered).length,
-                holders: holders.map((holder) => ({
-                    id: holder.personId,
-                    name: holder.name,
-                    isRegistered: holder.isRegistered,
-                    phone: holder.phone,
-                    address: holder.address,
-                })),
-            };
-        })
-        .sort((left, right) => {
-            if (right.duplicateCount !== left.duplicateCount) return right.duplicateCount - left.duplicateCount;
-            return left.number.localeCompare(right.number, 'ko-KR');
-        });
-    const duplicateExcludedCount = duplicateSourceOccurrences.length;
+    const {
+        registeredInternalDistinctCount,
+        registeredCertificateHolderCount,
+        certificateTotalCount,
+        refundCertificateCount,
+        duplicateExcludedCount,
+        allSourceDetails,
+        memberHeldDetails,
+        memberHeldDetailsInternal,
+        refundSourceDetails,
+        duplicateSourceDetails,
+    } = buildSourceCertificateSummary(unifiedPeople);
+    const reviewPendingCount = personCertificateSnapshot.rollups.reduce((sum, row) => sum + row.pending_review_count, 0);
     const additionalRecruitmentCount = Math.max(TOTAL_HOUSEHOLDS - registeredCount, 0);
     const relationPeople = unifiedPeople.filter(p => p.role_types.includes('agent') || p.role_types.includes('related_party'));
     const agentCount = relationPeople.filter(p => p.role_types.includes('agent')).length;
     const relationOtherCount = relationPeople.filter(p => !p.role_types.includes('agent') && p.role_types.includes('related_party')).length;
     const relationPeopleCount = agentCount + relationOtherCount;
 
-    const statusCounts: Record<string, number> = {};
-    for (const p of unifiedPeople) {
-        let s = p.status || '기타';
-        // Special calculated statuses
-        if (p.settlement_remaining > 0) {
-            statusCounts['정산대기'] = (statusCounts['정산대기'] || 0) + 1;
-        }
-        if (p.settlement_expected > 0 && p.settlement_remaining <= 0) {
-            statusCounts['지급완료'] = (statusCounts['지급완료'] || 0) + 1;
-        }
-        if (p.source_type === 'party_only' && !p.member_id) {
-            statusCounts['연결필요'] = (statusCounts['연결필요'] || 0) + 1;
-        }
-        if (p.party_id && (p.role_types.some(rt => rt === 'member' || rt === 'certificate_holder')) && !p.settlement_status) {
-            statusCounts['케이스누락'] = (statusCounts['케이스누락'] || 0) + 1;
-        }
+    const statusCounts = getStatusCounts(unifiedPeople);
 
-        statusCounts[s] = (statusCounts[s] || 0) + 1;
-    }
-
-    const qualityIssueCount = unifiedPeople.filter(p =>
-        (p.source_type === 'party_only' && !p.member_id) ||
-        (p.party_id && (p.role_types.includes('member') || p.role_types.includes('certificate_holder')) && !p.settlement_status) ||
-        (p.settlement_status === 'paid' && p.settlement_remaining > 0)
-    ).length;
-
-    const exceptionItems: ExceptionQueueItem[] = [
-        { label: '미확정 분류', count: 0, tone: 'warn' },
-        { label: '증빙 확인 대기', count: 0, tone: 'info' },
-        { label: '연결 필요 인물', count: unifiedPeople.filter(p => p.source_type === 'party_only' && !p.member_id).length, tone: 'danger' },
-    ];
-
-    const topRemaining = [...unifiedPeople].filter(p => p.settlement_remaining > 0).sort((a, b) => b.settlement_remaining - a.settlement_remaining).slice(0, 5);
-
-    const getPageLink = (targetPage: number) => {
-        const s = new URLSearchParams();
-        if (query) s.set('q', query);
-        if (sortField) s.set('sort', sortField);
-        if (sortOrder) s.set('order', sortOrder);
-        if (roleFilter !== 'all') s.set('role', roleFilter);
-        if (tierFilter !== 'all') s.set('tier', tierFilter);
-        if (statusFilter !== 'all') s.set('status', statusFilter);
-        if (tagFilter) s.set('tag', tagFilter);
-        s.set('page', String(targetPage));
-        return `/members?${s.toString()}`;
-    };
-
-    // Assuming MemberDetailDialog is imported and used here,
-    // and `selectedMemberId` and `isDetailOpen` are managed by state in a parent component or within this page.
-    // For the purpose of this edit, we'll assume a placeholder for these state variables.
-    // const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null);
-    // const [isDetailOpen, setIsDetailOpen] = React.useState(false);
-    // const selectedMember = displayedMembers.find(m => m.id === selectedMemberId);
+    const topRemaining = [...unifiedPeople]
+        .filter(p => isSettlementTarget(p) && p.settlement_remaining > 0)
+        .sort((a, b) => b.settlement_remaining - a.settlement_remaining)
+        .slice(0, 5);
 
     return (
         <div className="flex-1 flex flex-col bg-background">
@@ -560,23 +170,7 @@ export default async function MembersPage({
                         }}
                     />
                 )}
-                qualitySection={(
-                    <section key="members-quality-section" className="rounded-xl border border-white/[0.08] bg-[#101725] px-3 py-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                                <MaterialIcon name="verified_user" size="sm" className="text-sky-300" />
-                                <p className="text-sm font-extrabold text-foreground">데이터 품질 경고</p>
-                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${qualityIssueCount > 0 ? 'border-amber-400/30 bg-amber-500/10 text-amber-200' : 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200'}`}>
-                                    {qualityIssueCount > 0 ? `이슈 인물 ${qualityIssueCount.toLocaleString()}명` : '이슈 없음'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="mt-2.5 flex flex-wrap gap-2">
-                            <QualityBadge label="회원 미연결" count={unifiedPeople.filter(p => p.source_type === 'party_only' && !p.member_id).length} tone="warn" href="/members?status=연결필요" />
-                            <QualityBadge label="케이스 누락" count={unifiedPeople.filter(p => p.party_id && (p.role_types.includes('member') || p.role_types.includes('certificate_holder')) && !p.settlement_status).length} tone="warn" href="/members?status=케이스누락" />
-                        </div>
-                    </section>
-                )}
+                qualitySection={null}
                 filterData={{
                     roleCounts,
                     tierCounts,
@@ -587,70 +181,35 @@ export default async function MembersPage({
                     filteredCount: totalCount,
                 }}
             >
-                <div className="flex flex-col lg:rounded-xl lg:border lg:border-white/[0.08] lg:bg-card lg:shadow-sm mb-4 lg:mb-6">
-                    <div className="flex items-center justify-between px-3 pt-3 pb-2 mb-1 border-b border-white/[0.04]">
-                        <h2 className="text-sm font-bold text-slate-200">데이터 리스트</h2>
-                        <MembersExportPrintButtons data={filteredPeople} />
-                    </div>
-                    <div className="p-2 lg:p-3">
-                        <div className="flex gap-3">
-                            <div className="min-w-0 flex-1 rounded-lg border border-white/[0.06] bg-[#0f1725] overflow-hidden max-h-[68vh]">
-                                {displayedMembers.length > 0 ? (
-                                    <MembersTable
-                                        members={displayedMembers}
-                                        tableKey={JSON.stringify(params)}
-                                        startIndex={from}
-                                    />
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 py-12">
-                                        <MaterialIcon name="search_off" size="xl" className="opacity-20" />
-                                        <p className="font-bold">검색 결과가 없습니다.</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <LinkedOperationPanel
-                                totalRemainingRefund={totalRemainingRefund}
-                                totalExpectedRefund={totalExpectedRefund}
-                                totalPaidRefund={totalPaidRefund}
-                                topRemaining={topRemaining}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="shrink-0 z-20 lg:bg-[#161B22] lg:border-t lg:border-white/[0.08] bg-transparent">
-                        <div className="px-6 py-3 flex items-center justify-between">
-                            <p className="text-xs text-gray-400">
-                                총 <span className="font-bold text-white">{totalCount.toLocaleString()}명</span> 중 <span className="text-white">{Math.min(from + 1, totalCount)}-{Math.min(to + 1, totalCount)}</span> 표시
-                            </p>
-                            <div className="flex items-center gap-1">
-                                <Link href={getPageLink(Math.max(1, normalizedPage - 1))} className={`size-7 flex items-center justify-center rounded border border-white/[0.08] bg-[#161B22] text-gray-400 ${normalizedPage <= 1 ? 'pointer-events-none opacity-50' : ''}`}>
-                                    <MaterialIcon name="chevron_left" size="sm" />
-                                </Link>
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                    const p = Math.max(1, Math.min(totalPages - 4, normalizedPage - 2)) + i;
-                                    if (p < 1 || p > totalPages) return null;
-                                    return (
-                                        <Link key={p} href={getPageLink(p)} className={`size-7 flex items-center justify-center rounded border text-xs font-bold ${p === normalizedPage ? 'border-primary bg-primary/10 text-primary' : 'border-white/[0.08] bg-[#161B22] text-gray-400'}`}>
-                                            {p}
-                                        </Link>
-                                    );
-                                })}
-                                <Link href={getPageLink(Math.min(totalPages, normalizedPage + 1))} className={`size-7 flex items-center justify-center rounded border border-white/[0.08] bg-[#161B22] text-gray-400 ${normalizedPage >= totalPages ? 'pointer-events-none opacity-50' : ''}`}>
-                                    <MaterialIcon name="chevron_right" size="sm" />
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <MembersDataSection
+                    displayedMembers={displayedMembers}
+                    filteredPeople={filteredPeople}
+                    paramsKey={JSON.stringify(params)}
+                    startIndex={from}
+                    reviewPendingCount={reviewPendingCount}
+                    duplicateExcludedCount={duplicateExcludedCount}
+                    totalCount={totalCount}
+                    from={from}
+                    to={to}
+                    normalizedPage={normalizedPage}
+                    totalPages={totalPages}
+                    totalRemainingRefund={totalRemainingRefund}
+                    totalExpectedRefund={totalExpectedRefund}
+                    totalPaidRefund={totalPaidRefund}
+                    topRemaining={topRemaining}
+                    getPageLink={(targetPage) => buildMembersPageLink({
+                        query,
+                        sortField,
+                        sortOrder,
+                        roleFilter,
+                        tierFilter,
+                        statusFilter,
+                        relFilter,
+                        tagFilter,
+                        targetPage,
+                    })}
+                />
             </DashboardManager>
         </div>
     );
-}
-
-function QualityBadge({ label, count, tone, href }: { label: string; count: number; tone: 'ok' | 'warn' | 'danger'; href?: string }) {
-    const toneClass = tone === 'ok' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : tone === 'danger' ? 'border-rose-400/20 bg-rose-500/10 text-rose-200' : 'border-amber-400/20 bg-amber-500/10 text-amber-200';
-    const badgeClass = `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${toneClass}`;
-    if (!href) return <div className={badgeClass}><span>{label}</span><span className="font-black">{count.toLocaleString()}건</span></div>;
-    return <Link href={href} className={badgeClass}><span>{label}</span><span className="font-black">{count.toLocaleString()}건</span><MaterialIcon name="open_in_new" size="xs" /></Link>;
 }

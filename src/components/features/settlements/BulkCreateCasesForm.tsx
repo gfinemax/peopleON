@@ -63,7 +63,7 @@ export function BulkCreateCasesForm() {
                         className="h-9 px-3 rounded-lg border border-sky-400/30 bg-sky-500/10 text-sky-200 text-xs font-bold inline-flex items-center gap-1.5 hover:bg-sky-500/20 disabled:opacity-60"
                     >
                         <MaterialIcon name={isPending ? 'hourglass_top' : 'auto_fix_high'} size="sm" />
-                        {isPending ? '생성 중...' : '미생성 케이스 일괄 생성'}
+                        {isPending ? '시작 중...' : '정산대상 일괄 시작'}
                     </button>
                 </div>
                 {(state.error || state.message) && (

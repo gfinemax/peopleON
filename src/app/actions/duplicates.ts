@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
+import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 
 export interface DuplicateGroup {
     phone: string;
@@ -144,6 +145,7 @@ export async function mergeDuplicateEntities(
 
         revalidatePath('/admin/duplicates');
         revalidatePath('/members');
+        revalidateUnifiedMembersTag();
         return { success: true, message: `${mergedCount}건의 레코드가 기본 레코드로 병합되었습니다.` };
 
     } catch (e) {
@@ -175,6 +177,7 @@ export async function ignoreDuplicateGroups(entityIds: string[]): Promise<Duplic
 
         await createAuditLog('IGNORE_DUPLICATES', entityIds[0], { target_ids: entityIds });
         revalidatePath('/admin/duplicates');
+        revalidateUnifiedMembersTag();
         return { success: true, message: '해당 인물들은 향후 병합 대상에서 제외됩니다.' };
     } catch (e) {
         console.error('Ignore error:', e);

@@ -1,6 +1,5 @@
 'use client';
 
-import { useTheme } from 'next-themes';
 import { MaterialIcon } from '@/components/ui/icon';
 import { signOut } from '@/app/actions/auth';
 import { GlobalSearch } from '@/components/features/search/GlobalSearch';
@@ -16,7 +15,6 @@ interface HeaderProps {
 }
 
 export function Header({ title = '통합 대시보드', iconName, leftContent, rightContent, userEmail, userName }: HeaderProps) {
-    const { theme, setTheme } = useTheme();
     // useRouter and state removed as GlobalSearch handles it
 
     return (

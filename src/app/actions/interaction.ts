@@ -4,6 +4,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
+import { revalidateActivityFeedTag } from '@/lib/server/cacheTags';
 
 export type InteractionType = 'CALL' | 'MEET' | 'SMS' | 'DOC';
 export type Direction = 'Inbound' | 'Outbound';
@@ -49,6 +50,7 @@ export async function logInteraction(
         await createAuditLog('ADD_INTERACTION_LOG', memberId, { type, direction, summary });
 
         revalidatePath(`/members/${memberId}`);
+        revalidateActivityFeedTag();
         return { success: true };
     } catch (e) {
         console.error('Server Action Error:', e);
@@ -81,6 +83,7 @@ export async function logSystemInteraction(memberId: string, summary: string) {
         await createAuditLog('SYSTEM_INTERACTION_LOG', memberId, { summary });
 
         revalidatePath(`/members/${memberId}`);
+        revalidateActivityFeedTag();
         return { success: true };
     } catch (e) {
         console.error('System Log Server Error:', e);

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { classifyCertificateInput } from '@/lib/certificates/rightNumbers';
+import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -94,6 +95,7 @@ export async function POST(request: Request) {
             if (privateError) console.error('Error creating private info:', privateError);
         }
 
+        revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true, id: entity.id });
     } catch (error: unknown) {
         console.error('Error creating member:', error);

@@ -10,7 +10,6 @@ const menuItems = [
     { name: '대시보드', href: '/', icon: 'dashboard' },
     { name: '조합원 관리', href: '/members', icon: 'group' },
     { name: '분담금 관리', href: '/payments', icon: 'payments' },
-    { name: '자금흐름', href: '/finance', icon: 'account_balance' },
     { name: '정산/환불', href: '/settlements', icon: 'currency_exchange' },
     { name: '활동 타임라인', href: '/timeline', icon: 'history' },
     { name: '부가관리기능', href: '/sms', icon: 'send' },
