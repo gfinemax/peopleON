@@ -172,7 +172,21 @@ export function filterMembers({
         if (query) {
             const queryLower = query.toLowerCase();
             const certificateText = `${person.certificate_display || ''} ${(person.certificate_search_tokens || []).join(' ')}`;
-            const isTextMatch = `${person.name} ${certificateText} ${person.phone} ${person.notes || ''}`
+            const relatedNames = [
+                ...(person.relationships || []).flatMap((relationship) => [
+                    relationship.name || '',
+                    relationship.relation || '',
+                ]),
+                ...(person.acts_as_agent_for || []).flatMap((owner) => [
+                    owner.name || '',
+                    owner.relation || '',
+                    owner.type || '',
+                    owner.category || '',
+                ]),
+                person.real_owner?.name || '',
+                ...(person.nominees || []).map((nominee) => nominee.name || ''),
+            ].join(' ');
+            const isTextMatch = `${person.name} ${certificateText} ${person.phone} ${person.notes || ''} ${relatedNames}`
                 .toLowerCase()
                 .includes(queryLower);
             const isLogMatch = Array.isArray(person.entity_ids) && person.entity_ids.some((id) => matchedEntityIds.has(id));

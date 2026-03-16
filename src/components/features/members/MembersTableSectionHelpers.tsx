@@ -37,6 +37,8 @@ export const roleOptions = [
 
 export const statusOptions = [
     { label: '정상', value: '정상', colorClass: 'text-emerald-400' },
+    { label: '대리인', value: '대리인', colorClass: 'text-emerald-300', disabled: true },
+    { label: '관계인', value: '관계인', colorClass: 'text-amber-300', disabled: true },
     { label: '환불', value: '환불', colorClass: 'text-cyan-300' },
     { label: '명의대여', value: '차명', colorClass: 'text-sky-400' },
     { label: '제명', value: '제명', colorClass: 'text-amber-400' },

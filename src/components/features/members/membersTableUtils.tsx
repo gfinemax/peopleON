@@ -155,6 +155,10 @@ export const getStatusBadge = (status: string | null) => {
     switch (status) {
         case '정상':
             return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300 border border-emerald-400/20">정상</span>;
+        case '대리인':
+            return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200 border border-emerald-400/20">대리인</span>;
+        case '관계인':
+            return <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-200 border border-amber-400/20">관계인</span>;
         case '환불':
             return <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/10 px-2 py-1 text-xs text-cyan-200 border border-cyan-400/20">환불</span>;
         case '제명':

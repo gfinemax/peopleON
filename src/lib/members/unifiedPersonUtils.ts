@@ -38,8 +38,24 @@ export const isSimpleCertificateHolder = (person: UnifiedPerson) => {
 };
 
 export const getDisplayMemberStatus = (person: UnifiedPerson) => {
+    if (person.status === '차명') {
+        return '차명';
+    }
+
+    if (person.status === '탈퇴' || person.status === '제명') {
+        return person.status;
+    }
+
     if (isSimpleCertificateHolder(person)) {
         return '환불';
+    }
+
+    if (!person.is_registered && person.role_types.includes('agent')) {
+        return '대리인';
+    }
+
+    if (!person.is_registered && person.role_types.includes('related_party')) {
+        return '관계인';
     }
 
     return person.status || '기타';

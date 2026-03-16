@@ -6,6 +6,7 @@ import {
     ActivityItem,
     DuplicateConflictRow,
 } from '@/components/features/dashboard/DashboardPagePrimitives';
+import { DashboardConflictRefreshButton } from '@/components/features/dashboard/DashboardConflictRefreshButton';
 import type {
     DashboardActionItem,
     DashboardFavoriteMember,
@@ -90,9 +91,12 @@ export function DashboardActionActivitySection({
                             </p>
                         </div>
                     </div>
-                    <Link href="/members" className="text-sm font-bold text-primary transition-colors hover:text-primary-hover">
-                        전체 보기
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <DashboardConflictRefreshButton />
+                        <Link href="/members" className="text-sm font-bold text-primary transition-colors hover:text-primary-hover">
+                            전체 보기
+                        </Link>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">

@@ -9,6 +9,7 @@ export interface DropdownOption {
     label: string;
     value: string;
     colorClass?: string;
+    disabled?: boolean;
 }
 
 interface InlineCellDropdownProps {
@@ -59,6 +60,11 @@ export function InlineCellDropdown({
 
     const handleSelect = async (e: React.MouseEvent, value: string) => {
         e.stopPropagation();
+        const selectedOption = options.find((option) => option.value === value);
+        if (selectedOption?.disabled) {
+            setIsOpen(false);
+            return;
+        }
         setIsOpen(false);
         setIsLoading(true);
         try {
@@ -124,6 +130,7 @@ export function InlineCellDropdown({
                             className={cn(
                                 "px-3 py-2 text-xs font-semibold flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors",
                                 isSelected(opt.value) ? "bg-white/5 text-white" : "text-gray-400",
+                                opt.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
                                 opt.colorClass
                             )}
                         >

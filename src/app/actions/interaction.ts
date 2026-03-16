@@ -4,6 +4,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
+import { normalizeCertificateNumber } from '@/lib/certificates/rightNumbers';
 import { revalidateActivityFeedTag } from '@/lib/server/cacheTags';
 
 export type InteractionType = 'CALL' | 'MEET' | 'SMS' | 'DOC';
@@ -105,44 +106,66 @@ export async function checkAndLogAssetRightConflicts(
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         ); // Admin client bypasses client RLS
 
-        console.log('checkAndLogAssetRightConflicts input:', currentIds, newlyChangedRightNumbers);
+        const normalizedChangedNumbers = Array.from(
+            new Set(
+                newlyChangedRightNumbers
+                    .map((value) => normalizeCertificateNumber(value))
+                    .filter(Boolean),
+            ),
+        );
+
+        if (normalizedChangedNumbers.length === 0) {
+            return { success: false, error: '유효한 권리증 번호가 없습니다.' };
+        }
 
         const { data: allSameRights, error } = await supabase
-            .from('asset_rights')
-            .select('right_number, entity_id, account_entities(display_name)')
-            .in('right_number', newlyChangedRightNumbers);
-
-        console.log('allSameRights result:', allSameRights, error);
+            .from('certificate_registry')
+            .select('entity_id, certificate_number_raw, certificate_number_normalized')
+            .eq('is_active', true)
+            .in('certificate_number_normalized', normalizedChangedNumbers);
 
         if (error || !allSameRights) {
             console.error('System Log Check Error:', error);
             return { error: '조회 실패' };
         }
 
+        const entityIds = Array.from(new Set(allSameRights.map((row) => row.entity_id).filter(Boolean)));
+        const { data: entities, error: entityError } = await supabase
+            .from('account_entities')
+            .select('id, display_name')
+            .in('id', entityIds);
+
+        if (entityError) {
+            console.error('Entity lookup error:', entityError);
+            return { error: '이름 조회 실패' };
+        }
+
         const conflictingRights = allSameRights.filter(c => !currentIds.includes(c.entity_id));
-        const uniqueConflictingNumbers = Array.from(new Set(conflictingRights.map(c => c.right_number)));
-        console.log('conflictingRights:', conflictingRights, 'uniqueConflictingNumbers:', uniqueConflictingNumbers);
+        const uniqueConflictingNumbers = Array.from(
+            new Set(conflictingRights.map((c) => c.certificate_number_normalized || '').filter(Boolean)),
+        );
 
         // Build a map of entity_id -> display_name for easy lookup
         const nameMap: Record<string, string> = {};
-        allSameRights.forEach(c => {
-            if (c.account_entities && !Array.isArray(c.account_entities)) {
-                nameMap[c.entity_id] = (c.account_entities as { display_name: string }).display_name;
-            }
+        (entities || []).forEach((entity) => {
+            nameMap[entity.id] = entity.display_name || '알 수 없음';
         });
 
         // Resolve current and other names for the logs
         const currentNames = currentIds.map(id => nameMap[id] || '알 수 없음').join(', ');
 
         for (const conflictNum of uniqueConflictingNumbers) {
-            console.log('Inserting conflict for:', conflictNum, currentIds);
-
-            const otherEntityIds = Array.from(new Set(conflictingRights.filter(c => c.right_number === conflictNum).map(c => c.entity_id)));
+            const matchingRows = conflictingRights.filter(
+                (c) => (c.certificate_number_normalized || '') === conflictNum,
+            );
+            const displayNumber =
+                matchingRows.find((row) => row.certificate_number_raw)?.certificate_number_raw || conflictNum;
+            const otherEntityIds = Array.from(new Set(matchingRows.map(c => c.entity_id)));
             const otherNames = otherEntityIds.map(id => nameMap[id] || '알 수 없음').join(', ');
 
             // Log for current user(s)
             for (const currentId of currentIds) {
-                const summaryMsg = `[시스템 알림] 다른 회원(${otherNames})과 동일한 권리증 번호(${conflictNum})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
+                const summaryMsg = `[시스템 알림] 다른 회원(${otherNames})과 동일한 권리증 번호(${displayNumber})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
                 const appendText = `\n\n${summaryMsg}`;
 
                 const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', currentId).single();
@@ -154,14 +177,13 @@ export async function checkAndLogAssetRightConflicts(
                 if (upd1) {
                     console.error('Update currentId memo error:', upd1);
                 } else {
-                    await createAuditLog('CONFLICT_ALERT', currentId, { summary: summaryMsg, conflictNum, otherNames });
+                    await createAuditLog('CONFLICT_ALERT', currentId, { summary: summaryMsg, conflictNum: displayNumber, otherNames });
                 }
             }
 
             // Log for conflicting others
-            console.log('otherEntityIds:', otherEntityIds);
             for (const otherId of otherEntityIds) {
-                const summaryMsg = `[시스템 알림] 다른 회원(${currentNames})과 동일한 권리증 번호(${conflictNum})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
+                const summaryMsg = `[시스템 알림] 다른 회원(${currentNames})과 동일한 권리증 번호(${displayNumber})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
                 const appendText = `\n\n${summaryMsg}`;
 
                 const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', otherId).single();
@@ -173,12 +195,11 @@ export async function checkAndLogAssetRightConflicts(
                 if (upd2) {
                     console.error('Update otherId memo error:', upd2);
                 } else {
-                    await createAuditLog('CONFLICT_ALERT', otherId, { summary: summaryMsg, conflictNum, otherNames: currentNames });
+                    await createAuditLog('CONFLICT_ALERT', otherId, { summary: summaryMsg, conflictNum: displayNumber, otherNames: currentNames });
                 }
             }
         }
 
-        console.log('checkAndLogAssetRightConflicts done successfully');
         return { success: true, count: uniqueConflictingNumbers.length };
     } catch (e) {
         console.error('System Log Conflict Server Error:', e);
