@@ -114,7 +114,7 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
     const [entitiesRes, rolesRes, rightsRes, casesRes, relsRes] = await Promise.all([
         supabase
             .from('account_entities')
-            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, email, meta, status, birth_date'),
+            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags'),
         supabase
             .from('membership_roles')
             .select('id, entity_id, role_code, role_status, is_registered'),

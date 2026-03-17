@@ -51,7 +51,6 @@ export default async function MembersPage({
 
     const unifiedPeople = await getUnifiedMembersSnapshot();
     const personCertificateSnapshot = await fetchPersonCertificateSummarySnapshot(supabase);
-    const recentActivitiesByPerson = await fetchRecentActivitySummariesSnapshotForPeople(unifiedPeople);
 
     // --- Search History Integration ---
     const matchedEntityIds = new Set<string>();
@@ -84,7 +83,13 @@ export default async function MembersPage({
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const normalizedPage = Math.min(page, totalPages);
     const { from, to } = getPageRange(normalizedPage, pageSize);
-    const displayedMembers = sortedPeople.slice(from, to + 1).map(p => ({
+
+    // --- Performance Optimization: Fetch activities ONLY for displayed page ---
+    const pageSlice = sortedPeople.slice(from, to + 1);
+    const recentActivitiesByPerson = await fetchRecentActivitySummariesSnapshotForPeople(pageSlice);
+    // --------------------------------------------------------------------------
+
+    const displayedMembers = pageSlice.map(p => ({
         ...p,
         is_settlement_eligible: isSettlementTarget(p),
         display_status: getDisplayMemberStatus(p),
@@ -96,9 +101,9 @@ export default async function MembersPage({
 
     const { relationNames, relCounts } = getRelationFilterData(unifiedPeople);
 
-    const totalExpectedRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_expected, 0);
-    const totalPaidRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_paid, 0);
-    const totalRemainingRefund = unifiedPeople.reduce((sum, p) => sum + p.settlement_remaining, 0);
+    const totalExpectedRefund = unifiedPeople.reduce((sum: number, p: any) => sum + p.settlement_expected, 0);
+    const totalPaidRefund = unifiedPeople.reduce((sum: number, p: any) => sum + p.settlement_paid, 0);
+    const totalRemainingRefund = unifiedPeople.reduce((sum: number, p: any) => sum + p.settlement_remaining, 0);
     const registeredCount = unifiedPeople.filter(p => p.is_registered).length;
     const {
         registeredInternalDistinctCount,
@@ -112,7 +117,7 @@ export default async function MembersPage({
         refundSourceDetails,
         duplicateSourceDetails,
     } = buildSourceCertificateSummary(unifiedPeople);
-    const reviewPendingCount = personCertificateSnapshot.rollups.reduce((sum, row) => sum + row.pending_review_count, 0);
+    const reviewPendingCount = personCertificateSnapshot.rollups.reduce((sum: number, row: any) => sum + row.pending_review_count, 0);
     const additionalRecruitmentCount = Math.max(TOTAL_HOUSEHOLDS - registeredCount, 0);
     const relationPeople = unifiedPeople.filter(p => p.role_types.includes('agent') || p.role_types.includes('related_party'));
     const agentCount = relationPeople.filter(p => p.role_types.includes('agent')).length;

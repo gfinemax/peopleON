@@ -79,7 +79,7 @@ export async function fetchDashboardOverviewData(supabase: SupabaseClient): Prom
             .limit(3),
         supabase
             .from('account_entities')
-            .select('id, display_name, member_number, tier, status')
+            .select('id, display_name, member_number, tier, status, is_favorite')
             .eq('is_favorite', true)
             .order('display_name', { ascending: true })
             .limit(10),

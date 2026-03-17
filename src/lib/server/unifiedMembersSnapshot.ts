@@ -9,7 +9,9 @@ import { getUnifiedMembers, type UnifiedPerson } from '@/services/memberAggregat
 const loadUnifiedMembersSnapshot = unstable_cache(
     async (): Promise<UnifiedPerson[]> => {
         const supabase = createAdminClient();
+        console.time('build-unified-members-snapshot');
         const { unifiedPeople, fetchError } = await getUnifiedMembers(supabase);
+        console.timeEnd('build-unified-members-snapshot');
 
         if (fetchError) {
             const message =
@@ -21,10 +23,10 @@ const loadUnifiedMembersSnapshot = unstable_cache(
 
         return unifiedPeople;
     },
-    ['unified-members-snapshot'],
+    ['unified-members-snapshot-v1'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
-        revalidate: 300,
+        revalidate: 600,
     },
 );
 

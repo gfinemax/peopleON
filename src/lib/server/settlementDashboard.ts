@@ -158,7 +158,7 @@ export async function fetchSettlementDashboardData(
     diagFilter: SettlementDiagFilter,
     query: string,
 ): Promise<SettlementDashboardData> {
-    const { rows: settlementCases, errorMessage } = await fetchSettlementCases(supabase, statusFilter);
+    const { rows: allSettlementCases, errorMessage } = await fetchSettlementCases(supabase, statusFilter);
     if (errorMessage) {
         const emptyDiagnostics = buildSettlementDiagnostics([]);
         return {
@@ -176,18 +176,40 @@ export async function fetchSettlementDashboardData(
         };
     }
 
-    const partyIds = Array.from(new Set(settlementCases.map((item) => item.party_id)));
-    const { partyMap, ownershipByParty } = await fetchOwnershipMaps(supabase, partyIds);
-    const caseIds = settlementCases.map((item) => item.id);
-    const { finalLineByCase, paidByCase } = await fetchSettlementAmounts(supabase, caseIds);
+    // --- Performance Optimization: Pre-filtering by query ---
+    let matchedCases = allSettlementCases;
+    if (query) {
+        const normalizedQuery = query.toLowerCase();
+        // 1. Search for matching parties first
+        const { data: matchedParties } = await supabase
+            .from('party_profiles')
+            .select('id')
+            .ilike('display_name', `%${query}%`);
+        
+        const partyIds = new Set((matchedParties || []).map(p => p.id));
+        
+        // 2. Filter cases by party name or case ID
+        matchedCases = allSettlementCases.filter(c => 
+            partyIds.has(c.party_id) || 
+            c.id.toLowerCase().includes(normalizedQuery)
+        );
+    }
+    // --------------------------------------------------------
+
+    const activePartyIds = Array.from(new Set(matchedCases.map((item) => item.party_id)));
+    const { partyMap, ownershipByParty } = await fetchOwnershipMaps(supabase, activePartyIds);
+    const activeCaseIds = matchedCases.map((item) => item.id);
+    const { finalLineByCase, paidByCase } = await fetchSettlementAmounts(supabase, activeCaseIds);
 
     const rawRows = buildSettlementRows(
-        settlementCases,
+        matchedCases,
         partyMap,
         ownershipByParty,
         finalLineByCase,
         paidByCase,
     );
+    
+    // We still call filterSettlementRows to catch diagFilter and any residual query logic (like owner_name)
     const rows = filterSettlementRows(rawRows, query, diagFilter);
 
     const expectedTotal = rows.reduce((sum, row) => sum + row.expected, 0);
