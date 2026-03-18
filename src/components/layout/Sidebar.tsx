@@ -19,49 +19,60 @@ const menuItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const [manualCollapsed, setManualCollapsed] = useState(false);
+    // Default to unpinned (collapsed) unless the user manually pins it. Since we don't persist it yet, we'll start with false.
+    const [isPinned, setIsPinned] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+
     const isDetailPage = pathname.startsWith('/members/') && pathname !== '/members';
-    const isCollapsed = isDetailPage || manualCollapsed;
+    
+    // Sidebar is collapsed if it's neither pinned nor hovered.
+    // However, on detail pages, we might want to prioritize space unless hovered.
+    const isCollapsed = isDetailPage ? !isHovered : !isPinned && !isHovered;
 
     return (
         <aside
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             className={cn(
-                "hidden flex-col border-r border-sidebar-border bg-sidebar md:flex h-screen sticky top-0 z-20 overflow-y-auto transition-all duration-300 ease-in-out",
-                isCollapsed ? "w-16" : "w-44"
+                "hidden flex-col border-r border-sidebar-border bg-sidebar md:flex h-screen sticky top-0 z-50 overflow-y-auto transition-all duration-300 ease-in-out",
+                isCollapsed ? "w-16" : "w-44 shadow-2xl border-r-0 md:shadow-none md:border-r" // Added shadow when expanded over content but wait, width change pushes content automatically.
             )}
         >
             <div className={cn("flex min-h-full flex-col justify-between p-4 transition-all text-nowrap", isCollapsed && "px-3")}>
                 <div className="flex flex-col gap-6 flex-1">
                     {/* Brand & Toggle */}
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-3 px-1 overflow-hidden">
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3 px-1 overflow-hidden relative">
                             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 flex-shrink-0 transition-transform duration-300">
                                 <MaterialIcon name="apartment" size="md" />
                             </div>
+                            
                             {!isCollapsed && (
-                                <div className="flex flex-col overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300">
-                                    <h1 className="text-base font-bold leading-none tracking-tight text-foreground truncate">
-                                        People On
-                                    </h1>
-                                    <p className="mt-1 text-[10px] font-bold text-muted-foreground/40 truncate uppercase tracking-wider">
-                                        통합 관리 시스템
-                                    </p>
-                                </div>
+                                <>
+                                    <div className="flex flex-col flex-1 overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300 pr-6">
+                                        <h1 className="text-base font-bold leading-none tracking-tight text-foreground truncate">
+                                            People On
+                                        </h1>
+                                        <p className="mt-1 text-[10px] font-bold text-muted-foreground/40 truncate uppercase tracking-wider">
+                                            통합 관리 시스템
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsPinned(!isPinned)}
+                                        className="absolute right-0 p-1 rounded-md text-muted-foreground hover:text-foreground opacity-50 hover:opacity-100 transition-all hover:bg-white/5 active:scale-95"
+                                        title={isPinned ? "고정 해제" : "사이드바 고정"}
+                                    >
+                                        <MaterialIcon
+                                            name="push_pin"
+                                            size="sm"
+                                            className={cn("transition-transform", !isPinned && "rotate-45")}
+                                            filled={isPinned}
+                                        />
+                                    </button>
+                                </>
                             )}
                         </div>
-
-                        {/* Collapse Toggle Button */}
-                        <button
-                            onClick={() => setManualCollapsed((prev) => !prev)}
-                            className="flex items-center justify-center p-1.5 rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-muted-foreground hover:text-foreground transition-all hover:bg-sidebar-accent mx-1"
-                            title={isCollapsed ? "펼치기" : "접기"}
-                        >
-                            <MaterialIcon
-                                name={isCollapsed ? "chevron_right" : "chevron_left"}
-                                size="sm"
-                                className="transition-transform duration-300"
-                            />
-                        </button>
+                        {/* The large collapse button block is removed */}
                     </div>
 
                     {/* Navigation */}
