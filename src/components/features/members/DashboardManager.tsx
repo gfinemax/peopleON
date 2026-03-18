@@ -61,7 +61,7 @@ export function DashboardManager({
 
     return (
         <DashboardContext.Provider value={{ isCollapsed: effectiveCollapsed, setIsCollapsed }}>
-            <div className="flex flex-col gap-2 w-full max-w-[1600px] mx-auto">
+            <div className="flex flex-col gap-2 w-full max-w-[1600px] mx-auto px-3 py-3 lg:px-6 lg:py-4">
                 {/* Dashboard Area (KPI + Quality) */}
                 <div
                     className={cn(
