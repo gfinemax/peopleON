@@ -171,7 +171,7 @@ export function MembersDesktopTable(props: MembersTableSectionsProps) {
                                     <InlineCellDropdown
                                         options={statusOptions}
                                         currentValue={member.display_status || member.status}
-                                        onSelect={(value) => onInlineUpdate(member.id, 'status', value)}
+                                        onSelect={(value) => onInlineUpdate(member.id, 'status', value, member.entity_ids || [member.id])}
                                         disabled={!member.id}
                                     >
                                         {getStatusBadge(member.display_status || member.status)}

@@ -35,15 +35,15 @@ export async function POST(request: Request) {
 
             // Optional: If value changes to '대리인' or something specific, we could handle it here.
         } else if (field === 'status') {
-            // Update status in account_entities
+            const targetIds = (entity_ids && entity_ids.length > 0) ? entity_ids : [id];
             const { error: entityError } = await supabase
                 .from('account_entities')
                 .update({ status: value })
-                .eq('id', id);
+                .in('id', targetIds);
 
             if (entityError) throw entityError;
 
-            await createAuditLog('UPDATE_MEMBER_STATUS', id, { new_status: value });
+            await Promise.all(targetIds.map((eid: string) => createAuditLog('UPDATE_MEMBER_STATUS', eid, { new_status: value })));
         } else if (field === 'role') {
             // Not a direct table field but modifying membership_roles structure
             // e.g. toggle role
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
                 if (!updated || updated.length === 0) {
                     await supabase
                         .from('membership_roles')
-                        .insert(roleEntityIds.map(eid => ({
+                        .insert(roleEntityIds.map((eid: string) => ({
                             entity_id: eid,
                             role_code: insertCode,
                             role_status: 'inactive',
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
                         })));
                 }
 
-                await Promise.all(roleEntityIds.map(eid => createAuditLog('UPDATE_MEMBER_ROLE', eid, { role_removed: role_code, target_code: insertCode })));
+                await Promise.all(roleEntityIds.map((eid: string) => createAuditLog('UPDATE_MEMBER_ROLE', eid, { role_removed: role_code, target_code: insertCode })));
             } else if (action === 'add') {
                 const { data: updated } = await supabase
                     .from('membership_roles')
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
                 if (!updated || updated.length === 0) {
                     await supabase
                         .from('membership_roles')
-                        .insert(roleEntityIds.map(eid => ({
+                        .insert(roleEntityIds.map((eid: string) => ({
                             entity_id: eid,
                             role_code: insertCode,
                             role_status: 'active',
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
                         })));
                 }
 
-                await Promise.all(roleEntityIds.map(eid => createAuditLog('UPDATE_MEMBER_ROLE', eid, { role_added: role_code, insert_code: insertCode })));
+                await Promise.all(roleEntityIds.map((eid: string) => createAuditLog('UPDATE_MEMBER_ROLE', eid, { role_added: role_code, insert_code: insertCode })));
             }
         } else {
             return NextResponse.json({ success: false, error: 'Invalid field' }, { status: 400 });

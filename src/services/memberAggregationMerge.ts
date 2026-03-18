@@ -38,9 +38,10 @@ export function mergeUnifiedPeople(rawUnifiedPeople: UnifiedPerson[]) {
 
     const unifiedPeople: UnifiedPerson[] = [];
     const statusPriority: Record<string, number> = {
-        제명: 6,
-        소송: 5,
-        탈퇴: 4,
+        제명: 7,
+        소송: 6,
+        탈퇴: 5,
+        차명: 4,
         비조합원: 3,
         정상: 2,
         미정: 1,
