@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn, formatSafeDateTime } from '@/lib/utils';
 import Image from 'next/image';
+import { logInteraction } from '@/app/actions/interaction';
 
 interface InteractionLog {
     id: string;
@@ -30,59 +31,92 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
 
     // New Log Input State
     const [newLogText, setNewLogText] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        async function fetchLogs() {
-            if (page === 1) setLoading(true);
-            const supabase = createClient();
+    const fetchLogs = async (isRefresh = false) => {
+        if (page === 1 && !isRefresh) setLoading(true);
+        const supabase = createClient();
 
-            // Fetch total count first
-            if (page === 1) {
-                const { count } = await supabase
-                    .from('interaction_logs')
-                    .select('*', { count: 'exact', head: true })
-                    .in('entity_id', memberIds);
-
-                setTotalCount(count || 0);
-            }
-
-            // Fetch paginated data
-            const from = (page - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            const { data, error } = await supabase
+        // Fetch total count first
+        if (page === 1) {
+            const { count } = await supabase
                 .from('interaction_logs')
-                .select('*')
-                .in('entity_id', memberIds)
-                .order('created_at', { ascending: false })
-                .range(from, to);
+                .select('*', { count: 'exact', head: true })
+                .in('entity_id', memberIds);
 
-            if (!error && data) {
-                const formattedLogs: InteractionLog[] = data.map((d: any) => ({
-                    id: d.id,
-                    type: d.type || 'NOTE',
-                    title: d.type === 'CALL' ? '전화 상담' :
-                        d.type === 'MEET' ? '대면 상담' :
-                            d.type === 'SMS' ? '문자 발송' :
-                                d.type === 'DOC' ? '서류 기록' :
-                                    d.type === 'REPAIR' ? '수리 건' : '기타 메모',
-                    summary: d.summary || '',
-                    staff_name: d.staff_name,
-                    created_at: formatSafeDateTime(d.created_at),
-                    attachment: null
-                }));
-
-                if (page === 1) {
-                    setLogs(formattedLogs);
-                } else {
-                    setLogs(prev => [...prev, ...formattedLogs]);
-                }
-            }
-            setLoading(false);
+            setTotalCount(count || 0);
         }
 
+        // Fetch paginated data
+        const from = (page - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
+
+        const { data, error } = await supabase
+            .from('interaction_logs')
+            .select('*')
+            .in('entity_id', memberIds)
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (!error && data) {
+            const formattedLogs: InteractionLog[] = data.map((d: any) => ({
+                id: d.id,
+                type: d.type || 'NOTE',
+                title: d.type === 'CALL' ? '전화 상담' :
+                    d.type === 'MEET' ? '대면 상담' :
+                        d.type === 'SMS' ? '문자 발송' :
+                            d.type === 'DOC' ? '서류 기록' :
+                                d.type === 'REPAIR' ? '수리 건' : '기타 메모',
+                summary: d.summary || '',
+                staff_name: d.staff_name,
+                created_at: formatSafeDateTime(d.created_at),
+                attachment: null
+            }));
+
+            if (page === 1) {
+                setLogs(formattedLogs);
+            } else {
+                setLogs(prev => [...prev, ...formattedLogs]);
+            }
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
         fetchLogs();
     }, [memberIds, page]);
+
+    const handleSaveActivity = async () => {
+        if (!newLogText.trim() || isSaving) return;
+
+        setIsSaving(true);
+        try {
+            const formData = new FormData();
+            formData.append('memberId', memberIds[0]); // Use primary ID
+            formData.append('type', 'NOTE');
+            formData.append('direction', 'Inbound');
+            formData.append('summary', newLogText.trim());
+
+            const result = await logInteraction({}, formData);
+            if (result.success) {
+                setNewLogText('');
+                // If on page 1, just refresh. If elsewhere, could be tricky, 
+                // but for simple UX we'll reset to page 1 and refresh.
+                if (page === 1) {
+                    await fetchLogs(true);
+                } else {
+                    setPage(1);
+                }
+            } else {
+                alert(result.error || '저장에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Save error:', error);
+            alert('오류가 발생했습니다.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -125,8 +159,22 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
                             <MaterialIcon name="mic" size="sm" />
                         </button>
                         {newLogText && (
-                            <button className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors">
-                                저장
+                            <button
+                                onClick={handleSaveActivity}
+                                disabled={isSaving}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5",
+                                    isSaving && "opacity-70 cursor-not-allowed"
+                                )}
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <MaterialIcon name="refresh" size="xs" className="animate-spin" />
+                                        저장 중...
+                                    </>
+                                ) : (
+                                    '저장'
+                                )}
                             </button>
                         )}
                     </div>

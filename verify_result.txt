@@ -1,0 +1,12 @@
+[dotenv@17.3.1] injecting env (4) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+🚀 Checking Recent Activity Filter...
+Target Member: 강대운 (9aeca392-d6a5-4c0b-bce0-1e3332cee41e)
+Found 1 total logs for this member.
+Skipping legacy log: [2026-03-01T14:30:20.060289+00:00] Staff: 이전시스템기록 | [1차조합관련] 1.28 통화/관망
+
+[8월31일 조합...
+✅ Success: No summary found for legacy-only member.
+
+Testing with a TRULY recent record...
+✅ Success: Truly recent record is correctly identified.
+Test data cleaned up.

@@ -20,6 +20,9 @@ type InteractionLogRow = {
     created_at: string;
 };
 
+const LEGACY_IMPORT_STAFF = '이전시스템기록';
+const LEGACY_THRESHOLD_DATE = new Date('2026-03-10');
+
 type AccountEntityLogTarget = {
     id: string;
     display_name: string | null;
@@ -116,7 +119,7 @@ const cachedRecentActivityLogs = unstable_cache(
         for (const entityIdChunk of chunk(sortedEntityIds, 80)) {
             const { data: logs, error } = await supabase
                 .from('interaction_logs')
-                .select('id, entity_id, type, direction, summary, created_at')
+                .select('id, entity_id, type, direction, summary, staff_name, created_at')
                 .in('entity_id', entityIdChunk)
                 .order('created_at', { ascending: false });
 
@@ -218,7 +221,7 @@ export async function fetchRecentActivitySummariesForPeople<T extends PersonLike
                   for (const entityIdChunk of chunk(sortedEntityIds, 80)) {
                       const { data, error } = await supabase
                           .from('interaction_logs')
-                          .select('id, entity_id, type, direction, summary, created_at')
+                          .select('id, entity_id, type, direction, summary, staff_name, created_at')
                           .in('entity_id', entityIdChunk)
                           .order('created_at', { ascending: false });
 
@@ -248,6 +251,10 @@ export async function fetchRecentActivitySummariesForPeople<T extends PersonLike
         const linkedPeople = entityToPersonIds.get(log.entity_id) || [];
         const type = normalizeLogType(log.type);
         const summary = (log.summary || '').trim();
+
+        // Filter out legacy imported records for the summary view
+        const isLegacy = log.staff_name === LEGACY_IMPORT_STAFF || new Date(log.created_at) < LEGACY_THRESHOLD_DATE;
+        if (isLegacy) continue;
 
         for (const personId of linkedPeople) {
             if (recentByPersonId.has(personId)) continue;
