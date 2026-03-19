@@ -97,9 +97,9 @@ export async function POST(request: Request) {
 
         revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true, id: entity.id });
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error('Error creating member:', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message = error?.message || 'Unknown error';
         return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }
