@@ -10,6 +10,9 @@ export interface UnitType {
     name: string;
     area_sqm: number;
     total_contribution: number;
+    first_sale_price?: number;
+    second_sale_price?: number;
+    general_sale_price?: number;
     certificate_amount: number;
     contract_amount: number;
     installment_1_amount: number;
@@ -40,6 +43,9 @@ export async function upsertUnitType(unitType: Partial<UnitType> & { name: strin
         name: unitType.name,
         area_sqm: unitType.area_sqm,
         total_contribution: unitType.total_contribution || 0,
+        first_sale_price: unitType.first_sale_price || unitType.total_contribution || 0,
+        second_sale_price: unitType.second_sale_price || unitType.total_contribution || 0,
+        general_sale_price: unitType.general_sale_price || unitType.total_contribution || 0,
         certificate_amount: unitType.certificate_amount || 0,
         contract_amount: unitType.contract_amount || 0,
         installment_1_amount: unitType.installment_1_amount || 0,

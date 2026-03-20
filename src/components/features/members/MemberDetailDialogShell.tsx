@@ -248,6 +248,8 @@ export function MemberDetailDialogBody({
                                         memberIds={memberIds}
                                         memberName={member.name ?? ''}
                                         unitGroup={member.unit_group}
+                                        memberTiers={member.tiers}
+                                        isRegistered={member.is_registered}
                                     />
                                 </div>
                             ) : null}

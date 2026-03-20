@@ -13,9 +13,12 @@ import {
 } from './PaymentStatusTabSections';
 import {
     buildPaymentSummary,
+    createMissingSystemUnionFeeLines,
     createPremiumPaymentLines,
     createStructuredPaymentLines,
     derivePaymentStatus,
+    getDisplayPayments,
+    SYSTEM_UNION_FEE_NOTE,
     type DepositAccount,
     type PaymentRecord,
     type UnitType,
@@ -25,9 +28,16 @@ interface PaymentStatusTabProps {
     memberIds: string[];
     memberName: string;
     unitGroup?: string | null;
+    memberTiers?: string[] | null;
+    isRegistered?: boolean;
 }
 
-export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
+export function PaymentStatusTab({
+    memberIds,
+    memberTiers = [],
+    isRegistered = false,
+}: PaymentStatusTabProps) {
+    const normalizedMemberTiers = memberTiers || [];
     const [loading, setLoading] = useState(true);
     const [payments, setPayments] = useState<PaymentRecord[]>([]);
     const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
@@ -48,12 +58,26 @@ export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
             supabase.from('deposit_accounts').select('*').eq('is_active', true).order('account_type', { ascending: true }),
         ]);
 
-        const paymentRows = paymentsRes.data || [];
+        let paymentRows = paymentsRes.data || [];
+        const missingUnionFeeLines = createMissingSystemUnionFeeLines(paymentRows);
+
+        if (missingUnionFeeLines.length > 0) {
+            const { error: insertError } = await supabase.from('member_payments').insert(missingUnionFeeLines);
+            if (!insertError) {
+                const refreshedPaymentsRes = await supabase
+                    .from('member_payments')
+                    .select('*')
+                    .in('entity_id', memberIds)
+                    .order('sort_order', { ascending: true });
+                paymentRows = refreshedPaymentsRes.data || paymentRows;
+            }
+        }
+
         setPayments(paymentRows);
         setUnitTypes(unitTypesRes.data || []);
         setAccounts(accountsRes.data || []);
 
-        const firstPayment = paymentRows.find((payment) => payment.unit_type_id);
+        const firstPayment = getDisplayPayments(paymentRows).find((payment) => payment.unit_type_id);
         if (firstPayment?.unit_type_id) {
             setSelectedUnitTypeId(firstPayment.unit_type_id);
         }
@@ -79,6 +103,13 @@ export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
             .delete()
             .in('entity_id', memberIds)
             .in('payment_type', ['certificate', 'contract', 'installment_1', 'installment_2', 'balance']);
+
+        await supabase
+            .from('member_payments')
+            .delete()
+            .in('entity_id', memberIds)
+            .eq('payment_type', 'other')
+            .eq('receipt_note', SYSTEM_UNION_FEE_NOTE);
 
         const lines = createStructuredPaymentLines(memberIds, unitTypeId, unitType);
         await supabase.from('member_payments').insert(lines);
@@ -144,7 +175,8 @@ export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
         await fetchAll();
     };
 
-    const summary = buildPaymentSummary(payments, unitTypes, selectedUnitTypeId);
+    const displayPayments = getDisplayPayments(payments);
+    const summary = buildPaymentSummary(displayPayments, unitTypes, selectedUnitTypeId, normalizedMemberTiers, isRegistered);
 
     if (loading) {
         return (
@@ -160,6 +192,8 @@ export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
                 unitTypes={unitTypes}
                 selectedUnitTypeId={selectedUnitTypeId}
                 selectedUnitType={summary.selectedUnitType}
+                selectedUnitContributionTotal={summary.selectedUnitContributionTotal}
+                salePriceLabel={summary.salePriceLabel}
                 saving={saving}
                 onAssignUnitType={handleAssignUnitType}
             />
@@ -168,6 +202,9 @@ export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
                 certificateAmount={summary.certificateAmount}
                 premiumRecognized={summary.premiumRecognized}
                 pureAdditionalBurden={summary.pureAdditionalBurden}
+                unionFeeDue={summary.unionFeeDue}
+                unionFeePaid={summary.unionFeePaid}
+                unionFeeStatus={summary.unionFeeStatus}
             />
             <PaymentProgressSection
                 contributionRate={summary.contributionRate}
@@ -179,7 +216,7 @@ export function PaymentStatusTab({ memberIds }: PaymentStatusTabProps) {
                 accounts={accounts}
                 editForm={editForm}
                 editingId={editingId}
-                payments={payments}
+                payments={displayPayments}
                 saving={saving}
                 onCancelEdit={cancelEdit}
                 onDelete={handleDelete}

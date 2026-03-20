@@ -1,6 +1,7 @@
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { type UnifiedPerson } from '@/services/memberAggregation';
 import { isSettlementTarget, splitSourceCertificateDisplay } from '@/lib/members/unifiedPersonUtils';
+import { getSystemUnionFeeSummary, isSystemUnionFeePayment } from '@/lib/payments/systemUnionFee';
 
 export type PaymentStatus = '수납완료' | '부분납' | '미납' | '미설정';
 
@@ -53,6 +54,10 @@ export type PersonPaymentSummary = {
     totalContributionUnpaid: number;
     totalInvestment: number;
     additionalBurden: number;
+    unionFeeDue: number;
+    unionFeePaid: number;
+    unionFeeUnpaid: number;
+    unionFeeStatus: '완납' | '일부납' | '미납' | '미설정';
     latestPaidDate: string | null;
     paymentStatus: PaymentStatus;
     settlementSummary: string;
@@ -169,9 +174,14 @@ function buildPaymentSummaries(
     return unifiedPeople
         .map<PersonPaymentSummary>((person) => {
             const personPayments = person.entity_ids.flatMap((entityId) => paymentsByEntity.get(entityId) || []);
-            const contributionPayments = personPayments.filter((payment) => payment.is_contribution && payment.payment_type !== 'premium');
-            const totalContributionDue = contributionPayments.reduce((sum, payment) => sum + parseMoney(payment.amount_due), 0);
-            const totalContributionPaid = contributionPayments.reduce((sum, payment) => sum + parseMoney(payment.amount_paid), 0);
+            const contributionPayments = personPayments.filter(
+                (payment) => payment.is_contribution && payment.payment_type !== 'premium' && !isSystemUnionFeePayment(payment),
+            );
+            const unionFeeSummary = getSystemUnionFeeSummary(personPayments);
+            const totalContributionDue =
+                contributionPayments.reduce((sum, payment) => sum + parseMoney(payment.amount_due), 0) + unionFeeSummary.totalDue;
+            const totalContributionPaid =
+                contributionPayments.reduce((sum, payment) => sum + parseMoney(payment.amount_paid), 0) + unionFeeSummary.totalPaid;
             const totalContributionUnpaid = Math.max(totalContributionDue - totalContributionPaid, 0);
 
             const certificatePaid = personPayments
@@ -182,6 +192,14 @@ function buildPaymentSummaries(
                 .reduce((sum, payment) => sum + parseMoney(payment.amount_paid), 0);
             const totalInvestment = certificatePaid + premiumRecognized;
             const additionalBurden = Math.max(totalContributionDue - totalInvestment, 0);
+            const unionFeeStatus =
+                unionFeeSummary.totalDue <= 0
+                    ? '미설정'
+                    : unionFeeSummary.totalPaid >= unionFeeSummary.totalDue
+                      ? '완납'
+                      : unionFeeSummary.totalPaid > 0
+                        ? '일부납'
+                        : '미납';
 
             const latestPaidDate = personPayments
                 .map((payment) => payment.paid_date)
@@ -229,6 +247,10 @@ function buildPaymentSummaries(
                 totalContributionUnpaid,
                 totalInvestment,
                 additionalBurden,
+                unionFeeDue: unionFeeSummary.totalDue,
+                unionFeePaid: unionFeeSummary.totalPaid,
+                unionFeeUnpaid: unionFeeSummary.totalUnpaid,
+                unionFeeStatus,
                 latestPaidDate,
                 paymentStatus: getPaymentStatus(totalContributionDue, totalContributionPaid, personPayments.length),
                 settlementSummary: settlementSummary.label,

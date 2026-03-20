@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { UnitTypeForm } from './FinancialSettingsForms';
+import { getSalePriceForCategory } from '@/lib/payments/salePricing';
 import {
     buildUnitTypePayload,
     createEmptyUnitTypeForm,
@@ -103,6 +104,11 @@ export function UnitTypesSection() {
                                         </div>
                                         <div>
                                             <p className="font-bold text-foreground">{unitType.name}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                1차 {formatFinancialAmount(getSalePriceForCategory(unitType, 'first'))} · 2차{' '}
+                                                {formatFinancialAmount(getSalePriceForCategory(unitType, 'second'))} · 일반{' '}
+                                                {formatFinancialAmount(getSalePriceForCategory(unitType, 'general'))}
+                                            </p>
                                             <p className="text-xs text-muted-foreground">
                                                 필증 {formatFinancialAmount(unitType.certificate_amount)} · 계약{' '}
                                                 {formatFinancialAmount(unitType.contract_amount)} · 1차{' '}

@@ -2,18 +2,23 @@
 
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import { SYSTEM_UNION_FEE_LABEL } from './paymentStatusTabUtils';
 import type { UnitType } from './paymentStatusTabUtils';
 
 export function UnitTypeSelectorSection({
     unitTypes,
     selectedUnitTypeId,
     selectedUnitType,
+    selectedUnitContributionTotal,
+    salePriceLabel,
     saving,
     onAssignUnitType,
 }: {
     unitTypes: UnitType[];
     selectedUnitTypeId: string | null;
     selectedUnitType?: UnitType;
+    selectedUnitContributionTotal: number;
+    salePriceLabel: string;
     saving: boolean;
     onAssignUnitType: (unitTypeId: string) => void;
 }) {
@@ -44,9 +49,12 @@ export function UnitTypeSelectorSection({
                 )}
             </div>
             {selectedUnitType && (
-                <p className="mt-2 text-[11px] text-gray-500">
-                    총 분담금: <span className="font-bold text-gray-300">₩{selectedUnitType.total_contribution.toLocaleString()}</span>
-                </p>
+                <div className="mt-2">
+                    <p className="text-[11px] text-gray-500">
+                        적용 분양가: <span className="font-bold text-sky-300">{salePriceLabel}</span>{' '}
+                        <span className="font-bold text-gray-300">₩{selectedUnitContributionTotal.toLocaleString()}</span>
+                    </p>
+                </div>
             )}
         </div>
     );
@@ -57,14 +65,27 @@ export function PaymentSummarySection({
     certificateAmount,
     premiumRecognized,
     pureAdditionalBurden,
+    unionFeeDue,
+    unionFeePaid,
+    unionFeeStatus,
 }: {
     totalInvestment: number;
     certificateAmount: number;
     premiumRecognized: number;
     pureAdditionalBurden: number;
+    unionFeeDue: number;
+    unionFeePaid: number;
+    unionFeeStatus: string;
 }) {
+    const unionFeeTone =
+        unionFeeStatus === '완납'
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+            : unionFeeStatus === '일부납'
+              ? 'border-orange-500/20 bg-orange-500/10 text-orange-300'
+              : 'border-rose-500/20 bg-rose-500/10 text-rose-300';
+
     return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="rounded-lg border border-white/5 bg-[#233040] p-4 shadow-sm">
                 <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                     <MaterialIcon name="savings" className="text-[14px] text-emerald-500" />
@@ -73,6 +94,21 @@ export function PaymentSummarySection({
                 <p className="text-lg font-black tracking-tight text-emerald-400">₩{totalInvestment.toLocaleString()}</p>
                 <p className="mt-0.5 text-[10px] text-gray-500">
                     필증 {certificateAmount.toLocaleString()} + 인정 {premiumRecognized.toLocaleString()}
+                </p>
+            </div>
+            <div className={cn('rounded-lg border p-4 shadow-sm', unionFeeTone)}>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                        <MaterialIcon name="groups" className="text-[14px]" />
+                        {SYSTEM_UNION_FEE_LABEL}
+                    </p>
+                    <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/90">
+                        {unionFeeStatus}
+                    </span>
+                </div>
+                <p className="text-lg font-black tracking-tight">₩{unionFeeDue.toLocaleString()}</p>
+                <p className="mt-0.5 text-[10px]">
+                    수납 {unionFeePaid.toLocaleString()} / 청구 {unionFeeDue.toLocaleString()}
                 </p>
             </div>
             <div className="rounded-lg border border-white/5 bg-[#233040] p-4 shadow-sm">
@@ -110,7 +146,7 @@ export function PaymentProgressSection({
             <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-gray-400">분담금 납부 진행률</span>
-                    <span className="text-[10px] text-gray-500">(프리미엄 제외)</span>
+                    <span className="text-[10px] text-gray-500">(조합비 포함, 프리미엄 제외)</span>
                 </div>
                 <span className="text-xs font-black text-white">{contributionRate}%</span>
             </div>

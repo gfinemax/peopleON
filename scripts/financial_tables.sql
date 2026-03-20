@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS unit_types (
     name TEXT NOT NULL,                          -- 예: "59㎡ A타입"
     area_sqm NUMERIC NOT NULL,                   -- 면적(㎡): 59, 74, 84
     total_contribution NUMERIC NOT NULL DEFAULT 0,  -- 총 분담금
+    first_sale_price NUMERIC NOT NULL DEFAULT 0,    -- 1차 분양가
+    second_sale_price NUMERIC NOT NULL DEFAULT 0,   -- 2차 분양가
+    general_sale_price NUMERIC NOT NULL DEFAULT 0,  -- 일반분양가
     certificate_amount NUMERIC NOT NULL DEFAULT 30000000,  -- 필증 기준액
     contract_amount NUMERIC NOT NULL DEFAULT 20000000,     -- 계약금
     installment_1_amount NUMERIC NOT NULL DEFAULT 50000000, -- 1차 분담금
@@ -90,12 +93,22 @@ CREATE POLICY "Allow authenticated read member_payments"
 CREATE POLICY "Allow authenticated all member_payments"
     ON member_payments FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+ALTER TABLE unit_types ADD COLUMN IF NOT EXISTS first_sale_price NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE unit_types ADD COLUMN IF NOT EXISTS second_sale_price NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE unit_types ADD COLUMN IF NOT EXISTS general_sale_price NUMERIC NOT NULL DEFAULT 0;
+
+UPDATE unit_types
+SET
+    first_sale_price = CASE WHEN coalesce(first_sale_price, 0) = 0 THEN total_contribution ELSE first_sale_price END,
+    second_sale_price = CASE WHEN coalesce(second_sale_price, 0) = 0 THEN total_contribution ELSE second_sale_price END,
+    general_sale_price = CASE WHEN coalesce(general_sale_price, 0) = 0 THEN total_contribution ELSE general_sale_price END;
+
 -- 6. 기본 평형 데이터 시드
-INSERT INTO unit_types (name, area_sqm, total_contribution, certificate_amount, contract_amount, installment_1_amount, installment_2_amount, balance_amount)
+INSERT INTO unit_types (name, area_sqm, total_contribution, first_sale_price, second_sale_price, general_sale_price, certificate_amount, contract_amount, installment_1_amount, installment_2_amount, balance_amount)
 VALUES
-    ('59㎡', 59, 160000000, 30000000, 20000000, 50000000, 60000000, 0),
-    ('74㎡', 74, 180000000, 30000000, 20000000, 50000000, 60000000, 20000000),
-    ('84㎡', 84, 200000000, 30000000, 20000000, 50000000, 60000000, 40000000)
+    ('59 Type', 59, 750000000, 750000000, 1000000000, 1100000000, 30000000, 20000000, 50000000, 60000000, 0),
+    ('73 Type', 73, 925000000, 925000000, 1325000000, 1475000000, 30000000, 20000000, 50000000, 60000000, 20000000),
+    ('84 Type', 84, 999000000, 999000000, 1399000000, 1549000000, 30000000, 20000000, 50000000, 60000000, 40000000)
 ON CONFLICT DO NOTHING;
 
 -- 7. 기본 계좌 데이터 시드

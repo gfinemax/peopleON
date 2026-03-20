@@ -4,9 +4,10 @@ import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import {
     ACCOUNT_TYPE_LABELS,
-    PAYMENT_TYPE_LABELS,
     PaymentTypeIcon,
     getAccountBadgeClass,
+    getPaymentDisplayLabel,
+    isSystemManagedUnionFee,
     renderPaymentStatusBadge,
     type DepositAccount,
     type PaymentRecord,
@@ -56,19 +57,38 @@ export function PaymentDetailsTable({
                             const account = accounts.find((item) => item.id === payment.deposit_account_id);
                             const isPremiumType =
                                 payment.payment_type === 'premium' || payment.payment_type === 'premium_recognized';
+                            const isSystemUnionFee = isSystemManagedUnionFee(payment);
 
                             return (
                                 <tr
                                     key={payment.id}
-                                    className={cn('transition-colors hover:bg-white/[0.02]', isPremiumType && 'bg-violet-500/[0.03]')}
+                                    className={cn(
+                                        'transition-colors hover:bg-white/[0.02]',
+                                        isPremiumType && 'bg-violet-500/[0.03]',
+                                        isSystemUnionFee && 'bg-sky-500/[0.05]',
+                                    )}
                                 >
                                     <td className="px-3 py-2.5">
                                         <div className="flex items-center gap-2">
-                                            <PaymentTypeIcon paymentType={payment.payment_type} isPremiumType={isPremiumType} />
+                                            <PaymentTypeIcon
+                                                paymentType={payment.payment_type}
+                                                isPremiumType={isPremiumType}
+                                                isSystemUnionFee={isSystemUnionFee}
+                                            />
                                             <div>
                                                 <span className="font-bold text-gray-200">
-                                                    {PAYMENT_TYPE_LABELS[payment.payment_type] || payment.payment_type}
+                                                    {getPaymentDisplayLabel(payment)}
                                                 </span>
+                                                {isSystemUnionFee && (
+                                                    <>
+                                                        <span className="ml-1.5 rounded border border-sky-400/20 bg-sky-500/10 px-1 text-[9px] text-sky-300">
+                                                            필수납부
+                                                        </span>
+                                                        <span className="ml-1 rounded border border-cyan-400/20 bg-cyan-500/10 px-1 text-[9px] text-cyan-300">
+                                                            분담금포함
+                                                        </span>
+                                                    </>
+                                                )}
                                                 {!payment.is_contribution && (
                                                     <span className="ml-1.5 rounded border border-violet-500/20 bg-violet-500/10 px-1 text-[9px] text-violet-400">
                                                         분담금제외

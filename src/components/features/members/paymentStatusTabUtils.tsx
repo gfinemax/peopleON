@@ -2,12 +2,32 @@
 
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import {
+    getCollapsedSystemUnionFeePayment,
+    SYSTEM_UNION_FEE_AMOUNT,
+    SYSTEM_UNION_FEE_LABEL,
+    SYSTEM_UNION_FEE_NOTE,
+    SYSTEM_UNION_FEE_PAYMENT_TYPE,
+    SYSTEM_UNION_FEE_SORT_ORDER,
+    createSystemUnionFeePayments,
+    getSystemUnionFeeSummary,
+    isSystemUnionFeePayment,
+} from '@/lib/payments/systemUnionFee';
+import {
+    getSalePriceCategoryLabel,
+    getSalePriceForCategory,
+    resolveSalePriceCategory,
+    type SalePriceCategory,
+} from '@/lib/payments/salePricing';
 
 export interface UnitType {
     id: string;
     name: string;
     area_sqm: number;
     total_contribution: number;
+    first_sale_price?: number;
+    second_sale_price?: number;
+    general_sale_price?: number;
     certificate_amount: number;
     contract_amount: number;
     installment_1_amount: number;
@@ -76,21 +96,24 @@ const STRUCTURED_PAYMENT_DEFINITIONS = [
 ] as const;
 
 export function createStructuredPaymentLines(memberIds: string[], unitTypeId: string, unitType: UnitType) {
-    return memberIds.flatMap((entityId) =>
-        STRUCTURED_PAYMENT_DEFINITIONS.map(({ payment_type, amountKey, sort_order }) => ({
-            entity_id: entityId,
-            unit_type_id: unitTypeId,
-            payment_type,
-            amount_due: unitType[amountKey],
-            amount_paid: 0,
-            deposit_account_id: null,
-            paid_date: null,
-            receipt_note: null,
-            is_contribution: true,
-            status: 'pending',
-            sort_order,
-        })),
-    );
+    return [
+        ...memberIds.flatMap((entityId) =>
+            STRUCTURED_PAYMENT_DEFINITIONS.map(({ payment_type, amountKey, sort_order }) => ({
+                entity_id: entityId,
+                unit_type_id: unitTypeId,
+                payment_type,
+                amount_due: unitType[amountKey],
+                amount_paid: 0,
+                deposit_account_id: null,
+                paid_date: null,
+                receipt_note: null,
+                is_contribution: true,
+                status: 'pending',
+                sort_order,
+            })),
+        ),
+        ...createSystemUnionFeePayments(memberIds[0] ? [{ entity_id: memberIds[0], unit_type_id: unitTypeId }] : []),
+    ];
 }
 
 export function createPremiumPaymentLines(
@@ -123,10 +146,17 @@ export function buildPaymentSummary(
     payments: PaymentRecord[],
     unitTypes: UnitType[],
     selectedUnitTypeId: string | null,
+    memberTiers: string[],
+    isRegistered: boolean,
 ) {
-    const contributionPayments = payments.filter((payment) => payment.is_contribution && payment.payment_type !== 'premium');
-    const totalContributionDue = contributionPayments.reduce((sum, payment) => sum + Number(payment.amount_due), 0);
-    const totalContributionPaid = contributionPayments.reduce((sum, payment) => sum + Number(payment.amount_paid), 0);
+    const contributionPayments = payments.filter(
+        (payment) => payment.is_contribution && payment.payment_type !== 'premium' && !isSystemUnionFeePayment(payment),
+    );
+    const unionFeeSummary = getSystemUnionFeeSummary(payments);
+    const totalContributionDue =
+        contributionPayments.reduce((sum, payment) => sum + Number(payment.amount_due), 0) + unionFeeSummary.totalDue;
+    const totalContributionPaid =
+        contributionPayments.reduce((sum, payment) => sum + Number(payment.amount_paid), 0) + unionFeeSummary.totalPaid;
     const totalContributionUnpaid = totalContributionDue - totalContributionPaid;
     const contributionRate =
         totalContributionDue > 0 ? Math.round((totalContributionPaid / totalContributionDue) * 100) : 0;
@@ -139,18 +169,62 @@ export function buildPaymentSummary(
     const totalInvestment = certificateAmount + premiumRecognized;
     const pureAdditionalBurden = totalContributionDue - totalInvestment;
     const selectedUnitType = unitTypes.find((unitType) => unitType.id === selectedUnitTypeId);
+    const salePriceCategory = resolveSalePriceCategory(memberTiers, isRegistered);
+    const salePriceLabel = getSalePriceCategoryLabel(salePriceCategory);
+    const selectedUnitContributionTotal = getSalePriceForCategory(selectedUnitType, salePriceCategory);
+    const unionFeeStatus =
+        unionFeeSummary.totalDue <= 0
+            ? '미설정'
+            : unionFeeSummary.totalPaid >= unionFeeSummary.totalDue
+              ? '완납'
+              : unionFeeSummary.totalPaid > 0
+                ? '일부납'
+                : '미납';
 
     return {
         certificateAmount,
         contributionRate,
         premiumRecognized,
         pureAdditionalBurden,
+        salePriceCategory,
+        salePriceLabel,
         selectedUnitType,
+        selectedUnitContributionTotal,
         totalContributionDue,
         totalContributionPaid,
         totalContributionUnpaid,
         totalInvestment,
+        unionFeeDue: unionFeeSummary.totalDue,
+        unionFeePaid: unionFeeSummary.totalPaid,
+        unionFeeStatus,
     };
+}
+
+export function createMissingSystemUnionFeeLines(payments: PaymentRecord[]) {
+    return createSystemUnionFeePayments(getSystemUnionFeeSummary(payments).missingTargets);
+}
+
+export function getDisplayPayments(payments: PaymentRecord[]) {
+    const collapsedUnionFee = getCollapsedSystemUnionFeePayment(payments);
+    const visiblePayments = payments.filter((payment) => !isSystemUnionFeePayment(payment));
+
+    if (collapsedUnionFee) {
+        visiblePayments.push(collapsedUnionFee);
+    }
+
+    return visiblePayments.sort((left, right) => {
+        if (left.sort_order !== right.sort_order) return left.sort_order - right.sort_order;
+        return left.payment_type.localeCompare(right.payment_type, 'ko-KR');
+    });
+}
+
+export function getPaymentDisplayLabel(payment: Pick<PaymentRecord, 'payment_type' | 'receipt_note'>) {
+    if (isSystemUnionFeePayment(payment)) return SYSTEM_UNION_FEE_LABEL;
+    return PAYMENT_TYPE_LABELS[payment.payment_type] || payment.payment_type;
+}
+
+export function isSystemManagedUnionFee(payment: Pick<PaymentRecord, 'payment_type' | 'receipt_note'>) {
+    return isSystemUnionFeePayment(payment);
 }
 
 export function getAccountBadgeClass(accountType: string) {
@@ -160,6 +234,30 @@ export function getAccountBadgeClass(accountType: string) {
 }
 
 export function renderPaymentStatusBadge(status: string, payment: PaymentRecord) {
+    if (isSystemUnionFeePayment(payment)) {
+        if (Number(payment.amount_paid) >= (Number(payment.amount_due) || SYSTEM_UNION_FEE_AMOUNT)) {
+            return (
+                <span className="inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                    완납
+                </span>
+            );
+        }
+
+        if (Number(payment.amount_paid) > 0) {
+            return (
+                <span className="inline-flex items-center rounded border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-400">
+                    일부납
+                </span>
+            );
+        }
+
+        return (
+            <span className="inline-flex items-center rounded border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-400">
+                미납
+            </span>
+        );
+    }
+
     if (payment.payment_type === 'premium') {
         return (
             <span className="inline-flex items-center rounded border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-400">
@@ -210,14 +308,29 @@ export function renderPaymentStatusBadge(status: string, payment: PaymentRecord)
 export function PaymentTypeIcon({
     paymentType,
     isPremiumType,
+    isSystemUnionFee = false,
 }: {
     paymentType: string;
     isPremiumType: boolean;
+    isSystemUnionFee?: boolean;
 }) {
     return (
         <MaterialIcon
-            name={PAYMENT_TYPE_ICONS[paymentType] || 'payments'}
-            className={cn('text-[16px]', isPremiumType ? 'text-violet-400' : 'text-gray-500')}
+            name={isSystemUnionFee ? 'groups' : PAYMENT_TYPE_ICONS[paymentType] || 'payments'}
+            className={cn(
+                'text-[16px]',
+                isPremiumType ? 'text-violet-400' : isSystemUnionFee ? 'text-sky-300' : 'text-gray-500',
+            )}
         />
     );
 }
+
+export {
+    SYSTEM_UNION_FEE_AMOUNT,
+    SYSTEM_UNION_FEE_LABEL,
+    SYSTEM_UNION_FEE_NOTE,
+    SYSTEM_UNION_FEE_PAYMENT_TYPE,
+    SYSTEM_UNION_FEE_SORT_ORDER,
+};
+
+export type { SalePriceCategory };

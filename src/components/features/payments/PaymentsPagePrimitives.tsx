@@ -1,4 +1,5 @@
-import Link from 'next/link';
+'use client';
+
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import type { PaymentStatus, PersonPaymentSummary } from '@/lib/server/paymentDashboard';
@@ -12,12 +13,33 @@ const formatDate = (value?: string | null) => {
     return date.toLocaleDateString('ko-KR');
 };
 
-export function PersonPaymentRow({ row }: { row: PersonPaymentSummary }) {
+export function PersonPaymentRow({
+    row,
+    onOpenMemberDetail,
+}: {
+    row: PersonPaymentSummary;
+    onOpenMemberDetail: (row: PersonPaymentSummary) => void;
+}) {
+    const unionFeeTone =
+        row.unionFeeStatus === '완납'
+            ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+            : row.unionFeeStatus === '일부납'
+              ? 'border-amber-400/20 bg-amber-500/10 text-amber-200'
+              : row.unionFeeStatus === '미납'
+                ? 'border-rose-400/20 bg-rose-500/10 text-rose-200'
+                : 'border-white/10 bg-white/[0.04] text-slate-300';
+
     return (
         <tr className="align-top hover:bg-white/[0.02]">
             <td className="min-w-[150px] px-3 py-4">
                 <div className="space-y-1.5">
-                    <p className="text-base font-black text-slate-100">{row.name}</p>
+                    <button
+                        type="button"
+                        onClick={() => onOpenMemberDetail(row)}
+                        className="inline-flex text-left text-base font-black text-slate-100 transition-colors hover:text-sky-300"
+                    >
+                        {row.name}
+                    </button>
                     <p className="text-[11px] text-slate-400">{row.phone || '연락처 미입력'}</p>
                 </div>
             </td>
@@ -59,16 +81,36 @@ export function PersonPaymentRow({ row }: { row: PersonPaymentSummary }) {
                 </div>
             </td>
             <td className="min-w-[360px] px-4 py-4">
-                <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-                    <AmountCell label="출자금" value={formatAmount(row.totalInvestment)} tone="investment" />
-                    <AmountCell label="총분담금" value={formatAmount(row.totalContributionDue)} tone="total" />
-                    <AmountCell label="수납액" value={formatAmount(row.totalContributionPaid)} tone="paid" />
-                    <AmountCell
-                        label="미납액"
-                        value={formatAmount(row.totalContributionUnpaid)}
-                        tone={row.totalContributionUnpaid > 0 ? 'unpaid' : 'muted'}
-                        helper={row.additionalBurden > 0 ? `추가부담 ${formatAmount(row.additionalBurden)}` : undefined}
-                    />
+                <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+                        <AmountCell label="출자금" value={formatAmount(row.totalInvestment)} tone="investment" />
+                        <AmountCell label="총분담금" value={formatAmount(row.totalContributionDue)} tone="total" />
+                        <AmountCell label="수납액" value={formatAmount(row.totalContributionPaid)} tone="paid" />
+                        <AmountCell
+                            label="미납액"
+                            value={formatAmount(row.totalContributionUnpaid)}
+                            tone={row.totalContributionUnpaid > 0 ? 'unpaid' : 'muted'}
+                            helper={row.additionalBurden > 0 ? `추가부담 ${formatAmount(row.additionalBurden)}` : undefined}
+                        />
+                    </div>
+                    <div className={cn('flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2', unionFeeTone)}>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">조합비(분담금 포함)</p>
+                            <p className="mt-1 text-xs font-bold">
+                                {row.unionFeeDue > 0 ? '필수 납부 항목' : '평형 배정 후 자동 생성'}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs font-black">{row.unionFeeStatus}</p>
+                            {row.unionFeeDue > 0 ? (
+                                <p className="mt-1 text-[11px] font-semibold">
+                                    {formatAmount(row.unionFeePaid)} / {formatAmount(row.unionFeeDue)}
+                                </p>
+                            ) : (
+                                <p className="mt-1 text-[11px] font-semibold text-slate-300">수납선 미생성</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </td>
             <td className="min-w-[180px] px-4 py-4">
@@ -91,9 +133,13 @@ export function PersonPaymentRow({ row }: { row: PersonPaymentSummary }) {
                 </span>
             </td>
             <td className="px-4 py-4 text-center">
-                <Link href={`/members/${row.id}`} className="inline-flex items-center justify-center rounded-lg border border-sky-400/20 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-200 transition-colors hover:bg-sky-500/20">
+                <button
+                    type="button"
+                    onClick={() => onOpenMemberDetail(row)}
+                    className="inline-flex items-center justify-center rounded-lg border border-sky-400/20 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-200 transition-colors hover:bg-sky-500/20"
+                >
                     개인 상세
-                </Link>
+                </button>
             </td>
         </tr>
     );

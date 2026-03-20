@@ -32,9 +32,9 @@ export async function POST() {
         if (!utData || utData.length === 0) {
             // Insert seed data
             const { error: seedErr } = await supabase.from('unit_types').insert([
-                { name: '59㎡', area_sqm: 59, total_contribution: 160000000, certificate_amount: 30000000, contract_amount: 20000000, installment_1_amount: 50000000, installment_2_amount: 60000000, balance_amount: 0 },
-                { name: '74㎡', area_sqm: 74, total_contribution: 180000000, certificate_amount: 30000000, contract_amount: 20000000, installment_1_amount: 50000000, installment_2_amount: 60000000, balance_amount: 20000000 },
-                { name: '84㎡', area_sqm: 84, total_contribution: 200000000, certificate_amount: 30000000, contract_amount: 20000000, installment_1_amount: 50000000, installment_2_amount: 60000000, balance_amount: 40000000 },
+                { name: '59 Type', area_sqm: 59, total_contribution: 750000000, first_sale_price: 750000000, second_sale_price: 1000000000, general_sale_price: 1100000000, certificate_amount: 30000000, contract_amount: 20000000, installment_1_amount: 50000000, installment_2_amount: 60000000, balance_amount: 0 },
+                { name: '73 Type', area_sqm: 73, total_contribution: 925000000, first_sale_price: 925000000, second_sale_price: 1325000000, general_sale_price: 1475000000, certificate_amount: 30000000, contract_amount: 20000000, installment_1_amount: 50000000, installment_2_amount: 60000000, balance_amount: 20000000 },
+                { name: '84 Type', area_sqm: 84, total_contribution: 999000000, first_sale_price: 999000000, second_sale_price: 1399000000, general_sale_price: 1549000000, certificate_amount: 30000000, contract_amount: 20000000, installment_1_amount: 50000000, installment_2_amount: 60000000, balance_amount: 40000000 },
             ]);
             results.push({ step: 'unit_types seed', ok: !seedErr, error: seedErr?.message });
         } else {
