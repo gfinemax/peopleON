@@ -7,13 +7,13 @@ export const CACHE_TAGS = {
 } as const;
 
 export function revalidateUnifiedMembersTag() {
-    revalidateTag(CACHE_TAGS.unifiedMembers, 'max');
+    revalidateTag(CACHE_TAGS.unifiedMembers, 'page');
 }
 
 export function revalidateActivityFeedTag() {
-    revalidateTag(CACHE_TAGS.activityFeed, 'max');
+    revalidateTag(CACHE_TAGS.activityFeed, 'page');
 }
 
 export function revalidateFinanceTag() {
-    revalidateTag(CACHE_TAGS.finance, 'max');
+    revalidateTag(CACHE_TAGS.finance, 'page');
 }

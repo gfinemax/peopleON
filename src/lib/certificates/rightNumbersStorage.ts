@@ -65,7 +65,11 @@ export const resolveCertificateRight = (right: AssetRightCertificateRow): Resolv
         const normalizedSource = (right.right_number || '').trim() || null;
         const extractedFromRaw = extractConfirmedCertificateNumber(rawValue);
         const confirmedNumber =
-            storedStatus === 'confirmed' ? ((rawValue || normalizedSource || extractedFromRaw || '').trim() || null) : null;
+        storedStatus === 'confirmed'
+            ? ((normalizedSource && (!rawValue || normalizedSource.length > rawValue.length)
+                  ? normalizedSource
+                  : rawValue || normalizedSource || '').trim() || null)
+            : null;
         const normalizedKey =
             storedStatus === 'confirmed'
                 ? normalizeCertificateNumber(normalizedSource || extractedFromRaw || confirmedNumber)

@@ -1,0 +1,94 @@
+{
+  "entity": [
+    {
+      "id": "656e0807-1dda-4568-9078-3053a52df857",
+      "source_party_id": null,
+      "entity_type": "person",
+      "display_name": "김점이",
+      "phone": "010-9101-5448",
+      "id_hash": null,
+      "deposit_account_masked": null,
+      "meta": {
+        "agents": [
+          {
+            "name": "김점이",
+            "phone": "010-9271-5451",
+            "relation": null
+          }
+        ],
+        "survey_25": "참여",
+        "assembly_25": "참석"
+      },
+      "created_at": "2026-02-27T03:10:02.411049+00:00",
+      "updated_at": "2026-03-21T09:10:39.565802+00:00",
+      "email": null,
+      "address_legal": "서울시 동작구 대방동6길2 로얄팰리스 401호",
+      "memo": null,
+      "tags": null,
+      "is_favorite": false,
+      "unit_group": "미정",
+      "status": "정상",
+      "birth_date": null,
+      "phone_secondary": "010-9271-5451"
+    }
+  ],
+  "asset_rights": "{'message': \"Could not find the table 'public.asset_rights' in the schema cache\", 'code': 'PGRST205', 'hint': \"Perhaps you meant the table 'public.audit_logs'\", 'details': None}",
+  "certificate_registry": [
+    {
+      "id": "2a845e72-8303-4bf9-9880-65bad530cdba",
+      "entity_id": "656e0807-1dda-4568-9078-3053a52df857",
+      "certificate_number_raw": "2005-1-6",
+      "certificate_number_normalized": "2005-1-6",
+      "certificate_status": "confirmed",
+      "source_type": "member_number",
+      "source_ref_id": null,
+      "is_confirmed_for_count": true,
+      "is_active": true,
+      "review_status": "auto",
+      "merge_key": null,
+      "note": null,
+      "created_at": "2026-03-11T15:29:48.746989+00:00",
+      "updated_at": "2026-03-11T15:29:48.746989+00:00",
+      "category": "등기조합원",
+      "holding_status": null,
+      "cert_holder_name": null,
+      "cert_date": null,
+      "cert_price": null,
+      "cert_agency": null
+    }
+  ],
+  "membership_roles": [
+    {
+      "id": "eff635f6-ab0a-426c-a130-7e371b719a02",
+      "entity_id": "656e0807-1dda-4568-9078-3053a52df857",
+      "source_member_id": null,
+      "role_code": "등기조합원",
+      "role_status": "active",
+      "is_registered": true,
+      "valid_from": null,
+      "valid_to": null,
+      "note": null,
+      "created_at": "2026-02-27T03:10:02.411049+00:00"
+    },
+    {
+      "id": "2b7f93d9-9d82-4a4a-b805-56899c0020ed",
+      "entity_id": "656e0807-1dda-4568-9078-3053a52df857",
+      "source_member_id": null,
+      "role_code": "권리증보유자",
+      "role_status": "active",
+      "is_registered": false,
+      "valid_from": null,
+      "valid_to": null,
+      "note": null,
+      "created_at": "2026-02-27T11:34:21.36637+00:00"
+    }
+  ],
+  "person_certificate_summaries": "{'message': \"Could not find the table 'public.person_certificate_summaries' in the schema cache\", 'code': 'PGRST205', 'hint': \"Perhaps you meant the table 'public.certificate_registry'\", 'details': None}",
+  "others": [
+    {
+      "id": "656e0807-1dda-4568-9078-3053a52df857",
+      "display_name": "김점이",
+      "phone": "010-9101-5448"
+    }
+  ]
+}

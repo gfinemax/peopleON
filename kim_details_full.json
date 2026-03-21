@@ -1,0 +1,31 @@
+{
+  "id": "656e0807-1dda-4568-9078-3053a52df857",
+  "source_party_id": null,
+  "entity_type": "person",
+  "display_name": "김점이",
+  "phone": "010-9101-5448",
+  "id_hash": null,
+  "deposit_account_masked": null,
+  "meta": {
+    "agents": [
+      {
+        "name": "김점이",
+        "phone": "010-9271-5451",
+        "relation": null
+      }
+    ],
+    "survey_25": "참여",
+    "assembly_25": "참석"
+  },
+  "created_at": "2026-02-27T03:10:02.411049+00:00",
+  "updated_at": "2026-03-21T09:10:39.565802+00:00",
+  "email": null,
+  "address_legal": "서울시 동작구 대방동6길2 로얄팰리스 401호",
+  "memo": null,
+  "tags": null,
+  "is_favorite": false,
+  "unit_group": "미정",
+  "status": "정상",
+  "birth_date": null,
+  "phone_secondary": "010-9271-5451"
+}
