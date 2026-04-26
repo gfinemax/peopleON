@@ -161,6 +161,33 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
     };
 }
 
+export async function fetchAggregationIdentityData(supabase: SupabaseClient) {
+    const [entitiesRes, rolesRes] = await Promise.all([
+        supabase
+            .from('account_entities')
+            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date'),
+        supabase
+            .from('membership_roles')
+            .select('id, entity_id, role_code, role_status, is_registered'),
+    ]);
+
+    const fetchError = entitiesRes.error || rolesRes.error || null;
+
+    if (fetchError) {
+        return {
+            fetchError,
+            entities: [] as AccountEntityRecord[],
+            roles: [] as MembershipRoleRecord[],
+        };
+    }
+
+    return {
+        fetchError: null,
+        entities: ((entitiesRes.data as AccountEntityRecord[] | null) || []),
+        roles: ((rolesRes.data as MembershipRoleRecord[] | null) || []),
+    };
+}
+
 export async function fetchSettlementAmounts(
     supabase: SupabaseClient,
     settlementCases: SettlementCaseRecord[],

@@ -3,14 +3,14 @@ import { MaterialIcon } from '@/components/ui/icon';
 import { createClient } from '@/lib/supabase/server';
 import { BulkSmsWorkspace } from '@/components/features/sms/BulkSmsWorkspace';
 import { getSmsDeliveryMode } from '@/lib/server/smsDelivery';
-import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
+import { getUnifiedMembersLiteSnapshot } from '@/lib/server/unifiedMembersSnapshot';
 import { fetchSmsDashboardData } from '@/lib/server/smsDashboard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SmsPage() {
     const supabase = await createClient();
-    const unifiedPeople = await getUnifiedMembersSnapshot();
+    const unifiedPeople = await getUnifiedMembersLiteSnapshot();
     const deliveryMode = getSmsDeliveryMode();
     const { recipients, history, totalPeople, reachableCount, unpaidCount } = await fetchSmsDashboardData(
         supabase,

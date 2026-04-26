@@ -108,3 +108,30 @@ export async function fetchPersonCertificateSummarySnapshot(supabase: SupabaseCl
         return { available: false, summaries: DEFAULT_SUMMARY_ROWS, rollups: DEFAULT_ROLLUP_ROWS };
     }
 }
+
+export async function fetchPersonCertificateRollupsSnapshot(
+    supabase: SupabaseClient,
+): Promise<PersonCertificateRollupRow[]> {
+    try {
+        const { data, error } = await supabase
+            .from('vw_person_certificate_rollup')
+            .select(
+                'owner_group, owner_count, owner_with_certificate_count, provisional_certificate_count, effective_certificate_count, conflict_certificate_count, manual_locked_count, pending_review_count',
+            )
+            .order('owner_group', { ascending: false });
+
+        if (isMissingRelationError(error)) {
+            return DEFAULT_ROLLUP_ROWS;
+        }
+
+        if (error) {
+            console.error('[personCertificateSummary] rollup fetch failed', error);
+            return DEFAULT_ROLLUP_ROWS;
+        }
+
+        return ((data as Partial<PersonCertificateRollupRow>[] | null) || []).map(normalizeRollupRow);
+    } catch (error) {
+        console.error('[personCertificateSummary] unexpected rollup fetch failure', error);
+        return DEFAULT_ROLLUP_ROWS;
+    }
+}

@@ -5,7 +5,7 @@ import { MembersKpiStrip } from '@/components/features/members/MembersKpiStrip';
 import { DashboardManager } from '@/components/features/members/DashboardManager';
 import { MemberActions } from '@/components/features/members/MemberActions';
 import { MembersDataSection } from '@/components/features/members/MembersPageSections';
-import { fetchPersonCertificateSummarySnapshot } from '@/lib/server/personCertificateSummary';
+import { fetchPersonCertificateRollupsSnapshot } from '@/lib/server/personCertificateSummary';
 import { fetchRecentActivitySummariesSnapshotForPeople } from '@/lib/server/activityFeed';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
 import {
@@ -49,19 +49,26 @@ export default async function MembersPage({
 
     const supabase = await createClient();
 
-    const unifiedPeople = await getUnifiedMembersSnapshot();
-    const personCertificateSnapshot = await fetchPersonCertificateSummarySnapshot(supabase);
-
     // --- Search History Integration ---
-    const matchedEntityIds = new Set<string>();
-    if (query) {
-        const { data, error } = await supabase
+    const matchedLogsPromise = query
+        ? supabase
             .from('interaction_logs')
             .select('entity_id')
-            .ilike('summary', `%${query}%`);
+            .ilike('summary', `%${query}%`)
+        : Promise.resolve({ data: [], error: null });
 
-        if (error) console.error("Search history error:", error);
-        if (data) data.forEach(log => matchedEntityIds.add(log.entity_id));
+    const [unifiedPeople, personCertificateRollups, matchedLogsRes] = await Promise.all([
+        getUnifiedMembersSnapshot(),
+        fetchPersonCertificateRollupsSnapshot(supabase),
+        matchedLogsPromise,
+    ]);
+
+    const matchedEntityIds = new Set<string>();
+    if (matchedLogsRes.error) {
+        console.error("Search history error:", matchedLogsRes.error);
+    }
+    if (matchedLogsRes.data) {
+        matchedLogsRes.data.forEach(log => matchedEntityIds.add(log.entity_id));
     }
     // -----------------------------------
 
@@ -117,7 +124,7 @@ export default async function MembersPage({
         refundSourceDetails,
         duplicateSourceDetails,
     } = buildSourceCertificateSummary(unifiedPeople);
-    const reviewPendingCount = personCertificateSnapshot.rollups.reduce((sum: number, row: any) => sum + row.pending_review_count, 0);
+    const reviewPendingCount = personCertificateRollups.reduce((sum: number, row) => sum + row.pending_review_count, 0);
     const additionalRecruitmentCount = Math.max(TOTAL_HOUSEHOLDS - registeredCount, 0);
     const relationPeople = unifiedPeople.filter(p => p.role_types.includes('agent') || p.role_types.includes('related_party'));
     const agentCount = relationPeople.filter(p => p.role_types.includes('agent')).length;

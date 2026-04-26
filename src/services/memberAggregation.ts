@@ -2,6 +2,7 @@ import { type SupabaseClient } from '@supabase/supabase-js';
 import {
     buildRelationshipMaps,
     fetchAggregationBaseData,
+    fetchAggregationIdentityData,
     fetchSettlementAmounts,
     groupByEntityId,
 } from './memberAggregationData';
@@ -43,6 +44,33 @@ export async function getUnifiedMembers(supabase: SupabaseClient): Promise<{ uni
     });
     const unifiedPeople = mergeUnifiedPeople(rawUnifiedPeople);
     enrichInheritedCertificates(unifiedPeople);
+
+    return { unifiedPeople, fetchError };
+}
+
+export async function getUnifiedMembersLite(
+    supabase: SupabaseClient,
+): Promise<{ unifiedPeople: UnifiedPerson[], fetchError: unknown }> {
+    const {
+        fetchError,
+        entities,
+        roles,
+    } = await fetchAggregationIdentityData(supabase);
+
+    if (fetchError) {
+        return { unifiedPeople: [], fetchError };
+    }
+
+    const rolesByEntity = groupByEntityId(roles);
+    const rawUnifiedPeople = buildRawUnifiedPeople(entities, {
+        rolesByEntity,
+        rightsByEntity: new Map(),
+        latestCaseByEntity: new Map(),
+        finalRefundByCase: new Map(),
+        paidByCase: new Map(),
+        ...buildRelationshipMaps([]),
+    });
+    const unifiedPeople = mergeUnifiedPeople(rawUnifiedPeople);
 
     return { unifiedPeople, fetchError };
 }
