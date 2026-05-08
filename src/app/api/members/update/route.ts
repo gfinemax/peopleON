@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAuditLog } from '@/app/actions/audit';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
+import { AuthorizationError, authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 import {
     buildMemberPatch,
     getTargetIdsFromPayload,
@@ -24,14 +25,7 @@ async function safeCreateAuditLog(actionType: string, targetEntityId?: string, d
 export async function POST(request: Request) {
     try {
         const supabase = await createClient();
-        const {
-            data: { user },
-            error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-        }
+        const { user } = await requireRole(ROLE_GROUPS.opsAdmin, supabase);
 
         const body = (await request.json().catch(() => null)) as MemberUpdatePayload | null;
         const targetIds = getTargetIdsFromPayload(body);
@@ -135,6 +129,10 @@ export async function POST(request: Request) {
             },
         });
     } catch (error) {
+        if (error instanceof AuthorizationError) {
+            return authzErrorResponse(error);
+        }
+
         const message = error instanceof Error ? error.message : '알 수 없는 저장 오류';
         console.error('Members update route error:', error);
         return NextResponse.json({ success: false, error: message }, { status: 500 });

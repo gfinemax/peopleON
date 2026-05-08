@@ -10,7 +10,7 @@ interface LegacyRecord {
     original_name: string;
     rights_count: number;
     source_file: string;
-    raw_data: Record<string, any>;
+    raw_data: Record<string, unknown>;
     created_at: string;
 }
 

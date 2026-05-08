@@ -1,14 +1,15 @@
 'use server';
 
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
+import { requireRole, ROLE_GROUPS } from '@/lib/server/authz';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface DuplicateGroup {
     phone: string;
-    entities: any[];
+    entities: DuplicateEntity[];
 }
 
 export interface DuplicateActionState {
@@ -16,6 +17,23 @@ export interface DuplicateActionState {
     error?: string;
     message?: string;
 }
+
+export type DuplicateMembershipRole = {
+    id?: string;
+    source_member_id?: string | null;
+    role_code?: string | null;
+    role_status?: string | null;
+};
+
+export type DuplicateEntity = {
+    id: string;
+    display_name: string | null;
+    phone: string | null;
+    memo: string | null;
+    tags?: string[] | null;
+    membership_roles?: DuplicateMembershipRole[] | null;
+    certificate_registry?: Array<{ id: string; certificate_number_normalized: string | null }> | null;
+};
 
 function normalizePhone(phone: string | null | undefined): string | null {
     if (!phone) return null;
@@ -26,6 +44,7 @@ function normalizePhone(phone: string | null | undefined): string | null {
 // 중복 의심 그룹 목록 가져오기
 export async function getDuplicateGroups(): Promise<DuplicateGroup[]> {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.admin, supabase);
     
     // 1. 모든 인물 데이터 로드 (필요한 컬럼만)
     const { data: entities, error } = await supabase
@@ -42,7 +61,7 @@ export async function getDuplicateGroups(): Promise<DuplicateGroup[]> {
     }
 
     // 2. 전화번호별 그룹화
-    const byPhone: Record<string, any[]> = {};
+    const byPhone: Record<string, DuplicateEntity[]> = {};
     entities.forEach(e => {
         const np = normalizePhone(e.phone);
         if (!np) return; // 전화번호 없는 경우 제외
@@ -76,11 +95,8 @@ export async function mergeDuplicateEntities(
         return { error: '마스터 ID와 병합할 대상 ID가 필요합니다.' };
     }
 
-    // 관리자 권한을 사용하여 제약 조건 해결 (필요시)
-    const supabaseAdmin = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    await requireRole(ROLE_GROUPS.admin);
+    const supabaseAdmin = createAdminClient();
 
     try {
         let mergedCount = 0;
@@ -95,9 +111,12 @@ export async function mergeDuplicateEntities(
             // 1. membership_roles
             const { data: mRoles } = await supabaseAdmin.from('membership_roles').select('*').eq('entity_id', masterId);
             const { data: sRoles } = await supabaseAdmin.from('membership_roles').select('*').eq('entity_id', slaveId);
-            const masterRoleKeys = new Set((mRoles || []).map(r => `${r.role_code}_${r.role_status}`));
+            const masterRoleKeys = new Set(
+                ((mRoles || []) as DuplicateMembershipRole[]).map((role) => `${role.role_code}_${role.role_status}`),
+            );
             
-            for (const sRole of (sRoles || [])) {
+            for (const sRole of ((sRoles || []) as DuplicateMembershipRole[])) {
+                if (!sRole.id) continue;
                 if (masterRoleKeys.has(`${sRole.role_code}_${sRole.role_status}`)) {
                     await supabaseAdmin.from('membership_roles').delete().eq('id', sRole.id);
                 } else {
@@ -148,8 +167,8 @@ export async function mergeDuplicateEntities(
         revalidateUnifiedMembersTag();
         return { success: true, message: `${mergedCount}건의 레코드가 기본 레코드로 병합되었습니다.` };
 
-    } catch (e) {
-        console.error('Merge Error:', e);
+    } catch (error) {
+        console.error('Merge Error:', error);
         return { error: '병합 처리 중 오류가 발생했습니다.' };
     }
 }
@@ -160,10 +179,8 @@ export async function ignoreDuplicateGroups(entityIds: string[]): Promise<Duplic
         return { error: '제외할 인물 ID가 필요합니다.' };
     }
 
-    const supabaseAdmin = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    await requireRole(ROLE_GROUPS.admin);
+    const supabaseAdmin = createAdminClient();
 
     try {
         for (const id of entityIds) {
@@ -179,8 +196,8 @@ export async function ignoreDuplicateGroups(entityIds: string[]): Promise<Duplic
         revalidatePath('/admin/duplicates');
         revalidateUnifiedMembersTag();
         return { success: true, message: '해당 인물들은 향후 병합 대상에서 제외됩니다.' };
-    } catch (e) {
-        console.error('Ignore error:', e);
+    } catch (error) {
+        console.error('Ignore error:', error);
         return { error: '제외 처리 중 오류가 발생했습니다.' };
     }
 }

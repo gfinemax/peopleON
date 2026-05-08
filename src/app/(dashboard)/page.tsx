@@ -1,5 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/server';
+import type { User } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 
 import {
@@ -28,7 +29,7 @@ function isInvalidRefreshTokenError(error: unknown) {
 
 export default async function DashboardPage() {
     let dashboardData = createEmptyDashboardOverviewData();
-    let currentUser: any = null;
+    let currentUser: User | null = null;
 
     try {
         const supabase = await createClient();

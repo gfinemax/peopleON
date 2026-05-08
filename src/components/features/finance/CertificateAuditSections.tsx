@@ -12,19 +12,6 @@ export {
     CertificateAuditStatisticsSection,
 } from './CertificateAuditReportSections';
 
-type SegmentSummaryRow = {
-    segment: LegacyMemberSegment;
-    ownerCount: number;
-    certificateCount: number;
-};
-
-type RefundedPriorityRow = {
-    id: string;
-    original_name: string;
-    certificate_count: number;
-    contact: string;
-};
-
 type LegacyRecordRow = {
     id: string;
     original_name: string;

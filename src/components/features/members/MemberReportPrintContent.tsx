@@ -4,11 +4,11 @@ import { createPortal } from 'react-dom';
 
 import { PrintConfig } from '@/components/features/members/memberReportPrintTypes';
 import { getMemberReportPrintDate, getSortedPrintData } from '@/components/features/members/memberReportPrintUtils';
+import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 import { cn } from '@/lib/utils';
-import { UnifiedPerson } from '@/services/memberAggregation';
 
 interface MemberReportPrintContentProps {
-    data: UnifiedPerson[];
+    data: MemberExportRow[];
     config: PrintConfig;
 }
 

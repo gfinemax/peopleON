@@ -32,6 +32,13 @@ interface PaymentStatusTabProps {
     isRegistered?: boolean;
 }
 
+type PaymentTabData = {
+    paymentRows: PaymentRecord[];
+    unitTypeRows: UnitType[];
+    accountRows: DepositAccount[];
+    selectedUnitTypeId: string | null;
+};
+
 export function PaymentStatusTab({
     memberIds,
     memberTiers = [],
@@ -48,8 +55,7 @@ export function PaymentStatusTab({
     const [saving, setSaving] = useState(false);
     const [addingPremium, setAddingPremium] = useState(false);
 
-    const fetchAll = useCallback(async () => {
-        setLoading(true);
+    const loadPaymentTabData = useCallback(async (): Promise<PaymentTabData> => {
         const supabase = createClient();
 
         const [paymentsRes, unitTypesRes, accountsRes] = await Promise.all([
@@ -73,21 +79,48 @@ export function PaymentStatusTab({
             }
         }
 
-        setPayments(paymentRows);
-        setUnitTypes(unitTypesRes.data || []);
-        setAccounts(accountsRes.data || []);
-
         const firstPayment = getDisplayPayments(paymentRows).find((payment) => payment.unit_type_id);
-        if (firstPayment?.unit_type_id) {
-            setSelectedUnitTypeId(firstPayment.unit_type_id);
-        }
-
-        setLoading(false);
+        return {
+            paymentRows: paymentRows as PaymentRecord[],
+            unitTypeRows: (unitTypesRes.data || []) as UnitType[],
+            accountRows: (accountsRes.data || []) as DepositAccount[],
+            selectedUnitTypeId: firstPayment?.unit_type_id || null,
+        };
     }, [memberIds]);
 
+    const applyPaymentTabData = (data: PaymentTabData) => {
+        setPayments(data.paymentRows);
+        setUnitTypes(data.unitTypeRows);
+        setAccounts(data.accountRows);
+        if (data.selectedUnitTypeId) {
+            setSelectedUnitTypeId(data.selectedUnitTypeId);
+        }
+        setLoading(false);
+    };
+
+    const fetchAll = useCallback(async () => {
+        applyPaymentTabData(await loadPaymentTabData());
+    }, [loadPaymentTabData]);
+
     useEffect(() => {
-        void fetchAll();
-    }, [fetchAll]);
+        let cancelled = false;
+
+        void (async () => {
+            const data = await loadPaymentTabData();
+            if (cancelled) return;
+            setPayments(data.paymentRows);
+            setUnitTypes(data.unitTypeRows);
+            setAccounts(data.accountRows);
+            if (data.selectedUnitTypeId) {
+                setSelectedUnitTypeId(data.selectedUnitTypeId);
+            }
+            setLoading(false);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [loadPaymentTabData]);
 
     const handleAssignUnitType = async (unitTypeId: string) => {
         setSaving(true);

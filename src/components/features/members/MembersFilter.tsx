@@ -68,8 +68,6 @@ export function MembersFilter({
     relCounts,
     statusCounts,
     relationNames,
-    absoluteTotalCount,
-    filteredCount,
     isDashboardCollapsed,
     onToggleDashboard,
 }: MembersFilterProps) {
@@ -90,7 +88,6 @@ export function MembersFilter({
 
     const [query, setQuery] = useState(searchParams.get('q') || '');
     const debouncedQuery = useDebounce(query, 400);
-    const [tagInput] = useState(searchParams.get('tag') || '');
 
     const roleTabs = useMemo<RoleTab[]>(
         () =>

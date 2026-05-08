@@ -1,5 +1,6 @@
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface MemberProfileSummary {
     display_name: string;
@@ -71,10 +72,12 @@ export function MemberDetailSidebar({
 
                 <div className="flex flex-col items-center text-center mt-4">
                     <div className="relative mb-6">
-                        <div className="size-32 rounded-full overflow-hidden border-4 border-border/30 shadow-2xl transition-transform group-hover:scale-105 duration-500">
-                            <img
+                        <div className="relative size-32 rounded-full overflow-hidden border-4 border-border/30 shadow-2xl transition-transform group-hover:scale-105 duration-500">
+                            <Image
                                 src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.display_name}`}
                                 alt={member.display_name}
+                                fill
+                                sizes="128px"
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -97,10 +100,12 @@ export function MemberDetailSidebar({
                     <h3 className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider mb-6 px-1">세대 구성원</h3>
                     {representative ? (
                         <div className="flex items-center gap-4 rounded-xl bg-[#0F1115] px-5 py-6 border border-border/10 group/member hover:border-primary/30 transition-all">
-                            <div className="size-12 rounded-full overflow-hidden border border-white/10 shadow-inner">
-                                <img
+                            <div className="relative size-12 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                                <Image
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${representative.name}`}
                                     alt="member"
+                                    fill
+                                    sizes="48px"
                                     className="w-full h-full bg-white/5"
                                 />
                             </div>

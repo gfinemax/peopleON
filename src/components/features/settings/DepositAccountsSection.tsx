@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
@@ -30,17 +30,32 @@ export function DepositAccountsSection() {
         setForm({});
     };
 
-    const fetchAll = async () => {
-        setLoading(true);
+    const loadAccounts = useCallback(async () => {
         const supabase = createClient();
         const { data } = await supabase.from('deposit_accounts').select('*').eq('is_active', true).order('account_type');
+        return (data || []) as DepositAccount[];
+    }, []);
+
+    const fetchAll = useCallback(async () => {
+        const data = await loadAccounts();
         setAccounts(data || []);
         setLoading(false);
-    };
+    }, [loadAccounts]);
 
     useEffect(() => {
-        void fetchAll();
-    }, []);
+        let cancelled = false;
+
+        void (async () => {
+            const data = await loadAccounts();
+            if (cancelled) return;
+            setAccounts(data);
+            setLoading(false);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [loadAccounts]);
 
     const startEdit = (account?: DepositAccount) => {
         setEditingId(account?.id || 'new');

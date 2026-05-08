@@ -1,29 +1,25 @@
 'use client';
 
-import { useActionState, useState, useEffect, Suspense } from 'react';
+import { useActionState, useState, Suspense, useSyncExternalStore } from 'react';
 import { updatePassword, AuthState } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { MaterialIcon } from '@/components/ui/icon';
+import { useHydrated } from '@/lib/hooks/useHydrated';
+
+const subscribeToHash = () => () => {};
+const getHashSnapshot = () => window.location.hash;
+const getServerHashSnapshot = () => null;
 
 function ResetPasswordForm() {
     const [state, formAction, isPending] = useActionState<AuthState, FormData>(updatePassword, {});
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { theme, setTheme } = useTheme();
-
-    // Check if we have the necessary tokens from the URL
-    const [isValidSession, setIsValidSession] = useState(false);
-    const [isChecking, setIsChecking] = useState(true);
-
-    useEffect(() => {
-        // Supabase redirects with tokens in the URL hash
-        const hash = window.location.hash;
-        const hasAccessToken = hash.includes('access_token') || hash.includes('type=recovery');
-
-        setIsValidSession(hasAccessToken || hash.length > 1);
-        setIsChecking(false);
-    }, []);
+    const mounted = useHydrated();
+    const hash = useSyncExternalStore(subscribeToHash, getHashSnapshot, getServerHashSnapshot);
+    const isChecking = !mounted || hash === null;
+    const isValidSession = Boolean(hash && (hash.includes('access_token') || hash.includes('type=recovery') || hash.length > 1));
 
     if (isChecking) {
         return (
@@ -227,7 +223,7 @@ export default function ResetPasswordPage() {
         <Suspense fallback={
             <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 bg-pattern-dark dark:bg-pattern-dark bg-gradient-light">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                    <MaterialIcon name="progress_activity" />
                     <span>로딩 중...</span>
                 </div>
             </div>

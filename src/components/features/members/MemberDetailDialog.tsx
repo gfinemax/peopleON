@@ -60,7 +60,7 @@ export function MemberDetailDialog({
     const [activeTab, setActiveTab] = useState<TabType>('info');
     const [rightInput, setRightInput] = useState('');
     const [isAddingRight, setIsAddingRight] = useState(false);
-    const [conflictRightNumbers, setConflictRightNumbers] = useState<string[]>([]);
+    const [conflictRightNumbers] = useState<string[]>([]);
     const [deletedRightsIds, setDeletedRightsIds] = useState<string[]>([]);
     const [isSsnRevealed, setIsSsnRevealed] = useState(false);
     const [selectedRightIds, setSelectedRightIds] = useState<string[]>([]);

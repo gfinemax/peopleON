@@ -7,10 +7,10 @@ import { MemberCreateDialog } from "./MemberCreateDialog"
 import { MemberBulkUploadDialog } from "./MemberBulkUploadDialog"
 import { MembersExportDialog } from "./MembersExportDialog"
 import { ResidentRegistryImportDialog } from "./ResidentRegistryImportDialog"
-import type { UnifiedPerson } from "@/services/memberAggregation"
+import type { MemberExportRow } from "./memberExportTypes"
 
 interface MemberActionsProps {
-    data: UnifiedPerson[]
+    data: MemberExportRow[]
 }
 
 export function MemberActions({ data }: MemberActionsProps) {

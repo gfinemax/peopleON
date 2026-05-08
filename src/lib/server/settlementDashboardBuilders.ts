@@ -72,21 +72,26 @@ export function filterSettlementRows(
 }
 
 export function buildSettlementDiagnostics(rows: SettlementDashboardRow[]) {
-    const unlinkedCount = rows.filter((row) => row.ownership.owner_type === 'unlinked').length;
-    const zeroFinalRefundCount = rows.filter((row) => row.expected <= 0).length;
-    const paidStatusMismatchCount = rows.filter(
-        (row) => row.settlementCase.case_status === 'paid' && row.remaining > 0,
-    ).length;
-    const shouldBePaidCount = rows.filter(
-        (row) =>
+    let unlinkedCount = 0;
+    let zeroFinalRefundCount = 0;
+    let paidStatusMismatchCount = 0;
+    let shouldBePaidCount = 0;
+    let rejectedWithAmountCount = 0;
+
+    for (const row of rows) {
+        if (row.ownership.owner_type === 'unlinked') unlinkedCount += 1;
+        if (row.expected <= 0) zeroFinalRefundCount += 1;
+        if (row.settlementCase.case_status === 'paid' && row.remaining > 0) paidStatusMismatchCount += 1;
+        if (
             row.expected > 0 &&
             row.remaining <= 0 &&
             row.settlementCase.case_status !== 'paid' &&
-            row.settlementCase.case_status !== 'rejected',
-    ).length;
-    const rejectedWithAmountCount = rows.filter(
-        (row) => row.settlementCase.case_status === 'rejected' && row.expected > 0,
-    ).length;
+            row.settlementCase.case_status !== 'rejected'
+        ) {
+            shouldBePaidCount += 1;
+        }
+        if (row.settlementCase.case_status === 'rejected' && row.expected > 0) rejectedWithAmountCount += 1;
+    }
 
     const diagnostics: SettlementDiagnostic[] = [
         {

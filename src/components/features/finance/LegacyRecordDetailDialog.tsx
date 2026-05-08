@@ -61,8 +61,7 @@ export function LegacyRecordDetailDialog({
         });
     };
 
-    async function fetchRecord(id: string) {
-        setLoading(true);
+    async function loadRecord(id: string) {
         const supabase = createClient();
 
         const { data, error } = await supabase
@@ -73,7 +72,7 @@ export function LegacyRecordDetailDialog({
 
         if (!error && data) {
             const meta = (data.meta || {}) as Record<string, unknown>;
-            setRecord({
+            return {
                 id: data.id,
                 original_name: typeof meta.cert_name === 'string' ? meta.cert_name : '-',
                 rights_count: 1,
@@ -85,18 +84,37 @@ export function LegacyRecordDetailDialog({
                 is_refunded: data.status === 'refunded',
                 created_at: data.created_at,
                 certificates: data.right_number,
-            });
+            };
         }
 
-        setLoading(false);
+        return null;
     }
 
     useEffect(() => {
         if (!open || !recordId) return;
-        setPosition({ x: 0, y: 0 });
-        setActiveTab('info');
-        fetchRecord(recordId);
+        let cancelled = false;
+
+        void (async () => {
+            const nextRecord = await loadRecord(recordId);
+            if (cancelled) return;
+            setRecord(nextRecord);
+            setLoading(false);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [open, recordId]);
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen) {
+            setPosition({ x: 0, y: 0 });
+            setActiveTab('info');
+            setRecord(null);
+            setLoading(false);
+        }
+        onOpenChange(nextOpen);
+    };
 
     if (!record && !loading) return null;
 
@@ -105,7 +123,7 @@ export function LegacyRecordDetailDialog({
         : [];
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
                 className="w-full h-full max-w-none max-h-none h-screen sm:h-auto sm:max-h-[85vh] sm:max-w-2xl p-0 border-0 sm:border sm:border-white/[0.1] bg-[#0F151B] rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-xl sm:top-[12vh] sm:translate-y-0"
                 style={{

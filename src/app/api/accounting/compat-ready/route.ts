@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 type Severity = 'pass' | 'fail';
-type LegacyRoleType = 'member' | 'certificate_holder' | 'related_party' | 'refund_applicant';
 type NormalizedRoleType = 'member' | 'certificate_holder' | 'related_party';
 
 type CheckItem = {
@@ -36,9 +35,7 @@ type CompatReadyPayload = {
 
 type PartyProfileRow = { id: string };
 type AccountEntityRow = { id: string; source_party_id: string | null };
-type LegacyRoleRow = { role_type: LegacyRoleType; role_status: string };
 type CompatRoleRow = { entity_id: string; role_code: string; role_status: string };
-type LegacyCertificateRow = { holder_party_id: string | null; certificate_number: string; status: string | null };
 type CompatCertificateRow = { entity_id: string; certificate_number: string; status: string | null };
 
 function parseAllowedRoles() {
@@ -56,12 +53,6 @@ function extractUserRole(user: {
     const appRole = typeof user.app_metadata?.role === 'string' ? user.app_metadata.role : '';
     const userRole = typeof user.user_metadata?.role === 'string' ? user.user_metadata.role : '';
     return (appRole || userRole || '').trim().toLowerCase();
-}
-
-function normalizeLegacyRoleType(roleType: LegacyRoleType): NormalizedRoleType | null {
-    if (roleType === 'refund_applicant') return 'certificate_holder';
-    if (roleType === 'member' || roleType === 'certificate_holder' || roleType === 'related_party') return roleType;
-    return null;
 }
 
 function mapCompatRoleCode(roleCode: string): NormalizedRoleType | null {

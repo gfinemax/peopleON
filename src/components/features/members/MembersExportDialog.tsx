@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { MaterialIcon } from '@/components/ui/icon';
 import { exportToExcel, ExportColumn } from './MemberExportExcel';
-import { UnifiedPerson } from '@/services/memberAggregation';
+import type { MemberExportRow } from './memberExportTypes';
 import { cn } from '@/lib/utils';
 
 interface MembersExportDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    data: UnifiedPerson[];
+    data: MemberExportRow[];
 }
 
 const AVAILABLE_COLUMNS = [

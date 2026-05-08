@@ -7,6 +7,11 @@ type LegacyRecord = {
     meta: unknown;
 };
 
+type AssetRightLegacyRecord = {
+    entity_id: string;
+    meta: Record<string, unknown> | null;
+};
+
 type MemberPatchPayload = {
     address_legal?: string;
     memo?: string;
@@ -46,11 +51,12 @@ export async function GET(request: Request) {
 
         // 2. Process records (Deduplicate by entity_id)
         const memberMap = new Map<string, LegacyRecord>();
-        for (const row of (records as any[] | null) || []) {
+        for (const row of ((records as AssetRightLegacyRecord[] | null) || [])) {
+            const meta = row.meta || {};
             memberMap.set(row.entity_id, {
                 entity_id: row.entity_id,
-                meta: row.meta,
-                original_name: row.meta?.cert_name || '-'
+                meta,
+                original_name: typeof meta.cert_name === 'string' ? meta.cert_name : '-'
             });
         }
 

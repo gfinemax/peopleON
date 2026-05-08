@@ -3,13 +3,14 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAuditLog } from '@/app/actions/audit';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
+import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    try {
+        await requireRole(ROLE_GROUPS.opsAdmin, supabase);
+    } catch (error) {
+        return authzErrorResponse(error);
     }
 
     const body = await request.json().catch(() => null);
@@ -128,8 +129,9 @@ export async function POST(request: Request) {
         revalidatePath('/members');
         revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true });
-    } catch (e: any) {
-        console.error('Inline update failed:', e);
-        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    } catch (error: unknown) {
+        console.error('Inline update failed:', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

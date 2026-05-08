@@ -20,10 +20,25 @@ interface MemberBulkUploadDialogProps {
     onOpenChange: (open: boolean) => void
 }
 
+type BulkUploadMember = {
+    name: string;
+    phone: string;
+    member_number: string;
+    right_number: string;
+    tier: string;
+    unit_group: string;
+    address_legal: string;
+    memo: string;
+};
+
+type SpreadsheetRow = Record<string, unknown>;
+
+const cellToString = (value: unknown) => (value == null ? "" : String(value));
+
 export function MemberBulkUploadDialog({ open, onOpenChange }: MemberBulkUploadDialogProps) {
     const router = useRouter()
     const [loading, setLoading] = React.useState(false)
-    const [parsedData, setParsedData] = React.useState<any[]>([])
+    const [parsedData, setParsedData] = React.useState<BulkUploadMember[]>([])
     const [fileName, setFileName] = React.useState("")
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,18 +52,18 @@ export function MemberBulkUploadDialog({ open, onOpenChange }: MemberBulkUploadD
             const wb = XLSX.read(bstr, { type: "binary" })
             const wsname = wb.SheetNames[0]
             const ws = wb.Sheets[wsname]
-            const data = XLSX.utils.sheet_to_json(ws)
+            const data = XLSX.utils.sheet_to_json<SpreadsheetRow>(ws)
 
             // Basic mapping/cleaning
-            const mapped = data.map((row: any) => ({
-                name: row["성명"] || row["이름"] || row["Name"],
-                phone: row["연락처"] || row["전화번호"] || row["Phone"],
-                member_number: row["번호"] || row["회원번호"] || row["Number"],
-                right_number: row["권리증"] || row["권리증번호"] || row["권칙"] || row["No"] || row["증서"] || row["Right"],
-                tier: row["구분"] || row["등급"] || row["Tier"] || "예비조합원",
-                unit_group: row["그룹"] || row["동호수"] || row["Group"],
-                address_legal: row["주소"] || row["Address"],
-                memo: row["메모"] || row["특이사항"] || row["Memo"]
+            const mapped = data.map((row) => ({
+                name: cellToString(row["성명"] || row["이름"] || row["Name"]),
+                phone: cellToString(row["연락처"] || row["전화번호"] || row["Phone"]),
+                member_number: cellToString(row["번호"] || row["회원번호"] || row["Number"]),
+                right_number: cellToString(row["권리증"] || row["권리증번호"] || row["권칙"] || row["No"] || row["증서"] || row["Right"]),
+                tier: cellToString(row["구분"] || row["등급"] || row["Tier"] || "예비조합원"),
+                unit_group: cellToString(row["그룹"] || row["동호수"] || row["Group"]),
+                address_legal: cellToString(row["주소"] || row["Address"]),
+                memo: cellToString(row["메모"] || row["특이사항"] || row["Memo"])
             })).filter(m => m.name) // name is required
 
             setParsedData(mapped)
@@ -77,7 +92,7 @@ export function MemberBulkUploadDialog({ open, onOpenChange }: MemberBulkUploadD
             } else {
                 alert(data.error || "등록 중 오류가 발생했습니다.")
             }
-        } catch (error) {
+        } catch {
             alert("등록 중 오류가 발생했습니다.")
         } finally {
             setLoading(false)

@@ -69,9 +69,10 @@ export function InlineCellDropdown({
         setIsLoading(true);
         try {
             await onSelect(value);
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            alert(`업데이트 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+            const message = error instanceof Error ? error.message : '알 수 없는 오류';
+            alert(`업데이트 중 오류가 발생했습니다: ${message}`);
         } finally {
             setIsLoading(false);
         }

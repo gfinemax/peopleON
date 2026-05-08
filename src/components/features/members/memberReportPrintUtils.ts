@@ -1,6 +1,5 @@
-import { UnifiedPerson } from '@/services/memberAggregation';
-
 import { PrintConfig } from '@/components/features/members/memberReportPrintTypes';
+import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 
 export const DEFAULT_PRINT_CONFIG: PrintConfig = {
     orientation: 'portrait',
@@ -24,10 +23,10 @@ export function getMemberReportPrintDate() {
     return `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 }
 
-export function getSortedPrintData(data: UnifiedPerson[], config: PrintConfig) {
+export function getSortedPrintData(data: MemberExportRow[], config: PrintConfig) {
     return [...data].sort((leftPerson, rightPerson) => {
-        let leftValue: unknown = leftPerson[config.sortBy as keyof UnifiedPerson];
-        let rightValue: unknown = rightPerson[config.sortBy as keyof UnifiedPerson];
+        let leftValue: unknown = leftPerson[config.sortBy as keyof MemberExportRow];
+        let rightValue: unknown = rightPerson[config.sortBy as keyof MemberExportRow];
 
         if (config.sortBy === 'no') {
             leftValue = leftPerson.id;

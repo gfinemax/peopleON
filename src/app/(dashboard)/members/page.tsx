@@ -5,6 +5,7 @@ import { MembersKpiStrip } from '@/components/features/members/MembersKpiStrip';
 import { DashboardManager } from '@/components/features/members/DashboardManager';
 import { MemberActions } from '@/components/features/members/MemberActions';
 import { MembersDataSection } from '@/components/features/members/MembersPageSections';
+import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 import { fetchPersonCertificateRollupsSnapshot } from '@/lib/server/personCertificateSummary';
 import { fetchRecentActivitySummariesSnapshotForPeople } from '@/lib/server/activityFeed';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
@@ -29,6 +30,40 @@ import {
 
 export const dynamic = 'force-dynamic';
 const TOTAL_HOUSEHOLDS = 254;
+const MIN_LOG_SEARCH_QUERY_LENGTH = 2;
+const LOG_SEARCH_RESULT_LIMIT = 2000;
+
+function toMemberExportRow(person: {
+    id: string;
+    name: string;
+    phone: string | null;
+    certificate_numbers?: string[];
+    tier: string | null;
+    tiers?: string[];
+    unit_group: string | null;
+    address_legal?: string | null;
+    status: string | null;
+    role_types?: string[];
+    notes?: string | null;
+    raw_certificate_count: number;
+    managed_certificate_count: number;
+}): MemberExportRow {
+    return {
+        id: person.id,
+        name: person.name,
+        phone: person.phone,
+        certificate_numbers: person.certificate_numbers,
+        tier: person.tier,
+        tiers: person.tiers,
+        unit_group: person.unit_group,
+        address_legal: person.address_legal,
+        status: person.status,
+        role_types: person.role_types,
+        notes: person.notes,
+        raw_certificate_count: person.raw_certificate_count,
+        managed_certificate_count: person.managed_certificate_count,
+    };
+}
 
 export default async function MembersPage({
     searchParams,
@@ -50,11 +85,13 @@ export default async function MembersPage({
     const supabase = await createClient();
 
     // --- Search History Integration ---
-    const matchedLogsPromise = query
+    const shouldSearchInteractionLogs = query.length >= MIN_LOG_SEARCH_QUERY_LENGTH;
+    const matchedLogsPromise = shouldSearchInteractionLogs
         ? supabase
             .from('interaction_logs')
             .select('entity_id')
             .ilike('summary', `%${query}%`)
+            .limit(LOG_SEARCH_RESULT_LIMIT)
         : Promise.resolve({ data: [], error: null });
 
     const [unifiedPeople, personCertificateRollups, matchedLogsRes] = await Promise.all([
@@ -108,9 +145,9 @@ export default async function MembersPage({
 
     const { relationNames, relCounts } = getRelationFilterData(unifiedPeople);
 
-    const totalExpectedRefund = unifiedPeople.reduce((sum: number, p: any) => sum + p.settlement_expected, 0);
-    const totalPaidRefund = unifiedPeople.reduce((sum: number, p: any) => sum + p.settlement_paid, 0);
-    const totalRemainingRefund = unifiedPeople.reduce((sum: number, p: any) => sum + p.settlement_remaining, 0);
+    const totalExpectedRefund = unifiedPeople.reduce((sum, person) => sum + person.settlement_expected, 0);
+    const totalPaidRefund = unifiedPeople.reduce((sum, person) => sum + person.settlement_paid, 0);
+    const totalRemainingRefund = unifiedPeople.reduce((sum, person) => sum + person.settlement_remaining, 0);
     const registeredCount = unifiedPeople.filter(p => p.is_registered).length;
     const {
         registeredInternalDistinctCount,
@@ -132,6 +169,8 @@ export default async function MembersPage({
     const relationPeopleCount = agentCount + relationOtherCount;
 
     const statusCounts = getStatusCounts(unifiedPeople);
+    const allExportRows = unifiedPeople.map(toMemberExportRow);
+    const filteredExportRows = filteredPeople.map(toMemberExportRow);
 
     const topRemaining = [...unifiedPeople]
         .filter(p => isSettlementTarget(p) && p.settlement_remaining > 0)
@@ -150,7 +189,7 @@ export default async function MembersPage({
                         <span className="text-[10px] font-bold text-muted-foreground">· 조회 <span className="text-primary">{totalCount.toLocaleString()}</span></span>
                     </div>
                 )}
-                rightContent={<MemberActions data={unifiedPeople} />}
+                rightContent={<MemberActions data={allExportRows} />}
             />
 
             <DashboardManager
@@ -195,7 +234,7 @@ export default async function MembersPage({
             >
                 <MembersDataSection
                     displayedMembers={displayedMembers}
-                    filteredPeople={filteredPeople}
+                    exportRows={filteredExportRows}
                     paramsKey={JSON.stringify(params)}
                     startIndex={from}
                     reviewPendingCount={reviewPendingCount}

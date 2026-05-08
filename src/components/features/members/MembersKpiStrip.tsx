@@ -56,6 +56,8 @@ export function MembersKpiStrip({
                     unit="세대"
                     pillText={`조합원 ${ratio(households.members, households.total)}%`}
                     pillClassName="border-sky-400/20 bg-sky-500/10 text-sky-200"
+                    accentClassName="bg-gradient-to-r from-success to-primary"
+                    iconTileClassName="border-success/25 bg-success/15 text-success"
                     segments={householdSegments}
                 />
 
@@ -76,6 +78,8 @@ export function MembersKpiStrip({
                     unit="명"
                     pillText={`관계자 ${formatCount(relations.total, '명')}`}
                     pillClassName="border-emerald-400/20 bg-emerald-500/10 text-emerald-200"
+                    accentClassName="bg-gradient-to-r from-primary to-blue-400"
+                    iconTileClassName="border-primary/25 bg-primary/15 text-primary"
                     segments={relationSegments}
                 />
             </div>

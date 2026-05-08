@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
+import { FormEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -18,7 +18,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle, Loader2 } from 'lucide-react';
@@ -26,15 +25,26 @@ import { logInteraction } from '@/app/actions/interaction';
 
 export function LogInteractionDialog({ memberId }: { memberId: string }) {
     const [open, setOpen] = useState(false);
-    const [state, formAction, isPending] = useActionState(logInteraction, {});
+    const [error, setError] = useState<string | null>(null);
+    const [isPending, setIsPending] = useState(false);
 
-    // Close dialog on success
-    useEffect(() => {
-        if (state.success) {
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (isPending) return;
+
+        setIsPending(true);
+        setError(null);
+
+        const result = await logInteraction({}, new FormData(event.currentTarget));
+        setIsPending(false);
+
+        if (result.success) {
             setOpen(false);
-            // Reset logic if needed, but state is immutable here usually
+            event.currentTarget.reset();
+        } else {
+            setError(result.error || '저장에 실패했습니다.');
         }
-    }, [state.success]);
+    };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -52,7 +62,7 @@ export function LogInteractionDialog({ memberId }: { memberId: string }) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <form action={formAction} className="grid gap-4 py-4">
+                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     <input type="hidden" name="memberId" value={memberId} />
 
                     <div className="grid grid-cols-2 gap-4">
@@ -94,8 +104,8 @@ export function LogInteractionDialog({ memberId }: { memberId: string }) {
                         />
                     </div>
 
-                    {state.error && (
-                        <p className="text-sm text-red-500">{state.error}</p>
+                    {error && (
+                        <p className="text-sm text-red-500">{error}</p>
                     )}
 
                     <DialogFooter>

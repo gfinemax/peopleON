@@ -68,6 +68,12 @@ type RefundPaymentRecord = {
     payment_status: 'requested' | 'paid' | 'failed' | 'cancelled';
 };
 
+type SettlementCaseAmountSummaryRecord = {
+    case_id: string;
+    expected: number | string | null;
+    paid: number | string | null;
+};
+
 export type RelationshipLookupRecord = {
     to_entity_id: string;
     from_entity_id: string;
@@ -110,6 +116,22 @@ export const groupByEntityId = <T extends { entity_id: string }>(items: T[]) => 
     return grouped;
 };
 
+async function fetchLatestSettlementCases(supabase: SupabaseClient) {
+    const latestCasesRes = await supabase
+        .from('vw_latest_settlement_case_by_entity')
+        .select('id, entity_id, case_status, created_at')
+        .order('created_at', { ascending: false });
+
+    if (!latestCasesRes.error) {
+        return latestCasesRes;
+    }
+
+    return supabase
+        .from('settlement_cases')
+        .select('id, entity_id, case_status, created_at')
+        .order('created_at', { ascending: false });
+}
+
 export async function fetchAggregationBaseData(supabase: SupabaseClient) {
     const [entitiesRes, rolesRes, rightsRes, casesRes, relsRes] = await Promise.all([
         supabase
@@ -122,10 +144,7 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
             .from('certificate_registry')
             .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count')
             .eq('is_active', true),
-        supabase
-            .from('settlement_cases')
-            .select('id, entity_id, case_status, created_at')
-            .order('created_at', { ascending: false }),
+        fetchLatestSettlementCases(supabase),
         supabase
             .from('entity_relationships')
             .select('to_entity_id, from_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name), owner_entity:account_entities!to_entity_id(display_name)')
@@ -206,6 +225,23 @@ export async function fetchSettlementAmounts(
             finalRefundByCase: new Map<string, number>(),
             paidByCase: new Map<string, number>(),
         };
+    }
+
+    const { data: summaryData, error: summaryError } = await supabase
+        .from('vw_settlement_case_amount_summary')
+        .select('case_id, expected, paid')
+        .in('case_id', latestCaseIds);
+
+    if (!summaryError) {
+        const finalRefundByCase = new Map<string, number>();
+        const paidByCase = new Map<string, number>();
+
+        for (const row of (summaryData as SettlementCaseAmountSummaryRecord[] | null) || []) {
+            finalRefundByCase.set(row.case_id, parseMoney(row.expected));
+            paidByCase.set(row.case_id, parseMoney(row.paid));
+        }
+
+        return { latestCaseByEntity, finalRefundByCase, paidByCase };
     }
 
     const [linesRes, paymentsRes] = await Promise.all([

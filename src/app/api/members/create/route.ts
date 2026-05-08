@@ -2,9 +2,15 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { classifyCertificateInput } from '@/lib/certificates/rightNumbers';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
+import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
+    try {
+        await requireRole(ROLE_GROUPS.financeAdmin, supabase);
+    } catch (error) {
+        return authzErrorResponse(error);
+    }
 
     const body = await request.json().catch(() => null);
     if (!body || !body.name) {
@@ -97,9 +103,9 @@ export async function POST(request: Request) {
 
         revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true, id: entity.id });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating member:', error);
-        const message = error?.message || 'Unknown error';
+        const message = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

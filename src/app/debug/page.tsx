@@ -1,13 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
+import { requirePageRole, ROLE_GROUPS } from '@/lib/server/authz';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DebugPage() {
+    await requirePageRole(ROLE_GROUPS.admin);
+
     const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     let connectionResult = 'Not tested';
-    let connectionError = null;
+    let connectionError: string | null = null;
     let details = '';
 
     try {
@@ -23,10 +26,12 @@ export default async function DebugPage() {
             connectionResult = 'Success';
             details = `Connected to Supabase successfully. Member count access: ${count ?? 'Allowed'}`;
         }
-    } catch (e: any) {
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        const stack = error instanceof Error ? error.stack : undefined;
         connectionResult = 'Exception (Network/Config)';
-        connectionError = e.message;
-        details = e.stack || JSON.stringify(e);
+        connectionError = message;
+        details = stack || JSON.stringify(error);
     }
 
     return (
@@ -47,7 +52,7 @@ export default async function DebugPage() {
                         <div className="font-mono text-xs break-all bg-black p-2 rounded">
                             {sbUrl ? (
                                 <>
-                                    "{sbUrl}"
+                                    &quot;{sbUrl}&quot;
                                     <div className="mt-1 text-slate-500">
                                         Lengths: {sbUrl.length} chars
                                         <br />

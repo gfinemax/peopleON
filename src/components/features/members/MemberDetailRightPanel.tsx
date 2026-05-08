@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { ActivityTimelineTab } from './ActivityTimelineTab';
-import { AssetRightsCard } from './AssetRightsCard';
+import { AssetRightsCard, type AssetRight } from './AssetRightsCard';
 
 interface MemberDetailRightPanelProps {
     memberId: string;
-    assetRights: any[];
+    assetRights: AssetRight[];
 }
 
 type TabType = 'activity' | 'financials' | 'documents';

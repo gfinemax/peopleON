@@ -10,10 +10,27 @@ function isInvalidRefreshTokenError(error: unknown) {
     return message.includes('Invalid Refresh Token') || message.includes('Refresh Token Not Found');
 }
 
+function isMissingAuthSessionError(error: unknown) {
+    const message =
+        typeof error === 'object' && error && 'message' in error
+            ? String((error as { message?: unknown }).message || '')
+            : '';
+
+    return message.includes('Auth session missing');
+}
+
 function buildLoginRedirect(request: NextRequest) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return loginUrl;
+}
+
+function buildUnauthorizedResponse(request: NextRequest) {
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    return NextResponse.redirect(buildLoginRedirect(request));
 }
 
 function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
@@ -31,7 +48,7 @@ function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) 
 
 export async function proxy(request: NextRequest) {
     // Public paths that don't require authentication
-    const publicPaths = ['/login', '/signup', '/forgot-password', '/debug'];
+    const publicPaths = ['/login', '/signup', '/forgot-password'];
     const isPublicPath = publicPaths.some(path =>
         request.nextUrl.pathname.startsWith(path)
     );
@@ -80,10 +97,14 @@ export async function proxy(request: NextRequest) {
         } = await supabase.auth.getUser();
 
         if (authError) {
+            if (isMissingAuthSessionError(authError)) {
+                return buildUnauthorizedResponse(request);
+            }
+
             if (isInvalidRefreshTokenError(authError)) {
-                const redirectResponse = NextResponse.redirect(buildLoginRedirect(request));
-                clearSupabaseAuthCookies(request, redirectResponse);
-                return redirectResponse;
+                const unauthorizedResponse = buildUnauthorizedResponse(request);
+                clearSupabaseAuthCookies(request, unauthorizedResponse);
+                return unauthorizedResponse;
             }
 
             throw authError;
@@ -91,20 +112,23 @@ export async function proxy(request: NextRequest) {
 
         // If user is not authenticated, redirect to login
         if (!user) {
-            return NextResponse.redirect(buildLoginRedirect(request));
+            return buildUnauthorizedResponse(request);
         }
 
         return response;
     } catch (error) {
-        if (isInvalidRefreshTokenError(error)) {
-            const redirectResponse = NextResponse.redirect(buildLoginRedirect(request));
-            clearSupabaseAuthCookies(request, redirectResponse);
-            return redirectResponse;
+        if (isMissingAuthSessionError(error)) {
+            return buildUnauthorizedResponse(request);
         }
 
-        // On error, allow access (fail-open for development)
+        if (isInvalidRefreshTokenError(error)) {
+            const unauthorizedResponse = buildUnauthorizedResponse(request);
+            clearSupabaseAuthCookies(request, unauthorizedResponse);
+            return unauthorizedResponse;
+        }
+
         console.error('Proxy auth error:', error);
-        return NextResponse.next();
+        return buildUnauthorizedResponse(request);
     }
 }
 
@@ -116,8 +140,7 @@ export const config = {
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
          * - public files (images, etc.)
-         * - api routes
          */
-        '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
     ],
 };

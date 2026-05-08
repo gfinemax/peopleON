@@ -1,12 +1,12 @@
 import * as XLSX from "xlsx"
-import { UnifiedPerson } from "@/services/memberAggregation"
+import type { MemberExportRow } from "./memberExportTypes"
 
 export interface ExportColumn {
     id: string;
     label: string;
 }
 
-export function exportToExcel(data: UnifiedPerson[], columns: ExportColumn[]) {
+export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) {
     if (!data || data.length === 0 || !columns || columns.length === 0) return
 
     // Map unified person data to a flat object for Excel based on selected columns
@@ -36,14 +36,13 @@ export function exportToExcel(data: UnifiedPerson[], columns: ExportColumn[]) {
                     row[col.label] = p.unit_group || '';
                     break;
                 case 'address':
-                    // In UnifiedPerson, maybe meta.address_legal exists, or just address
-                    row[col.label] = (p as any).address_legal || (p.meta?.address_legal as string) || '';
+                    row[col.label] = p.address_legal || '';
                     break;
                 case 'status':
                     row[col.label] = p.status || '';
                     break;
                 case 'memo':
-                    row[col.label] = p.notes || (p as any).memo || '';
+                    row[col.label] = p.notes || '';
                     break;
                 case 'roles':
                     row[col.label] = p.role_types?.join(', ') || '';

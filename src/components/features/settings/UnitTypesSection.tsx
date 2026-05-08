@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
@@ -29,17 +29,32 @@ export function UnitTypesSection() {
         setForm({});
     };
 
-    const fetchAll = async () => {
-        setLoading(true);
+    const loadUnitTypes = useCallback(async () => {
         const supabase = createClient();
         const { data } = await supabase.from('unit_types').select('*').eq('is_active', true).order('area_sqm');
-        setUnitTypes(data || []);
+        return (data || []) as UnitType[];
+    }, []);
+
+    const fetchAll = useCallback(async () => {
+        const data = await loadUnitTypes();
+        setUnitTypes(data);
         setLoading(false);
-    };
+    }, [loadUnitTypes]);
 
     useEffect(() => {
-        void fetchAll();
-    }, []);
+        let cancelled = false;
+
+        void (async () => {
+            const data = await loadUnitTypes();
+            if (cancelled) return;
+            setUnitTypes(data);
+            setLoading(false);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [loadUnitTypes]);
 
     const startEdit = (unitType?: UnitType) => {
         setEditingId(unitType?.id || 'new');

@@ -1,21 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Public_Sans, Noto_Sans_KR } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
-
-const publicSans = Public_Sans({
-    variable: "--font-public-sans",
-    subsets: ["latin"],
-    weight: ["400", "500", "600", "700"],
-    display: "swap",
-});
-
-const notoSansKR = Noto_Sans_KR({
-    variable: "--font-noto-sans-kr",
-    subsets: ["latin"],
-    weight: ["400", "500", "700"],
-    display: "swap",
-});
 
 export const metadata: Metadata = {
     title: "People On - 통합 CRM & ERP",
@@ -40,16 +25,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="ko" suppressHydrationWarning>
-            <head>
-                {/* Material Symbols */}
-                <link
-                    rel="stylesheet"
-                    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-                />
-            </head>
-            <body
-                className={`${publicSans.variable} ${notoSansKR.variable} font-display antialiased`}
-            >
+            <body className="font-display antialiased">
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"

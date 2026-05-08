@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn, formatSafeDateTime } from '@/lib/utils';
-import Image from 'next/image';
 import { logInteraction } from '@/app/actions/interaction';
 
 interface InteractionLog {
@@ -17,6 +16,12 @@ interface InteractionLog {
     created_at: string;
     tags?: string[];
 }
+
+type InteractionLogRow = Partial<InteractionLog> & {
+    id: string;
+    type?: string | null;
+    created_at: string;
+};
 
 interface ActivityTimelineTabProps {
     memberIds: string[];
@@ -33,8 +38,7 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
     const [newLogText, setNewLogText] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
-    const fetchLogs = async (isRefresh = false) => {
-        if (page === 1 && !isRefresh) setLoading(true);
+    const fetchLogs = useCallback(async () => {
         const supabase = createClient();
 
         // Fetch total count first
@@ -59,16 +63,16 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
             .range(from, to);
 
         if (!error && data) {
-            const formattedLogs: InteractionLog[] = data.map((d: any) => ({
+            const formattedLogs: InteractionLog[] = (data as InteractionLogRow[]).map((d) => ({
                 id: d.id,
-                type: d.type || 'NOTE',
+                type: (d.type as InteractionLog['type']) || 'NOTE',
                 title: d.type === 'CALL' ? '전화 상담' :
                     d.type === 'MEET' ? '대면 상담' :
                         d.type === 'SMS' ? '문자 발송' :
                             d.type === 'DOC' ? '서류 기록' :
                                 d.type === 'REPAIR' ? '수리 건' : '기타 메모',
                 summary: d.summary || '',
-                staff_name: d.staff_name,
+                staff_name: d.staff_name || null,
                 created_at: formatSafeDateTime(d.created_at),
                 attachment: null
             }));
@@ -80,10 +84,63 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
             }
         }
         setLoading(false);
-    };
+    }, [memberIds, page]);
 
     useEffect(() => {
-        fetchLogs();
+        let cancelled = false;
+
+        void (async () => {
+            const supabase = createClient();
+
+            if (page === 1) {
+                const { count } = await supabase
+                    .from('interaction_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .in('entity_id', memberIds);
+
+                if (!cancelled) setTotalCount(count || 0);
+            }
+
+            const from = (page - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            const { data, error } = await supabase
+                .from('interaction_logs')
+                .select('*')
+                .in('entity_id', memberIds)
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (cancelled) return;
+
+            if (!error && data) {
+                const formattedLogs: InteractionLog[] = (data as InteractionLogRow[]).map((d) => ({
+                    id: d.id,
+                    type: (d.type as InteractionLog['type']) || 'NOTE',
+                    title: d.type === 'CALL' ? '전화 상담' :
+                        d.type === 'MEET' ? '대면 상담' :
+                            d.type === 'SMS' ? '문자 발송' :
+                                d.type === 'DOC' ? '서류 기록' :
+                                    d.type === 'REPAIR' ? '수리 건' : '기타 메모',
+                    summary: d.summary || '',
+                    staff_name: d.staff_name || null,
+                    created_at: formatSafeDateTime(d.created_at),
+                    attachment: null,
+                }));
+
+                if (page === 1) {
+                    setLogs(formattedLogs);
+                } else {
+                    setLogs((prev) => [...prev, ...formattedLogs]);
+                }
+            }
+
+            setLoading(false);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [memberIds, page]);
 
     const handleSaveActivity = async () => {
@@ -103,7 +160,7 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
                 // If on page 1, just refresh. If elsewhere, could be tricky, 
                 // but for simple UX we'll reset to page 1 and refresh.
                 if (page === 1) {
-                    await fetchLogs(true);
+                    await fetchLogs();
                 } else {
                     setPage(1);
                 }

@@ -1,24 +1,31 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
 export async function POST() {
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    try {
+        await requireRole(ROLE_GROUPS.financeAdmin);
+    } catch (error) {
+        return authzErrorResponse(error);
+    }
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !serviceRoleKey) {
+        return NextResponse.json(
+            { success: false, error: 'Missing Supabase service role configuration' },
+            { status: 500 },
+        );
+    }
+
+    const supabase = createSupabaseClient(
+        url,
+        serviceRoleKey,
         { db: { schema: 'public' } }
     );
 
     const results: { step: string; ok: boolean; error?: string }[] = [];
-
-    // Helper to run SQL via rpc (if available) or handle gracefully
-    async function tryTable(name: string, createFn: () => Promise<void>) {
-        try {
-            await createFn();
-            results.push({ step: name, ok: true });
-        } catch (e: any) {
-            results.push({ step: name, ok: false, error: e.message });
-        }
-    }
 
     // 1. Create unit_types - test if it exists first
     const { error: utCheck } = await supabase.from('unit_types').select('id').limit(1);

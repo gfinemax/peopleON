@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import {
     buildSettlementPartyOwnershipMap,
-    type MemberLite,
     type PartyProfileLite,
     type PartyRoleLite,
     type RightCertificateLite,
@@ -19,7 +18,6 @@ type SettlementCaseRow = {
 };
 
 type PartyProfileRow = PartyProfileLite;
-type MemberRow = MemberLite;
 type PartyRoleRow = PartyRoleLite;
 type RightCertificateRow = RightCertificateLite;
 

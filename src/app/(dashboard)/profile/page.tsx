@@ -1,19 +1,15 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { signOut } from '@/app/actions/auth';
+import { useHydrated } from '@/lib/hooks/useHydrated';
 
 export default function ProfilePage() {
     const { theme, setTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useHydrated();
 
     if (!mounted) {
         return null;

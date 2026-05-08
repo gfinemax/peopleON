@@ -113,6 +113,8 @@ export function CompactDonutCard({
     summaryRows,
     onSegmentClick,
     onPillClick,
+    accentClassName = 'bg-primary',
+    iconTileClassName = 'border-primary/25 bg-primary/12 text-primary',
 }: {
     icon: string;
     title: string;
@@ -125,16 +127,21 @@ export function CompactDonutCard({
     summaryRows?: { label: string; value: string }[];
     onSegmentClick?: (segment: Segment) => void;
     onPillClick?: () => void;
+    accentClassName?: string;
+    iconTileClassName?: string;
 }) {
     return (
-        <article className="min-w-0 rounded-2xl border border-white/10 bg-[#111a29] p-4">
+        <article className="group relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card/78 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/8">
+            <div className={`absolute left-0 top-0 h-1 w-full ${accentClassName}`} />
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 text-slate-100">
-                        <MaterialIcon name={icon} size="sm" className="opacity-90" />
-                        <p className="truncate text-sm font-extrabold">{title}</p>
+                        <div className={`flex size-9 items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-[1.03] ${iconTileClassName}`}>
+                            <MaterialIcon name={icon} size="sm" />
+                        </div>
+                        <p className="truncate text-sm font-extrabold text-foreground">{title}</p>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">{subtitle}</p>
+                    <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">{subtitle}</p>
                 </div>
                 {onPillClick ? (
                     <button

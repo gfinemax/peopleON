@@ -39,7 +39,7 @@ export function MembersRoleTabs({
     onSelectRole: (role: string) => void;
 }) {
     return (
-        <div className="flex items-end gap-0.5 overflow-x-auto scrollbar-hide py-1">
+        <div className="flex items-end gap-1 overflow-x-auto scrollbar-hide py-1">
             {roleTabs.map((tab) => {
                 const isActive = tab.id === activeRole;
                 return (
@@ -48,19 +48,20 @@ export function MembersRoleTabs({
                         type="button"
                         onClick={() => onSelectRole(tab.id)}
                         className={cn(
-                            'relative rounded-t-lg border-b-2 px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap transition-colors',
+                            'relative overflow-hidden rounded-lg border px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap transition-all',
                             isActive
-                                ? 'border-blue-400 bg-blue-500/10 text-blue-400'
-                                : 'border-transparent text-slate-400 hover:bg-white/5 hover:text-slate-200',
+                                ? 'border-primary/35 bg-primary/14 text-primary shadow-sm shadow-primary/10'
+                                : 'border-transparent text-muted-foreground hover:border-border hover:bg-card/70 hover:text-foreground',
                         )}
                     >
+                        {isActive ? <span className="absolute left-0 top-0 h-0.5 w-full bg-gradient-to-r from-success to-primary" /> : null}
                         <span className="flex items-center gap-1">
                             <MaterialIcon name={tab.icon} size="xs" />
                             {tab.label}
                             <span
                                 className={cn(
-                                    'ml-0.5 rounded-full bg-black/30 px-1 py-0.5 text-[9px] leading-none',
-                                    isActive ? 'text-blue-300' : 'text-slate-500',
+                                    'ml-0.5 rounded-full px-1 py-0.5 text-[9px] leading-none',
+                                    isActive ? 'bg-primary/18 text-sky-100' : 'bg-black/20 text-muted-foreground',
                                 )}
                             >
                                 {tab.count.toLocaleString()}
@@ -94,8 +95,8 @@ export function MembersSearchBar({
                 />
                 <input
                     type="text"
-                    placeholder="이름, 동호수, 전화번호"
-                    className="h-9 w-full rounded-md border border-[#324764] bg-[#0d182b] pl-9 pr-4 text-sm text-slate-100 placeholder:text-slate-500 transition-all focus:border-sky-400 focus:outline-none"
+                    placeholder="이름, 주소, 동호수, 전화번호"
+                    className="h-9 w-full rounded-md border border-border bg-card/70 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
                     value={query}
                     onChange={(event) => onQueryChange(event.target.value)}
                 />

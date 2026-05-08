@@ -1,27 +1,27 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import { MaterialIcon } from '@/components/ui/icon';
+import { requirePageRole, ROLE_GROUPS } from '@/lib/server/authz';
+
+type AuditLogDetails = {
+    rightsInfo?: Array<{ right_number?: string | null }>;
+    updates?: Record<string, unknown>;
+    entity_ids?: string[];
+};
+
+type AuditLogRow = {
+    id: string;
+    created_at: string;
+    ip_address: string | null;
+    target_entity_id: string | null;
+    actor_email: string | null;
+    action_type: string;
+    details: AuditLogDetails | null;
+    account_entities?: { display_name?: string | null } | null;
+};
 
 export default async function AuditLogsPage() {
+    await requirePageRole(ROLE_GROUPS.admin);
     const supabase = await createClient();
-
-    // 1. Verify Authentication & Role
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-        redirect('/login');
-    }
-
-    console.log('[DEBUG] Admin Audit Page - Current user email:', user.email);
-
-    // Role Check: In this example, only gfinemax@gmail.com can access.
-    // In production, this might check a user_roles table
-    const isAdmin = user?.email === 'gfinemax@gmail.com';
-
-    if (!isAdmin) {
-        // Redirect non-admins out of this page
-        redirect('/');
-    }
 
     // 2. Fetch Audit Logs
     // Note: This relies on the RLS policy ensuring only admins can select from system_audit_logs.
@@ -48,7 +48,7 @@ export default async function AuditLogsPage() {
         }
     };
 
-    const generateActionSummary = (log: any) => {
+    const generateActionSummary = (log: AuditLogRow) => {
         try {
             if (!log.details) return null;
 
@@ -56,7 +56,7 @@ export default async function AuditLogsPage() {
                 const rights = log.details.rightsInfo;
                 if (Array.isArray(rights)) {
                     if (rights.length === 0) return '권리증 전체 삭제됨';
-                    const certs = rights.map((r: any) => r.right_number || '번호없음').join(', ');
+                    const certs = rights.map((right) => right.right_number || '번호없음').join(', ');
                     return `권리증 ${rights.length}건: ${certs}`;
                 }
             } else if (log.action_type === 'UPDATE_MEMBER_INFO') {
@@ -72,10 +72,12 @@ export default async function AuditLogsPage() {
                 }
             }
             return null;
-        } catch (e) {
+        } catch {
             return null;
         }
     };
+
+    const auditLogs = (logs || []) as AuditLogRow[];
 
     return (
         <div className="flex flex-col h-full bg-background overflow-hidden p-8">
@@ -108,7 +110,7 @@ export default async function AuditLogsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {!logs || logs.length === 0 ? (
+                            {auditLogs.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
                                         <MaterialIcon name="history_toggle_off" size="xl" className="opacity-50 mx-auto mb-3" />
@@ -116,7 +118,7 @@ export default async function AuditLogsPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                logs.map((log: any) => {
+                                auditLogs.map((log) => {
                                     const summary = generateActionSummary(log);
                                     return (
                                         <tr key={log.id} className="hover:bg-white/[0.02] transition-colors align-top">

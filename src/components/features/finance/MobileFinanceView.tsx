@@ -27,8 +27,16 @@ interface MobileFinanceViewProps {
     rounds: FinanceRound[];
 }
 
+type FinanceFilter = 'all' | 'pending' | 'completed';
+
+const FINANCE_FILTER_OPTIONS: Array<{ value: FinanceFilter; label: string }> = [
+    { value: 'all', label: '전체' },
+    { value: 'pending', label: '미납' },
+    { value: 'completed', label: '완납' },
+];
+
 export function MobileFinanceView({ summary, rounds }: MobileFinanceViewProps) {
-    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+    const [filter, setFilter] = useState<FinanceFilter>('all');
 
     const filteredPayments = rounds.filter(p => {
         if (filter === 'all') return true;
@@ -107,14 +115,10 @@ export function MobileFinanceView({ summary, rounds }: MobileFinanceViewProps) {
                 {/* Filter Segment */}
                 <section>
                     <div className="flex w-full rounded-xl bg-muted p-1 gap-1">
-                        {[
-                            { value: 'all', label: '전체' },
-                            { value: 'pending', label: '미납' },
-                            { value: 'completed', label: '완납' },
-                        ].map((opt) => (
+                        {FINANCE_FILTER_OPTIONS.map((opt) => (
                             <button
                                 key={opt.value}
-                                onClick={() => setFilter(opt.value as any)}
+                                onClick={() => setFilter(opt.value)}
                                 className={cn(
                                     "flex h-9 flex-1 items-center justify-center rounded-lg text-sm font-medium transition-all active:scale-95",
                                     filter === opt.value

@@ -243,6 +243,8 @@ export function MembersCertificateAnalysisCard({
                 unit="건"
                 pillText={`중복 제외 ${certificates.duplicateExcluded.toLocaleString()}건`}
                 pillClassName="border-violet-400/20 bg-violet-500/10 text-violet-200"
+                accentClassName="bg-gradient-to-r from-orange-400 to-violet-400"
+                iconTileClassName="border-orange-400/25 bg-orange-500/15 text-orange-300"
                 segments={certificateSegments}
                 onSegmentClick={(segment) => {
                     if (segment.label === '조합원 보유분') openAnalysis('registered_global');

@@ -20,6 +20,8 @@ type InteractionLogRow = {
     created_at: string;
 };
 
+type LatestInteractionLogViewRow = InteractionLogRow;
+
 const LEGACY_IMPORT_STAFF = '이전시스템기록';
 const LEGACY_THRESHOLD_DATE = new Date('2026-03-10');
 
@@ -143,6 +145,38 @@ const cachedRecentActivityLogs = unstable_cache(
     },
 );
 
+const cachedLatestActivityLogsByEntity = unstable_cache(
+    async (sortedEntityIds: string[]): Promise<LatestInteractionLogViewRow[] | null> => {
+        if (!sortedEntityIds.length) return [];
+
+        const supabase = createAdminClient();
+        const allLogs: LatestInteractionLogViewRow[] = [];
+
+        for (const entityIdChunk of chunk(sortedEntityIds, 200)) {
+            const { data, error } = await supabase
+                .from('vw_latest_interaction_log_by_entity')
+                .select('id, entity_id, type, direction, summary, staff_name, created_at')
+                .in('entity_id', entityIdChunk);
+
+            if (error) {
+                return null;
+            }
+
+            if (data?.length) {
+                allLogs.push(...(data as LatestInteractionLogViewRow[]));
+            }
+        }
+
+        allLogs.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
+        return allLogs;
+    },
+    ['activity-latest-logs-by-entity'],
+    {
+        tags: [CACHE_TAGS.activityFeed],
+        revalidate: 120,
+    },
+);
+
 export async function fetchActivityFeedEntries(
     supabase: SupabaseClient,
     options?: { limit?: number },
@@ -213,7 +247,11 @@ export async function fetchRecentActivitySummariesForPeople<T extends PersonLike
     if (entityIds.length === 0) return new Map();
 
     const sortedEntityIds = [...entityIds].sort();
-    const allLogs =
+    const latestLogs =
+        supabase === createAdminClient()
+            ? await cachedLatestActivityLogsByEntity(sortedEntityIds)
+            : null;
+    const allLogs = latestLogs ?? (
         supabase === createAdminClient()
             ? await cachedRecentActivityLogs(sortedEntityIds)
             : await (async () => {
@@ -237,7 +275,8 @@ export async function fetchRecentActivitySummariesForPeople<T extends PersonLike
 
                   logs.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
                   return logs;
-              })();
+              })()
+    );
 
     if (!allLogs.length) {
         return new Map();

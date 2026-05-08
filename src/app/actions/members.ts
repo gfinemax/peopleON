@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { getCertificateDisplayText } from '@/lib/certificates/rightNumbers';
+import { getCertificateDisplayText, type AssetRightCertificateRow } from '@/lib/certificates/rightNumbers';
 
 export interface SearchResult {
     id: string;
@@ -10,7 +10,21 @@ export interface SearchResult {
     certificate_display?: string;
     phone: string | null;
     status: string;
+    address?: string | null;
 }
+
+type EntitySearchRow = {
+    id: string;
+    display_name: string;
+    address_legal: string | null;
+    phone: string | null;
+    phone_secondary: string | null;
+};
+
+type RightSearchRow = AssetRightCertificateRow & {
+    entity_id: string;
+    account_entities?: EntitySearchRow | EntitySearchRow[] | null;
+};
 
 export async function searchMembers(query: string): Promise<SearchResult[]> {
     if (!query || query.trim().length < 1) return [];
@@ -21,8 +35,8 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
     const [entitiesRes, rightsRes] = await Promise.all([
         supabase
             .from('account_entities')
-            .select('id, display_name, member_number, phone, phone_secondary')
-            .or(`display_name.ilike.%${cleanQuery}%,member_number.ilike.%${cleanQuery}%,phone.ilike.%${cleanQuery}%,phone_secondary.ilike.%${cleanQuery}%`)
+            .select('id, display_name, address_legal, phone, phone_secondary')
+            .or(`display_name.ilike.%${cleanQuery}%,address_legal.ilike.%${cleanQuery}%,phone.ilike.%${cleanQuery}%,phone_secondary.ilike.%${cleanQuery}%`)
             .limit(10),
         supabase
             .from('asset_rights')
@@ -35,7 +49,7 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
                 account_entities (
                     id,
                     display_name,
-                    member_number,
+                    address_legal,
                     phone,
                     phone_secondary
                 )
@@ -54,31 +68,33 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
         console.error('Search Rights Error:', rightsRes.error);
     }
 
-    const resultMap = new Map<string, SearchResult & { rights: Array<Record<string, unknown>> }>();
-    for (const row of ((entitiesRes.data as Array<{ id: string; display_name: string; member_number: string | null; phone: string | null; phone_secondary: string | null }> | null) || [])) {
+    const resultMap = new Map<string, SearchResult & { rights: AssetRightCertificateRow[], address: string | null }>();
+    for (const row of ((entitiesRes.data as EntitySearchRow[] | null) || [])) {
         resultMap.set(row.id, {
             id: row.id,
             name: row.display_name,
-            member_number: row.member_number || '',
+            member_number: '',
             certificate_display: '',
             phone: row.phone || row.phone_secondary,
             status: '정상',
             rights: [],
+            address: row.address_legal,
         });
     }
 
-    for (const row of ((rightsRes.data as Array<any> | null) || [])) {
+    for (const row of ((rightsRes.data as RightSearchRow[] | null) || [])) {
         const entity = Array.isArray(row.account_entities) ? row.account_entities[0] : row.account_entities;
         if (!entity?.id) continue;
 
-        const existing: SearchResult & { rights: Array<Record<string, unknown>> } = resultMap.get(entity.id) || {
+        const existing: SearchResult & { rights: AssetRightCertificateRow[], address: string | null } = resultMap.get(entity.id) || {
             id: entity.id,
             name: entity.display_name,
-            member_number: entity.member_number || '',
+            member_number: '',
             certificate_display: '',
             phone: entity.phone || entity.phone_secondary || null,
             status: '정상',
             rights: [],
+            address: entity.address_legal,
         };
 
         existing.rights.push(row);
@@ -93,6 +109,7 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
             certificate_display: getCertificateDisplayText(row.rights, { includeFallbackStatus: true }),
             phone: row.phone,
             status: row.status,
+            address: row.address,
         }))
         .slice(0, 10);
 }

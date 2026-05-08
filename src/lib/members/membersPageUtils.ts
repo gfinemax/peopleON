@@ -186,7 +186,7 @@ export function filterMembers({
                 person.real_owner?.name || '',
                 ...(person.nominees || []).map((nominee) => nominee.name || ''),
             ].join(' ');
-            const isTextMatch = `${person.name} ${certificateText} ${person.phone} ${person.notes || ''} ${relatedNames}`
+            const isTextMatch = `${person.name} ${certificateText} ${person.phone} ${person.address_legal || ''} ${person.notes || ''} ${relatedNames}`
                 .toLowerCase()
                 .includes(queryLower);
             const isLogMatch = Array.isArray(person.entity_ids) && person.entity_ids.some((id) => matchedEntityIds.has(id));

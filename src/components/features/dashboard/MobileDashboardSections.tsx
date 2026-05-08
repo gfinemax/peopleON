@@ -3,6 +3,7 @@
 import { GlobalSearch } from '@/components/features/search/GlobalSearch';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 import type {
     DashboardEvent,
     DashboardStats,
@@ -17,10 +18,12 @@ export function MobileDashboardHeader() {
             <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-2">
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <div className="size-10 overflow-hidden rounded-full border-2 border-primary/20 bg-muted/20">
-                            <img
+                        <div className="relative size-10 overflow-hidden rounded-full border-2 border-primary/20 bg-muted/20">
+                            <Image
                                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin"
                                 alt="Profile"
+                                fill
+                                sizes="40px"
                                 className="h-full w-full object-cover"
                             />
                         </div>

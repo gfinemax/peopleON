@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { UnifiedPerson } from '@/services/memberAggregation';
 import { MaterialIcon } from '@/components/ui/icon';
 import { MembersExportDialog } from './MembersExportDialog';
 import { MemberReportPrint } from './MemberReportPrint';
+import type { MemberExportRow } from './memberExportTypes';
 
 interface MembersExportPrintButtonsProps {
-    data: UnifiedPerson[];
+    data: MemberExportRow[];
 }
 
 export function MembersExportPrintButtons({ data }: MembersExportPrintButtonsProps) {

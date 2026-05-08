@@ -4,29 +4,19 @@ import { useEffect, useState } from 'react';
 
 import { MemberReportPrintContent } from '@/components/features/members/MemberReportPrintContent';
 import { MemberReportPrintDialog } from '@/components/features/members/MemberReportPrintDialog';
+import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 import { PrintConfig } from '@/components/features/members/memberReportPrintTypes';
 import { DEFAULT_PRINT_CONFIG } from '@/components/features/members/memberReportPrintUtils';
-import { UnifiedPerson } from '@/services/memberAggregation';
 
 interface MemberReportPrintProps {
-    data: UnifiedPerson[];
+    data: MemberExportRow[];
     isPrinting: boolean;
     onPrintComplete: () => void;
 }
 
 export function MemberReportPrint({ data, isPrinting, onPrintComplete }: MemberReportPrintProps) {
-    const [showConfig, setShowConfig] = useState(false);
     const [config, setConfig] = useState<PrintConfig>(DEFAULT_PRINT_CONFIG);
     const [realPrinting, setRealPrinting] = useState(false);
-
-    useEffect(() => {
-        if (isPrinting) {
-            setShowConfig(true);
-        } else {
-            setShowConfig(false);
-            setRealPrinting(false);
-        }
-    }, [isPrinting]);
 
     useEffect(() => {
         const handleAfterPrint = () => {
@@ -42,7 +32,6 @@ export function MemberReportPrint({ data, isPrinting, onPrintComplete }: MemberR
     if (!isPrinting) return null;
 
     const handleStartPrint = () => {
-        setShowConfig(false);
         setRealPrinting(true);
         setTimeout(() => window.print(), 500);
     };
@@ -50,7 +39,7 @@ export function MemberReportPrint({ data, isPrinting, onPrintComplete }: MemberR
     return (
         <>
             <MemberReportPrintDialog
-                open={showConfig}
+                open={!realPrinting}
                 config={config}
                 setConfig={setConfig}
                 onClose={onPrintComplete}

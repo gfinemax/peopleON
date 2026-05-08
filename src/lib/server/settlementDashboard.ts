@@ -28,6 +28,12 @@ import type {
 type PartyRoleRow = PartyRoleLite;
 type RightCertificateRow = RightCertificateLite;
 
+type SettlementCaseAmountSummaryRow = {
+    case_id: string;
+    expected: number | string | null;
+    paid: number | string | null;
+};
+
 async function fetchSettlementCases(
     supabase: SupabaseClient,
     statusFilter: SettlementStatusFilter,
@@ -123,6 +129,20 @@ async function fetchSettlementAmounts(
         return { finalLineByCase, paidByCase };
     }
 
+    const { data: summaryData, error: summaryError } = await supabase
+        .from('vw_settlement_case_amount_summary')
+        .select('case_id, expected, paid')
+        .in('case_id', caseIds);
+
+    if (!summaryError) {
+        for (const row of (summaryData as SettlementCaseAmountSummaryRow[] | null) || []) {
+            finalLineByCase.set(row.case_id, parseMoney(row.expected));
+            paidByCase.set(row.case_id, parseMoney(row.paid));
+        }
+
+        return { finalLineByCase, paidByCase };
+    }
+
     const [linesRes, paymentsRes] = await Promise.all([
         supabase
             .from('settlement_lines')
@@ -212,11 +232,20 @@ export async function fetchSettlementDashboardData(
     // We still call filterSettlementRows to catch diagFilter and any residual query logic (like owner_name)
     const rows = filterSettlementRows(rawRows, query, diagFilter);
 
-    const expectedTotal = rows.reduce((sum, row) => sum + row.expected, 0);
-    const paidTotal = rows.reduce((sum, row) => sum + row.paid, 0);
-    const remainingTotal = rows.reduce((sum, row) => sum + row.remaining, 0);
-    const connectedCount = rows.filter((row) => row.ownership.owner_type !== 'unlinked').length;
-    const pendingCount = rows.filter((row) => row.remaining > 0).length;
+    let expectedTotal = 0;
+    let paidTotal = 0;
+    let remainingTotal = 0;
+    let connectedCount = 0;
+    let pendingCount = 0;
+
+    for (const row of rows) {
+        expectedTotal += row.expected;
+        paidTotal += row.paid;
+        remainingTotal += row.remaining;
+        if (row.ownership.owner_type !== 'unlinked') connectedCount += 1;
+        if (row.remaining > 0) pendingCount += 1;
+    }
+
     const { diagnostics, diagnosticIssueCount, qaChecklist } = buildSettlementDiagnostics(rows);
 
     return {

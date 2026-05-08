@@ -3,6 +3,7 @@ import { MaterialIcon } from '@/components/ui/icon';
 import { MembersTable } from '@/components/features/members/MembersTable';
 import { MembersExportPrintButtons } from '@/components/features/members/MembersExportPrintButtons';
 import { LinkedOperationPanel } from '@/components/features/members/OperationPanel';
+import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 import type { UnifiedPerson } from '@/services/memberAggregation';
 
 function SlimQualityChip({ label, count, href }: { label: string; count: number; href: string }) {
@@ -24,7 +25,7 @@ function SlimQualityChip({ label, count, href }: { label: string; count: number;
 
 export function MembersDataSection({
     displayedMembers,
-    filteredPeople,
+    exportRows,
     paramsKey,
     startIndex,
     reviewPendingCount,
@@ -41,7 +42,7 @@ export function MembersDataSection({
     getPageLink,
 }: {
     displayedMembers: UnifiedPerson[];
-    filteredPeople: UnifiedPerson[];
+    exportRows: MemberExportRow[];
     paramsKey: string;
     startIndex: number;
     reviewPendingCount: number;
@@ -67,7 +68,7 @@ export function MembersDataSection({
                         <SlimQualityChip label="중복 검토" count={duplicateExcludedCount} href="/certificate-audit" />
                     </div>
                 </div>
-                <MembersExportPrintButtons data={filteredPeople} />
+                <MembersExportPrintButtons data={exportRows} />
             </div>
             <div className="p-2 lg:p-3">
                 <div className="flex gap-3">

@@ -6,7 +6,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 export async function createAuditLog(
     actionType: string,
     targetEntityId?: string,
-    details?: any
+    details?: Record<string, unknown>
 ) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
         console.error('Audit Log Error: Missing Supabase keys');

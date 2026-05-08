@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { DuplicateGroup, mergeDuplicateEntities, ignoreDuplicateGroups } from '@/app/actions/duplicates';
+import { DuplicateGroup, DuplicateMembershipRole, mergeDuplicateEntities, ignoreDuplicateGroups } from '@/app/actions/duplicates';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, Key, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
 
 
 export default function DuplicatesManager({ initialGroups }: { initialGroups: DuplicateGroup[] }) {
@@ -40,7 +39,7 @@ export default function DuplicatesManager({ initialGroups }: { initialGroups: Du
                 alert(res.message);
                 removeGroupFromView(phone);
             }
-        } catch (e) {
+        } catch {
             alert('병합 중 오류가 발생했습니다.');
         } finally {
             setLoadingIds(prev => {
@@ -61,7 +60,7 @@ export default function DuplicatesManager({ initialGroups }: { initialGroups: Du
                 alert(res.message || '병합 제외 처리되었습니다.');
                 removeGroupFromView(phone);
             }
-        } catch (e) {
+        } catch {
             alert('제외 처리 중 오류가 발생했습니다.');
         } finally {
             setLoadingIds(prev => {
@@ -110,8 +109,10 @@ export default function DuplicatesManager({ initialGroups }: { initialGroups: Du
                     </CardHeader>
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {group.entities.map((entity, idx) => {
-                                const roleCodes = entity.membership_roles?.map((r: any) => r.role_code) || [];
+                            {group.entities.map((entity) => {
+                                const roleCodes = entity.membership_roles
+                                    ?.map((role: DuplicateMembershipRole) => role.role_code)
+                                    .filter((roleCode): roleCode is string => Boolean(roleCode)) || [];
                                 const certsCount = entity.certificate_registry?.length || 0;
                                 const otherEntities = group.entities.filter(e => e.id !== entity.id).map(e => e.id);
                                 const isMergeLoading = loadingIds.has(group.phone);
@@ -125,7 +126,7 @@ export default function DuplicatesManager({ initialGroups }: { initialGroups: Du
                                             </div>
                                             {roleCodes.length > 0 && (
                                                 <div className="flex flex-wrap gap-1 mt-2">
-                                                    {roleCodes.map((r: string) => (
+                                                    {roleCodes.map((r) => (
                                                         <Badge key={r} variant="secondary" className="text-xs">{r}</Badge>
                                                     ))}
                                                 </div>

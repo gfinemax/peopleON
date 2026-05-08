@@ -8,6 +8,12 @@ type PaymentRow = {
     amount_paid: number | null;
 };
 
+type PaymentSummaryRow = {
+    entity_id: string;
+    total_due: number | string | null;
+    total_paid: number | string | null;
+};
+
 type InteractionLogRow = {
     id: string;
     entity_id: string;
@@ -15,6 +21,8 @@ type InteractionLogRow = {
     staff_name: string | null;
     created_at: string;
 };
+
+type PaymentTotals = Map<string, { totalDue: number; totalPaid: number }>;
 
 export type SmsDashboardData = {
     recipients: SmsRecipient[];
@@ -24,7 +32,18 @@ export type SmsDashboardData = {
     unpaidCount: number;
 };
 
+const ENTITY_ID_QUERY_CHUNK_SIZE = 100;
+
 const normalizePhone = (value?: string | null) => (value || '').replace(/\D/g, '');
+
+const parseMoney = (value: number | string | null | undefined) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+};
 
 const extractPrimaryPhone = (rawPhone?: string | null) => {
     const candidates = (rawPhone || '')
@@ -42,10 +61,59 @@ const extractPrimaryPhone = (rawPhone?: string | null) => {
     return candidates[0] || null;
 };
 
-function buildRecipient(person: UnifiedPerson, paymentRows: PaymentRow[]): SmsRecipient {
-    const rows = paymentRows.filter((row) => person.entity_ids.includes(row.entity_id));
-    const totalDue = rows.reduce((sum, row) => sum + Number(row.amount_due || 0), 0);
-    const totalPaid = rows.reduce((sum, row) => sum + Number(row.amount_paid || 0), 0);
+function buildPaymentTotalsByEntity(paymentRows: PaymentRow[]) {
+    const totalsByEntity = new Map<string, { totalDue: number; totalPaid: number }>();
+
+    for (const row of paymentRows) {
+        const current = totalsByEntity.get(row.entity_id) || { totalDue: 0, totalPaid: 0 };
+        current.totalDue += parseMoney(row.amount_due);
+        current.totalPaid += parseMoney(row.amount_paid);
+        totalsByEntity.set(row.entity_id, current);
+    }
+
+    return totalsByEntity;
+}
+
+function buildPaymentTotalsFromSummaryRows(summaryRows: PaymentSummaryRow[]) {
+    return new Map(
+        summaryRows.map((row) => [
+            row.entity_id,
+            {
+                totalDue: parseMoney(row.total_due),
+                totalPaid: parseMoney(row.total_paid),
+            },
+        ]),
+    );
+}
+
+function mergePaymentTotals(target: PaymentTotals, source: PaymentTotals) {
+    for (const [entityId, totals] of source) {
+        const current = target.get(entityId) || { totalDue: 0, totalPaid: 0 };
+        current.totalDue += totals.totalDue;
+        current.totalPaid += totals.totalPaid;
+        target.set(entityId, current);
+    }
+}
+
+function chunkList<T>(items: T[], chunkSize: number) {
+    const chunks: T[][] = [];
+    for (let index = 0; index < items.length; index += chunkSize) {
+        chunks.push(items.slice(index, index + chunkSize));
+    }
+    return chunks;
+}
+
+function buildRecipient(person: UnifiedPerson, totalsByEntity: Map<string, { totalDue: number; totalPaid: number }>): SmsRecipient {
+    let totalDue = 0;
+    let totalPaid = 0;
+
+    for (const entityId of person.entity_ids) {
+        const totals = totalsByEntity.get(entityId);
+        if (!totals) continue;
+        totalDue += totals.totalDue;
+        totalPaid += totals.totalPaid;
+    }
+
     const unpaidAmount = Math.max(totalDue - totalPaid, 0);
     const primaryPhone = extractPrimaryPhone(person.phone);
 
@@ -67,8 +135,22 @@ function buildRecipient(person: UnifiedPerson, paymentRows: PaymentRow[]): SmsRe
     };
 }
 
-function buildHistory(logRows: InteractionLogRow[], recipients: SmsRecipient[]) {
-    const recipientByEntityId = new Map(recipients.map((recipient) => [recipient.entityId, recipient]));
+function buildRecipientLookupByEntity(unifiedPeople: UnifiedPerson[], recipients: SmsRecipient[]) {
+    const recipientById = new Map(recipients.map((recipient) => [recipient.id, recipient]));
+    const recipientByEntityId = new Map<string, SmsRecipient>();
+
+    for (const person of unifiedPeople) {
+        const recipient = recipientById.get(person.id);
+        if (!recipient) continue;
+        for (const entityId of person.entity_ids) {
+            recipientByEntityId.set(entityId, recipient);
+        }
+    }
+
+    return recipientByEntityId;
+}
+
+function buildHistory(logRows: InteractionLogRow[], recipientByEntityId: Map<string, SmsRecipient>) {
     return logRows.map<SmsHistoryItem>((log) => ({
         id: log.id,
         entityId: log.entity_id,
@@ -80,14 +162,77 @@ function buildHistory(logRows: InteractionLogRow[], recipients: SmsRecipient[]) 
     }));
 }
 
+async function fetchPaymentTotalsByEntity(supabase: SupabaseClient, entityIds: string[]) {
+    if (entityIds.length === 0) return new Map<string, { totalDue: number; totalPaid: number }>();
+
+    const totalsByEntity: PaymentTotals = new Map();
+    const entityIdChunks = chunkList(entityIds, ENTITY_ID_QUERY_CHUNK_SIZE);
+    let shouldFallbackToPayments = false;
+
+    try {
+        for (const chunk of entityIdChunks) {
+            const { data: summaryRows, error: summaryError } = await supabase
+                .from('vw_member_payment_entity_summary')
+                .select('entity_id, total_due, total_paid')
+                .in('entity_id', chunk);
+
+            if (summaryError) {
+                shouldFallbackToPayments = true;
+                break;
+            }
+
+            mergePaymentTotals(
+                totalsByEntity,
+                buildPaymentTotalsFromSummaryRows((summaryRows || []) as PaymentSummaryRow[]),
+            );
+        }
+
+        if (!shouldFallbackToPayments) {
+            return totalsByEntity;
+        }
+    } catch (error) {
+        console.warn(
+            'Failed to load payment summary view for sms workspace:',
+            error instanceof Error ? error.message : error,
+        );
+    }
+
+    totalsByEntity.clear();
+
+    try {
+        for (const chunk of entityIdChunks) {
+            const { data: paymentRows, error: paymentsError } = await supabase
+                .from('member_payments')
+                .select('entity_id, amount_due, amount_paid')
+                .in('entity_id', chunk);
+
+            if (paymentsError) {
+                console.warn('Failed to load member payments for sms workspace:', paymentsError.message);
+                continue;
+            }
+
+            mergePaymentTotals(
+                totalsByEntity,
+                buildPaymentTotalsByEntity((paymentRows || []) as PaymentRow[]),
+            );
+        }
+    } catch (error) {
+        console.warn(
+            'Failed to load member payments for sms workspace:',
+            error instanceof Error ? error.message : error,
+        );
+    }
+
+    return totalsByEntity;
+}
+
 export async function fetchSmsDashboardData(
     supabase: SupabaseClient,
     unifiedPeople: UnifiedPerson[],
 ): Promise<SmsDashboardData> {
-    const [paymentsRes, logsRes] = await Promise.all([
-        supabase
-            .from('member_payments')
-            .select('entity_id, amount_due, amount_paid'),
+    const entityIds = Array.from(new Set(unifiedPeople.flatMap((person) => person.entity_ids)));
+    const [totalsByEntity, logsRes] = await Promise.all([
+        fetchPaymentTotalsByEntity(supabase, entityIds),
         supabase
             .from('interaction_logs')
             .select('id, entity_id, summary, staff_name, created_at')
@@ -96,20 +241,21 @@ export async function fetchSmsDashboardData(
             .limit(60),
     ]);
 
-    if (paymentsRes.error) {
-        console.error('Failed to load member payments for sms workspace:', paymentsRes.error.message);
-    }
-
     if (logsRes.error) {
         console.error('Failed to load sms history logs:', logsRes.error.message);
     }
 
-    const paymentRows = (paymentsRes.data || []) as PaymentRow[];
-    const recipients = unifiedPeople.map((person) => buildRecipient(person, paymentRows));
+    const recipients = unifiedPeople.map((person) => buildRecipient(person, totalsByEntity));
+    const recipientByEntityId = buildRecipientLookupByEntity(unifiedPeople, recipients);
     const logRows = (logsRes.data || []) as InteractionLogRow[];
-    const history = buildHistory(logRows, recipients);
-    const reachableCount = recipients.filter((recipient) => recipient.hasReachablePhone).length;
-    const unpaidCount = recipients.filter((recipient) => recipient.paymentStatus === 'unpaid').length;
+    const history = buildHistory(logRows, recipientByEntityId);
+    let reachableCount = 0;
+    let unpaidCount = 0;
+
+    for (const recipient of recipients) {
+        if (recipient.hasReachablePhone) reachableCount += 1;
+        if (recipient.paymentStatus === 'unpaid') unpaidCount += 1;
+    }
 
     return {
         recipients,

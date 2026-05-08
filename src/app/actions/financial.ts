@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
+import { requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
 // ── Unit Types ──────────────────────────────────────────
 
@@ -38,6 +39,7 @@ export async function getUnitTypes(): Promise<UnitType[]> {
 
 export async function upsertUnitType(unitType: Partial<UnitType> & { name: string; area_sqm: number }) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
 
     const payload = {
         name: unitType.name,
@@ -66,6 +68,7 @@ export async function upsertUnitType(unitType: Partial<UnitType> & { name: strin
 
 export async function deleteUnitType(id: string) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
     const { error } = await supabase.from('unit_types').update({ is_active: false }).eq('id', id);
     if (error) throw new Error(error.message);
     revalidateUnifiedMembersTag();
@@ -100,6 +103,7 @@ export async function getDepositAccounts(): Promise<DepositAccount[]> {
 
 export async function upsertDepositAccount(account: Partial<DepositAccount> & { account_name: string }) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
 
     const payload = {
         account_name: account.account_name,
@@ -122,6 +126,7 @@ export async function upsertDepositAccount(account: Partial<DepositAccount> & { 
 
 export async function deleteDepositAccount(id: string) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
     const { error } = await supabase.from('deposit_accounts').update({ is_active: false }).eq('id', id);
     if (error) throw new Error(error.message);
     revalidateUnifiedMembersTag();
@@ -161,6 +166,7 @@ export async function getMemberPayments(entityIds: string[]): Promise<MemberPaym
 
 export async function upsertMemberPayment(payment: Partial<MemberPayment> & { entity_id: string; payment_type: string }) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
 
     const payload = {
         entity_id: payment.entity_id,
@@ -188,6 +194,7 @@ export async function upsertMemberPayment(payment: Partial<MemberPayment> & { en
 
 export async function deleteMemberPayment(id: string) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
     const { error } = await supabase.from('member_payments').delete().eq('id', id);
     if (error) throw new Error(error.message);
     revalidateUnifiedMembersTag();
@@ -198,6 +205,7 @@ export async function deleteMemberPayment(id: string) {
  */
 export async function assignUnitTypeToMember(entityId: string, unitTypeId: string) {
     const supabase = await createClient();
+    await requireRole(ROLE_GROUPS.financeAdmin, supabase);
 
     // 1. Get unit type details
     const { data: unitType, error: utErr } = await supabase
