@@ -30,6 +30,7 @@ function isInvalidRefreshTokenError(error: unknown) {
 export default async function DashboardPage() {
     let dashboardData = createEmptyDashboardOverviewData();
     let currentUser: User | null = null;
+    let shouldRedirectLogin = false;
 
     try {
         const supabase = await createClient();
@@ -41,17 +42,20 @@ export default async function DashboardPage() {
 
         if (authError) {
             if (isInvalidRefreshTokenError(authError)) {
-                redirect('/login');
+                shouldRedirectLogin = true;
+            } else {
+                throw authError;
             }
-
-            throw authError;
+        } else {
+            currentUser = user;
+            dashboardData = await fetchDashboardOverviewData(supabase);
         }
-
-        currentUser = user;
-        dashboardData = await fetchDashboardOverviewData(supabase);
-
     } catch (error) {
         console.error("Dashboard Data Fetch Error:", error);
+    }
+
+    if (shouldRedirectLogin) {
+        redirect('/login');
     }
 
     const {
