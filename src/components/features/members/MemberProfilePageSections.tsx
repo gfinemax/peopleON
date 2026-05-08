@@ -4,7 +4,6 @@ import Image from 'next/image';
 
 interface MemberProfileSummary {
     display_name: string;
-    member_number: string | null;
     phone: string | null;
     email: string | null;
     address_legal: string | null;
@@ -90,7 +89,6 @@ export function MemberDetailSidebar({
                 </div>
 
                 <div className="mt-10 space-y-5">
-                    <ProfileInfoItem icon="badge" label="조합원번호" value={member.member_number ?? '-'} />
                     <ProfileInfoItem icon="call" label="연락처" value={member.phone || '010-1234-5678'} isMono />
                     <ProfileInfoItem icon="mail" label="이메일" value={member.email || 'user@example.com'} isMono />
                     <ProfileInfoItem icon="location_on" label="주소" value={member.address_legal || '서울시 강남구 테헤란로 123'} />
