@@ -164,17 +164,20 @@ export function MemberDetailDialogHeader({
                         </Button>
                     </>
                 )}
-                <Link
-                    href={`/members/${member?.id}`}
-                    className="group flex items-center justify-center rounded-full p-2 transition-colors hover:bg-white/10"
-                    title="전체 페이지로 이동"
-                >
-                    <MaterialIcon
-                        name="open_in_new"
-                        className="text-gray-400 transition-colors group-hover:text-white"
-                        size="sm"
-                    />
-                </Link>
+                {member ? (
+                    <Link
+                        href={`/members/${member.id}`}
+                        className="group inline-flex h-8 items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-500/10 px-3 text-xs font-bold text-sky-200 transition-colors hover:bg-sky-500/20 hover:text-white"
+                        title="공유/PDF 페이지로 이동"
+                    >
+                        <MaterialIcon
+                            name="picture_as_pdf"
+                            className="text-sky-300 transition-colors group-hover:text-white"
+                            size="xs"
+                        />
+                        공유/PDF
+                    </Link>
+                ) : null}
                 <button
                     onClick={onClose}
                     className="group flex items-center justify-center rounded-full p-2 transition-colors hover:bg-white/10"

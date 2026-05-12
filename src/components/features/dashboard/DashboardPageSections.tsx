@@ -54,10 +54,11 @@ export function DashboardKpiSection({
                 iconBg="bg-blue-500/10"
             />
 
-            <div className="group flex flex-col justify-between rounded-lg border border-border bg-card p-6 shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-300">
+            <div className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card/78 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/8">
+                <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-primary to-success" />
                 <div className="flex flex-col mb-4">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 transition-all duration-300 group-hover:scale-[1.03]">
                             <MaterialIcon name="how_to_reg" size="sm" />
                         </div>
                         <h3 className="text-sm font-bold text-muted-foreground">등기 조합원 현황</h3>

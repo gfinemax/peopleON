@@ -51,6 +51,7 @@ export function MemberDetailDialog({
 }: MemberDetailDialogProps) {
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
+    const [loadAttempted, setLoadAttempted] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -89,6 +90,9 @@ export function MemberDetailDialog({
     const refreshMember = async (ids: string[]) => {
         if (ids.length === 0) return;
         setLoading(true);
+        setLoadAttempted(false);
+        setMember(null);
+        setFormData({});
         setIsEditing(false);
         setSaveFeedback(null);
         setDeletedRightsIds([]);
@@ -97,6 +101,7 @@ export function MemberDetailDialog({
             setMember(data);
             setFormData(data);
         }
+        setLoadAttempted(true);
         setLoading(false);
         return data;
     };
@@ -321,7 +326,10 @@ export function MemberDetailDialog({
         }
     };
 
-    if (!member && !loading) {
+    const hasTargetMember = Boolean(memberIds?.length);
+    const isInitialLoading = open && hasTargetMember && !member && !loadAttempted;
+
+    if (!member && !loading && (!hasTargetMember || loadAttempted)) {
         return <MemberDetailDialogEmptyState open={open} onOpenChange={handleDialogOpenChange} />;
     }
 
@@ -348,7 +356,7 @@ export function MemberDetailDialog({
                 </div>
 
                 <MemberDetailDialogBody
-                    loading={loading}
+                    loading={loading || isInitialLoading}
                     activeTab={activeTab}
                     memberIds={memberIds}
                     member={member}
