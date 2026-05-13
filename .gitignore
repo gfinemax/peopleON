@@ -51,3 +51,5 @@ next-env.d.ts
 /merge_result.txt
 /sheets_temp
 nul
+
+.vercel
