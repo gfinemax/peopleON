@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { hasValidApiKey } from '@/lib/server/apiKeyAuth';
 
 function isInvalidRefreshTokenError(error: unknown) {
     const message =
@@ -47,6 +48,13 @@ function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) 
 }
 
 export async function proxy(request: NextRequest) {
+    if (
+        request.nextUrl.pathname === '/api/members/table' &&
+        hasValidApiKey(request.headers)
+    ) {
+        return NextResponse.next();
+    }
+
     // Public paths that don't require authentication
     const publicPaths = ['/login', '/signup', '/forgot-password'];
     const isPublicPath = publicPaths.some(path =>
