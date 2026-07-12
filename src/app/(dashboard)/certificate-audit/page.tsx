@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Header } from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/server';
 import {
@@ -274,7 +275,13 @@ export default async function FinancePage({
                         Legacy 내부 중복은 B(비등기 Legacy)에서 같은 권리증번호가 2건 이상인 번호 수입니다.
                     </p>
 
-                    <LegacyFilter />
+                    <Suspense fallback={
+                        <div className="h-24 w-full rounded-xl border border-border/20 bg-card/20 backdrop-blur-sm animate-pulse flex items-center justify-center text-xs text-muted-foreground/30 font-bold">
+                            필터링 시스템 로딩 중...
+                        </div>
+                    }>
+                        <LegacyFilter />
+                    </Suspense>
 
                     <CertificateAuditStatisticsSection
                         mergedDuplicateRows={mergedDuplicateRows}

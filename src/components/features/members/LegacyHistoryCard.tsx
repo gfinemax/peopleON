@@ -16,11 +16,26 @@ interface LegacyRecord {
 
 export function LegacyHistoryCard({ records }: { records: LegacyRecord[] }) {
     const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     if (!records || records.length === 0) return null;
 
     const toggleExpand = (id: string) => {
         setExpandedRecord(expandedRecord === id ? null : id);
+    };
+
+    const handleCopy = async (id: string, rawData: Record<string, unknown>) => {
+        try {
+            const jsonString = JSON.stringify(rawData, null, 2);
+            await navigator.clipboard.writeText(jsonString);
+            setCopiedId(id);
+            setTimeout(() => {
+                setCopiedId(null);
+            }, 2000); // Reset feedback state after 2 seconds
+        } catch (err) {
+            console.error('Failed to copy text:', err);
+            alert('클립보드 복사에 실패했습니다.');
+        }
     };
 
     return (
@@ -94,9 +109,18 @@ export function LegacyHistoryCard({ records }: { records: LegacyRecord[] }) {
                                         )}
                                     </div>
                                     <div className="mt-4 flex justify-end">
-                                        <button className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
-                                            <MaterialIcon name="content_copy" size="xs" />
-                                            RAW JSON 복사
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(record.id, record.raw_data)}
+                                            className={cn(
+                                                "text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer",
+                                                copiedId === record.id 
+                                                    ? "text-emerald-400 hover:text-emerald-300 font-semibold" 
+                                                    : "text-primary hover:underline"
+                                            )}
+                                        >
+                                            <MaterialIcon name={copiedId === record.id ? "check" : "content_copy"} size="xs" />
+                                            {copiedId === record.id ? "복사 완료!" : "RAW JSON 복사"}
                                         </button>
                                     </div>
                                 </div>
