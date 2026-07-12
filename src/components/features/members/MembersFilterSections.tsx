@@ -29,6 +29,8 @@ const chipToneClass: Record<FilterChip['tone'], string> = {
     sky: 'bg-sky-300/10 text-sky-200 border-sky-300/20',
 };
 
+const getStatusDisplayLabel = (status: string) => status === '정상' ? '등기' : status;
+
 export function MembersRoleTabs({
     roleTabs,
     activeRole,
@@ -193,7 +195,7 @@ export function MembersFilterControls({
                         })
                         .map(([status, count]) => (
                             <SelectItem key={status} value={status}>
-                                {status} ({count})
+                                {getStatusDisplayLabel(status)} ({count})
                             </SelectItem>
                         ))}
                 </SelectContent>

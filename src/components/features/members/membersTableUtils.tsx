@@ -154,7 +154,7 @@ export const getSettlementSummary = (member: MembersTableMember) => {
 export const getStatusBadge = (status: string | null) => {
     switch (status) {
         case '정상':
-            return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300 border border-emerald-400/20">정상</span>;
+            return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300 border border-emerald-400/20">등기</span>;
         case '대리인':
             return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200 border border-emerald-400/20">대리인</span>;
         case '관계인':

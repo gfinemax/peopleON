@@ -50,6 +50,8 @@ const tierGroupsByRole: Record<string, string[]> = {
     party: ['대리인', '관계인'],
 };
 
+const getStatusDisplayLabel = (status: string) => status === '정상' ? '등기' : status;
+
 const normalizeTierQuery = (raw: string | null) => {
     if (!raw || raw === 'all') return 'all';
     if (raw === '1차') return '2차';
@@ -146,7 +148,7 @@ export function MembersFilter({
         activeRole !== 'all' ? { key: 'role', label: `역할군: ${activeTab.label}`, tone: 'blue' as const } : null,
         activeRel !== 'all' ? { key: 'rel', label: `관계: ${activeRel}`, tone: 'indigo' as const } : null,
         activeTier !== 'all' ? { key: 'tier', label: `분류: ${activeTier}`, tone: 'sky' as const } : null,
-        activeStatus && activeStatus !== 'all' ? { key: 'status', label: `상태: ${activeStatus}`, tone: 'sky' as const } : null,
+        activeStatus && activeStatus !== 'all' ? { key: 'status', label: `상태: ${getStatusDisplayLabel(activeStatus)}`, tone: 'sky' as const } : null,
         activeTag ? { key: 'tag', label: `태그: #${activeTag}`, tone: 'sky' as const } : null,
     ].filter((chip): chip is FilterChip => Boolean(chip));
 
