@@ -6,6 +6,89 @@ export interface ExportColumn {
     label: string;
 }
 
+const roleLabelMap: Record<string, string> = {
+    member: '조합원',
+    certificate_holder: '권리증보유',
+    related_party: '관계인',
+    refund_applicant: '환불신청',
+    agent: '대리인',
+};
+
+const rolePriorityMap: Record<string, number> = {
+    member: 1,
+    certificate_holder: 2,
+    refund_applicant: 3,
+    agent: 4,
+    related_party: 5,
+};
+
+function getPrimaryTierLabel(person: MemberExportRow) {
+    const tiers = person.tiers || [];
+    return tiers.find((tier) =>
+        tier.includes('차') ||
+        tier.includes('조합원') ||
+        tier === '지주' ||
+        tier === '일반분양'
+    ) || person.tier || '';
+}
+
+export function formatExportCategory(person: MemberExportRow) {
+    const roles = person.role_types || [];
+    if (roles.length === 0) {
+        return Array.isArray(person.tiers) && person.tiers.length > 0
+            ? person.tiers.join(', ')
+            : (person.tier || '');
+    }
+
+    const primaryTier = getPrimaryTierLabel(person);
+    const labels = roles
+        .map((role) => {
+            if (role === 'member') {
+                if (primaryTier === '등기조합원') return '조합원(등기)';
+                if (primaryTier === '지주조합원') return '조합원(지주)';
+                if (primaryTier === '2차') return '조합원(2차)';
+                if (primaryTier === '일반분양') return '조합원(일반분양)';
+                if (primaryTier === '예비조합원') return '조합원(예비)';
+                if (primaryTier === '지주') return '원지주';
+                return primaryTier || roleLabelMap.member;
+            }
+
+            return roleLabelMap[role] || role;
+        })
+        .sort((left, right) => {
+            const leftRole = roles.find((role) => (roleLabelMap[role] || role) === left || left.startsWith(roleLabelMap[role] || role));
+            const rightRole = roles.find((role) => (roleLabelMap[role] || role) === right || right.startsWith(roleLabelMap[role] || role));
+            return (rolePriorityMap[leftRole || ''] || 99) - (rolePriorityMap[rightRole || ''] || 99);
+        });
+
+    return Array.from(new Set(labels)).join(', ');
+}
+
+export function formatExportRelationships(person: MemberExportRow) {
+    const items: string[] = [];
+
+    for (const relationship of person.relationships || []) {
+        const relation = relationship.relation ? `(${relationship.relation})` : '';
+        items.push(`${relationship.name}${relation}`);
+    }
+
+    for (const owner of person.acts_as_agent_for || []) {
+        const relation = owner.relation ? `(${owner.relation})` : '';
+        const type = owner.type ? ` ${owner.type}` : '';
+        items.push(`${owner.name}${type}${relation}`);
+    }
+
+    if (person.real_owner) {
+        items.push(`${person.real_owner.name}(실소유자)`);
+    }
+
+    for (const nominee of person.nominees || []) {
+        items.push(`${nominee.name}(명의자)`);
+    }
+
+    return Array.from(new Set(items)).join(', ');
+}
+
 export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) {
     if (!data || data.length === 0 || !columns || columns.length === 0) return
 
@@ -28,12 +111,13 @@ export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) 
                         : '';
                     break;
                 case 'tier':
-                    row[col.label] = Array.isArray(p.tiers) && p.tiers.length > 0 
-                        ? p.tiers.join(', ') 
-                        : (p.tier || '');
+                    row[col.label] = formatExportCategory(p);
                     break;
                 case 'unit_group':
                     row[col.label] = p.unit_group || '';
+                    break;
+                case 'relationships':
+                    row[col.label] = formatExportRelationships(p);
                     break;
                 case 'address':
                     row[col.label] = p.address_legal || '';

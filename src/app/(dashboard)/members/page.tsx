@@ -44,6 +44,10 @@ function toMemberExportRow(person: {
     address_legal?: string | null;
     status: string | null;
     role_types?: string[];
+    relationships?: { id?: string; name: string; relation: string; phone?: string }[] | null;
+    acts_as_agent_for?: { id?: string; name: string; relation: string; type: string; category?: string }[] | null;
+    real_owner?: { id: string; name: string } | null;
+    nominees?: { id: string; name: string }[] | null;
     notes?: string | null;
     raw_certificate_count: number;
     managed_certificate_count: number;
@@ -59,6 +63,10 @@ function toMemberExportRow(person: {
         address_legal: person.address_legal,
         status: person.status,
         role_types: person.role_types,
+        relationships: person.relationships,
+        acts_as_agent_for: person.acts_as_agent_for,
+        real_owner: person.real_owner,
+        nominees: person.nominees,
         notes: person.notes,
         raw_certificate_count: person.raw_certificate_count,
         managed_certificate_count: person.managed_certificate_count,

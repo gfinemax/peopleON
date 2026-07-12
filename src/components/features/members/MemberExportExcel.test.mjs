@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import {
+    formatExportCategory,
+    formatExportRelationships,
+} from './MemberExportExcel.ts';
+
+describe('member export formatting', () => {
+    it('formats category like the members table role badges', () => {
+        assert.equal(
+            formatExportCategory({
+                id: '1',
+                name: '강광자',
+                phone: null,
+                certificate_numbers: ['2006-1-212'],
+                tier: '등기조합원',
+                tiers: ['등기조합원', '권리증보유자'],
+                unit_group: null,
+                status: '정상',
+                role_types: ['member', 'certificate_holder'],
+                raw_certificate_count: 1,
+                managed_certificate_count: 1,
+            }),
+            '조합원(등기), 권리증보유',
+        );
+    });
+
+    it('exports relationship names and relation labels', () => {
+        assert.equal(
+            formatExportRelationships({
+                id: '1',
+                name: '강광자',
+                phone: null,
+                tier: '등기조합원',
+                unit_group: null,
+                status: '정상',
+                relationships: [{ name: '신승희', relation: '자녀' }],
+                raw_certificate_count: 1,
+                managed_certificate_count: 1,
+            }),
+            '신승희(자녀)',
+        );
+    });
+});
