@@ -68,14 +68,14 @@ export function formatExportRelationships(person: MemberExportRow) {
     const items: string[] = [];
 
     for (const relationship of person.relationships || []) {
-        const relation = relationship.relation ? `(${relationship.relation})` : '';
+        const relation = relationship.relation || '';
         items.push(`${relationship.name}${relation}`);
     }
 
     for (const owner of person.acts_as_agent_for || []) {
-        const relation = owner.relation ? `(${owner.relation})` : '';
+        const relation = owner.relation || '';
         const type = owner.type ? ` ${owner.type}` : '';
-        items.push(`${owner.name}${type}${relation}`);
+        items.push(`${owner.name}${relation}${type}`);
     }
 
     if (person.real_owner) {
@@ -87,6 +87,11 @@ export function formatExportRelationships(person: MemberExportRow) {
     }
 
     return Array.from(new Set(items)).join(', ');
+}
+
+export function formatExportStatus(status: string | null) {
+    if (status === '정상') return '등기';
+    return status || '';
 }
 
 export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) {
@@ -123,7 +128,7 @@ export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) 
                     row[col.label] = p.address_legal || '';
                     break;
                 case 'status':
-                    row[col.label] = p.status || '';
+                    row[col.label] = formatExportStatus(p.status);
                     break;
                 case 'memo':
                     row[col.label] = p.notes || '';

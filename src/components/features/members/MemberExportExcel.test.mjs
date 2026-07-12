@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
     formatExportCategory,
     formatExportRelationships,
+    formatExportStatus,
 } from './MemberExportExcel.ts';
 
 describe('member export formatting', () => {
@@ -39,7 +40,13 @@ describe('member export formatting', () => {
                 raw_certificate_count: 1,
                 managed_certificate_count: 1,
             }),
-            '신승희(자녀)',
+            '신승희자녀',
         );
+    });
+
+    it('exports normal status as registered label', () => {
+        assert.equal(formatExportStatus('정상'), '등기');
+        assert.equal(formatExportStatus('탈퇴'), '탈퇴');
+        assert.equal(formatExportStatus(null), '');
     });
 });
