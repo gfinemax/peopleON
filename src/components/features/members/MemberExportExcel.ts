@@ -89,9 +89,10 @@ export function formatExportRelationships(person: MemberExportRow) {
     return Array.from(new Set(items)).join(', ');
 }
 
-export function formatExportStatus(status: string | null) {
-    if (status === '정상') return '등기';
-    return status || '';
+export function formatExportStatus(status: string | null, displayStatus?: string | null) {
+    const effectiveStatus = displayStatus || status;
+    if (effectiveStatus === '정상') return '등기';
+    return effectiveStatus || '';
 }
 
 export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) {
@@ -128,7 +129,7 @@ export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) 
                     row[col.label] = p.address_legal || '';
                     break;
                 case 'status':
-                    row[col.label] = formatExportStatus(p.status);
+                    row[col.label] = formatExportStatus(p.status, p.display_status);
                     break;
                 case 'memo':
                     row[col.label] = p.notes || '';

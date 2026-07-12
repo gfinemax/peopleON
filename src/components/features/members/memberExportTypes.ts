@@ -8,6 +8,7 @@ export type MemberExportRow = {
     unit_group: string | null;
     address_legal?: string | null;
     status: string | null;
+    display_status?: string | null;
     role_types?: string[];
     relationships?: { id?: string; name: string; relation: string; phone?: string }[] | null;
     acts_as_agent_for?: { id?: string; name: string; relation: string; type: string; category?: string }[] | null;

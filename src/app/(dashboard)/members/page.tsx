@@ -6,6 +6,7 @@ import { DashboardManager } from '@/components/features/members/DashboardManager
 import { MemberActions } from '@/components/features/members/MemberActions';
 import { MembersDataSection } from '@/components/features/members/MembersPageSections';
 import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
+import type { UnifiedPerson } from '@/services/memberAggregation';
 import { fetchPersonCertificateRollupsSnapshot } from '@/lib/server/personCertificateSummary';
 import { fetchRecentActivitySummariesSnapshotForPeople } from '@/lib/server/activityFeed';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
@@ -33,25 +34,7 @@ const TOTAL_HOUSEHOLDS = 254;
 const MIN_LOG_SEARCH_QUERY_LENGTH = 2;
 const LOG_SEARCH_RESULT_LIMIT = 2000;
 
-function toMemberExportRow(person: {
-    id: string;
-    name: string;
-    phone: string | null;
-    certificate_numbers?: string[];
-    tier: string | null;
-    tiers?: string[];
-    unit_group: string | null;
-    address_legal?: string | null;
-    status: string | null;
-    role_types?: string[];
-    relationships?: { id?: string; name: string; relation: string; phone?: string }[] | null;
-    acts_as_agent_for?: { id?: string; name: string; relation: string; type: string; category?: string }[] | null;
-    real_owner?: { id: string; name: string } | null;
-    nominees?: { id: string; name: string }[] | null;
-    notes?: string | null;
-    raw_certificate_count: number;
-    managed_certificate_count: number;
-}): MemberExportRow {
+function toMemberExportRow(person: UnifiedPerson): MemberExportRow {
     return {
         id: person.id,
         name: person.name,
@@ -62,6 +45,7 @@ function toMemberExportRow(person: {
         unit_group: person.unit_group,
         address_legal: person.address_legal,
         status: person.status,
+        display_status: getDisplayMemberStatus(person),
         role_types: person.role_types,
         relationships: person.relationships,
         acts_as_agent_for: person.acts_as_agent_for,

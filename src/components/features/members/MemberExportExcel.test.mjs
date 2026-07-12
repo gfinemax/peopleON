@@ -49,4 +49,10 @@ describe('member export formatting', () => {
         assert.equal(formatExportStatus('탈퇴'), '탈퇴');
         assert.equal(formatExportStatus(null), '');
     });
+
+    it('prefers table display status for export status', () => {
+        assert.equal(formatExportStatus('정상', '환불'), '환불');
+        assert.equal(formatExportStatus('정상', '대리인'), '대리인');
+        assert.equal(formatExportStatus('정상', '정상'), '등기');
+    });
 });
