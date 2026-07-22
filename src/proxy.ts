@@ -49,7 +49,8 @@ function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) 
 
 export async function proxy(request: NextRequest) {
     if (
-        request.nextUrl.pathname === '/api/members/table' &&
+        (request.nextUrl.pathname === '/api/members/table' ||
+            request.nextUrl.pathname === '/api/integrations/ledger/members') &&
         hasValidApiKey(request.headers)
     ) {
         return NextResponse.next();
