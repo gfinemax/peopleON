@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Noto_Sans_KR } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
+
+const notoSansKr = Noto_Sans_KR({
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-noto-sans-kr",
+});
 
 export const metadata: Metadata = {
     title: "People On - 통합 CRM & ERP",
@@ -24,8 +31,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="ko" suppressHydrationWarning>
-            <body className="font-display antialiased">
+        <html lang="ko" className={notoSansKr.variable} suppressHydrationWarning>
+            <body className="antialiased">
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"

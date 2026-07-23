@@ -6,8 +6,8 @@
 
 @theme {
     /* Font Family */
-    --font-display: "Inter", "Pretendard", "Segoe UI Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", ui-sans-serif, system-ui, sans-serif;
-    --font-sans: "Inter", "Pretendard", "Segoe UI Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
     /* Colors */
