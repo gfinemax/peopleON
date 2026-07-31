@@ -25,6 +25,7 @@ export async function GET(request: Request) {
                 display_status: getDisplayMemberStatus(person),
                 unit_group: person.unit_group,
                 birth_date: person.birth_date,
+                joined_at: person.joined_at,
                 certificate_numbers: person.certificate_numbers || [],
                 certificate_display: person.certificate_display || null,
                 is_registered: person.is_registered,

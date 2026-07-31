@@ -56,6 +56,7 @@ export type UnifiedPerson = {
     nominees?: { id: string; name: string }[] | null;
     _hasLiveCertData?: boolean;
     birth_date: string | null;
+    joined_at: string | null;
     source_certificate_row_count: number;
     raw_certificate_count: number;
     managed_certificate_count: number;

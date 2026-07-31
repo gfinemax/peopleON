@@ -90,6 +90,9 @@ export function mergeUnifiedPeople(rawUnifiedPeople: UnifiedPerson[]) {
             if (person.is_registered) target.is_registered = true;
             if (!target.address_legal && person.address_legal) target.address_legal = person.address_legal;
             if (!target.birth_date && person.birth_date) target.birth_date = person.birth_date;
+            if (person.joined_at && (!target.joined_at || person.joined_at < target.joined_at)) {
+                target.joined_at = person.joined_at;
+            }
 
             const currentPriority = statusPriority[target.status || ''] || 0;
             const incomingPriority = statusPriority[person.status || ''] || 0;

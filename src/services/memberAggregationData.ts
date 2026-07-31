@@ -34,6 +34,7 @@ export type CertificateRegistryRecord = {
     note: unknown;
     is_active: boolean;
     is_confirmed_for_count?: boolean | null;
+    issued_at?: string | null;
 };
 
 export type AggregatedRightRecord = {
@@ -47,6 +48,7 @@ export type AggregatedRightRecord = {
     note: unknown;
     is_active: boolean;
     is_confirmed_for_count?: boolean | null;
+    issued_at?: string | null;
 };
 
 export type SettlementCaseRecord = {
@@ -104,6 +106,7 @@ const mapCertificateRows = (rows: CertificateRegistryRecord[]) =>
         note: row.note,
         is_active: row.is_active,
         is_confirmed_for_count: row.is_confirmed_for_count,
+        issued_at: row.issued_at,
     }));
 
 export const groupByEntityId = <T extends { entity_id: string }>(items: T[]) => {
@@ -142,7 +145,7 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
             .select('id, entity_id, role_code, role_status, is_registered'),
         supabase
             .from('certificate_registry')
-            .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count')
+            .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count, issued_at')
             .eq('is_active', true),
         fetchLatestSettlementCases(supabase),
         supabase

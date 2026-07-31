@@ -160,6 +160,11 @@ export function buildRawUnifiedPeople(
             }
         }
 
+        const joinedAt = combinedRights
+            .map((right) => right.issued_at?.slice(0, 10) || '')
+            .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))
+            .sort()[0] || null;
+
         const hasLiveCertData = entityRights.some((right) => right.right_type === 'certificate');
         const hasNumericCert = certificateNumbers.length > 0;
         if (roleTypes.has('certificate_holder')) {
@@ -177,6 +182,7 @@ export function buildRawUnifiedPeople(
             certificate_numbers: certificateNumbers,
             certificate_search_tokens: certificateSearchTokens,
             birth_date: derivedBirthDate,
+            joined_at: joinedAt,
             phone: entity.phone,
             address_legal: entity.address_legal,
             tier,
