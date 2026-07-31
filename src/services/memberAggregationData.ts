@@ -35,6 +35,7 @@ export type CertificateRegistryRecord = {
     is_active: boolean;
     is_confirmed_for_count?: boolean | null;
     issued_at?: string | null;
+    cert_date?: string | null;
 };
 
 export type AggregatedRightRecord = {
@@ -106,7 +107,7 @@ const mapCertificateRows = (rows: CertificateRegistryRecord[]) =>
         note: row.note,
         is_active: row.is_active,
         is_confirmed_for_count: row.is_confirmed_for_count,
-        issued_at: row.issued_at,
+        issued_at: row.issued_at || row.cert_date || null,
     }));
 
 export const groupByEntityId = <T extends { entity_id: string }>(items: T[]) => {
@@ -136,6 +137,22 @@ async function fetchLatestSettlementCases(supabase: SupabaseClient) {
 }
 
 export async function fetchAggregationBaseData(supabase: SupabaseClient) {
+    const fetchCertificateRegistry = async () => {
+        const currentSchema = await supabase
+            .from('certificate_registry')
+            .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count, issued_at')
+            .eq('is_active', true);
+
+        if (!currentSchema.error || currentSchema.error.code !== '42703') {
+            return currentSchema;
+        }
+
+        return supabase
+            .from('certificate_registry')
+            .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count, cert_date')
+            .eq('is_active', true);
+    };
+
     const [entitiesRes, rolesRes, rightsRes, casesRes, relsRes] = await Promise.all([
         supabase
             .from('account_entities')
@@ -143,10 +160,7 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
         supabase
             .from('membership_roles')
             .select('id, entity_id, role_code, role_status, is_registered'),
-        supabase
-            .from('certificate_registry')
-            .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count, issued_at')
-            .eq('is_active', true),
+        fetchCertificateRegistry(),
         fetchLatestSettlementCases(supabase),
         supabase
             .from('entity_relationships')
