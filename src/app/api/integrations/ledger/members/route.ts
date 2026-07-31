@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 
 import { hasValidApiKey } from '@/lib/server/apiKeyAuth';
 import { getDisplayMemberStatus } from '@/lib/members/unifiedPersonUtils';
+import { birthDateFromResidentRegistrationNumber } from '@/lib/residentRegistrationBirthDate';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +15,28 @@ export async function GET(request: Request) {
 
     try {
         const people = await getUnifiedMembersSnapshot();
-        const members = people
-            .filter((person) => person.source_type === 'member' || person.role_types.includes('member'))
+        const ledgerPeople = people.filter(
+            (person) => person.source_type === 'member' || person.role_types.includes('member'),
+        );
+        const missingBirthEntityIds = Array.from(new Set(
+            ledgerPeople.filter((person) => !person.birth_date).flatMap((person) => person.entity_ids),
+        ));
+        const birthDateByEntityId = new Map<string, string>();
+
+        if (missingBirthEntityIds.length > 0) {
+            const { data, error } = await createAdminClient()
+                .from('entity_private_info')
+                .select('entity_id, resident_registration_number')
+                .in('entity_id', missingBirthEntityIds);
+
+            if (error) throw error;
+            for (const row of data || []) {
+                const birthDate = birthDateFromResidentRegistrationNumber(row.resident_registration_number);
+                if (birthDate) birthDateByEntityId.set(row.entity_id, birthDate);
+            }
+        }
+
+        const members = ledgerPeople
             .map((person) => ({
                 peopleon_id: person.id,
                 member_id: person.member_id,
@@ -24,7 +46,9 @@ export async function GET(request: Request) {
                 status: person.status,
                 display_status: getDisplayMemberStatus(person),
                 unit_group: person.unit_group,
-                birth_date: person.birth_date,
+                birth_date: person.birth_date
+                    || person.entity_ids.map((entityId) => birthDateByEntityId.get(entityId)).find(Boolean)
+                    || null,
                 joined_at: person.joined_at,
                 certificate_numbers: person.certificate_numbers || [],
                 certificate_display: person.certificate_display || null,
