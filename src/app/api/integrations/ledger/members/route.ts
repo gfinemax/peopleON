@@ -24,6 +24,11 @@ export async function GET(request: Request) {
                 status: person.status,
                 display_status: getDisplayMemberStatus(person),
                 unit_group: person.unit_group,
+                birth_date: person.birth_date,
+                certificate_numbers: person.certificate_numbers || [],
+                certificate_display: person.certificate_display || null,
+                is_registered: person.is_registered,
+                tier: person.tier,
                 related_names: (person.relationships || []).map((relationship) => ({
                     name: relationship.name,
                     relation: relationship.relation,
