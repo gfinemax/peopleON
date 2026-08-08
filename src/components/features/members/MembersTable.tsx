@@ -76,7 +76,7 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
             <MemberQuickPreview
                 key={selectedMemberId || 'empty'}
                 memberId={selectedMemberId}
-                memberIds={tableMembers.find((member) => member.id === selectedMemberId)?.entity_ids || (selectedMemberId ? [selectedMemberId] : null)}
+                memberIds={tableMembers.find((member) => member.member_id === selectedMemberId)?.entity_ids || (selectedMemberId ? [selectedMemberId] : null)}
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 returnTo={typeof window === 'undefined' ? '/members' : `${window.location.pathname}${window.location.search}`}
