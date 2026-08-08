@@ -153,13 +153,13 @@ export function MembersMobileList({
                                     </button>
                                 ))}
                             </div>
-                            <div className="rounded-md border border-white/[0.06] bg-[#0d1523] p-2">
+                            <button type="button" onClick={(event) => { event.stopPropagation(); if (member.member_id) onOpenMemberDetail(member.member_id, 'payment'); }} disabled={!member.member_id} className="rounded-md border border-white/[0.06] bg-[#0d1523] p-2 transition-colors hover:border-sky-400/30 disabled:cursor-default">
                                 <p className="text-[10px] text-slate-400">정산 요약</p>
                                 <p className={cn('mt-1 text-xs font-semibold', settlementSummary.textClassName)}>
                                     {settlementSummary.label}
                                 </p>
                                 {settlementSummary.detail && <p className="mt-1 text-xs font-mono text-slate-300">{settlementSummary.detail}</p>}
-                            </div>
+                            </button>
                         </div>
 
                         <div className="flex items-center justify-between text-[12px]">

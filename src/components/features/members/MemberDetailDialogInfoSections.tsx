@@ -59,6 +59,8 @@ interface MemberDetailDialogHeaderProps {
     onDelete: () => void;
     onClose: () => void;
     setFormData: Dispatch<SetStateAction<Partial<MemberDetailDialogMember>>>;
+    presentation?: 'dialog' | 'page';
+    onPrint?: () => void;
 }
 
 export function MemberDetailDialogHeader({
@@ -73,25 +75,27 @@ export function MemberDetailDialogHeader({
     onDelete,
     onClose,
     setFormData,
+    presentation = 'dialog',
+    onPrint,
 }: MemberDetailDialogHeaderProps) {
+    const titleContent = isEditing ? (
+        <Input
+            className="h-9 max-w-[200px] border-emerald-500/30 bg-[#1A2633] text-xl font-bold text-white"
+            value={formData.name || ''}
+            onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+            autoFocus
+        />
+    ) : (member?.name || 'Loading...');
+
     return (
-        <div className="relative z-20 flex shrink-0 items-start justify-between bg-[#0F151B] px-6 pt-6 pb-1 select-none cursor-move">
+        <div className={cn('relative z-20 flex shrink-0 items-start justify-between bg-[#0F151B] px-6 pt-6 pb-1 select-none', presentation === 'dialog' ? 'cursor-move' : 'cursor-default')}>
             <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-3">
-                    <DialogTitle className="flex items-center gap-2 text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-md">
-                        {isEditing ? (
-                            <Input
-                                className="h-9 max-w-[200px] border-emerald-500/30 bg-[#1A2633] text-xl font-bold text-white"
-                                value={formData.name || ''}
-                                onChange={(event) =>
-                                    setFormData((prev) => ({ ...prev, name: event.target.value }))
-                                }
-                                autoFocus
-                            />
-                        ) : (
-                            member?.name || 'Loading...'
-                        )}
-                    </DialogTitle>
+                    {presentation === 'dialog' ? (
+                        <DialogTitle className="flex items-center gap-2 text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-md">{titleContent}</DialogTitle>
+                    ) : (
+                        <h1 className="flex items-center gap-2 text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-md">{titleContent}</h1>
+                    )}
                     {member ? (
                         <span
                             className={cn(
@@ -164,7 +168,7 @@ export function MemberDetailDialogHeader({
                         </Button>
                     </>
                 )}
-                {member ? (
+                {member && presentation === 'dialog' ? (
                     <Link
                         href={`/members/${member.id}`}
                         className="group inline-flex h-8 items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-500/10 px-3 text-xs font-bold text-sky-200 transition-colors hover:bg-sky-500/20 hover:text-white"
@@ -178,12 +182,19 @@ export function MemberDetailDialogHeader({
                         공유/PDF
                     </Link>
                 ) : null}
+                {member && presentation === 'page' ? (
+                    <Button variant="outline" size="sm" onClick={onPrint} className="h-8 border-sky-400/25 bg-sky-500/10 px-3 text-xs font-bold text-sky-200 hover:bg-sky-500/20 hover:text-white">
+                        <MaterialIcon name="picture_as_pdf" size="xs" className="mr-1.5" />
+                        공유/PDF
+                    </Button>
+                ) : null}
                 <button
                     onClick={onClose}
+                    aria-label={presentation === 'page' ? '조합원 목록으로 돌아가기' : '상세 창 닫기'}
                     className="group flex items-center justify-center rounded-full p-2 transition-colors hover:bg-white/10"
                 >
                     <MaterialIcon
-                        name="close"
+                        name={presentation === 'page' ? 'arrow_back' : 'close'}
                         className="text-gray-400 transition-colors group-hover:text-white"
                         size="sm"
                     />

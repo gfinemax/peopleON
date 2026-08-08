@@ -20,9 +20,9 @@ export const MEMBER_DETAIL_DIALOG_TABS: Array<{
     label: string;
     icon: string;
 }> = [
-    { id: 'info', label: '기본', icon: 'person' },
-    { id: 'timeline', label: '이력', icon: 'history' },
-    { id: 'payment', label: '납부', icon: 'payments' },
+    { id: 'info', label: '통합정보', icon: 'person' },
+    { id: 'timeline', label: '상담·활동', icon: 'history' },
+    { id: 'payment', label: '납부·정산', icon: 'payments' },
     { id: 'admin', label: '권리증', icon: 'description' },
 ];
 
@@ -58,18 +58,20 @@ function MemberDetailDialogTabBar({
     onTabChange,
 }: MemberDetailDialogTabBarProps) {
     return (
-        <div className="relative z-10 flex items-end px-4">
+        <div className="relative z-10 flex items-end overflow-x-auto px-2 scrollbar-thin scrollbar-thumb-white/10 sm:px-4" role="tablist" aria-label="조합원 통합정보 메뉴">
             {MEMBER_DETAIL_DIALOG_TABS.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                     <button
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
+                        role="tab"
+                        aria-selected={isActive}
                         className={cn(
                             'relative group flex items-center justify-center pb-3 outline-none transition-all',
                             isActive
-                                ? 'min-w-[100px] px-4 pt-3.5 z-20'
-                                : 'min-w-[110px] px-6 pt-4 text-gray-500 hover:text-gray-300 z-10',
+                                ? 'min-w-[96px] px-3 pt-3.5 z-20'
+                                : 'min-w-[96px] px-3 pt-4 text-gray-500 hover:text-gray-300 z-10 sm:min-w-[110px] sm:px-6',
                         )}
                     >
                         {isActive ? (

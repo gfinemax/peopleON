@@ -184,13 +184,13 @@ export function MembersDesktopTable(props: MembersTableSectionsProps) {
                                         '-'
                                     )}
                                 </td>
-                                <td className="px-2 py-1.5">
-                                    <div className="flex flex-col items-center justify-center gap-1">
+                                <td className="px-2 py-1.5" onClick={(event) => event.stopPropagation()}>
+                                    <button type="button" onClick={() => member.member_id && onOpenMemberDetail(member.member_id, 'payment')} disabled={!member.member_id} className="flex w-full flex-col items-center justify-center gap-1 rounded-md p-1 transition-colors hover:bg-white/5 disabled:cursor-default">
                                         <span className={cn('rounded border px-2 py-1 text-[10px] font-semibold', settlementSummary.className)}>
                                             {settlementSummary.label}
                                         </span>
                                         {settlementSummary.detail && <span className="text-[11px] font-mono text-slate-300">{settlementSummary.detail}</span>}
-                                    </div>
+                                    </button>
                                 </td>
                             </tr>
                         );
