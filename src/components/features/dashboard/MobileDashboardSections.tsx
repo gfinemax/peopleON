@@ -4,6 +4,7 @@ import { GlobalSearch } from '@/components/features/search/GlobalSearch';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import Link from 'next/link';
 import type {
     DashboardEvent,
     DashboardStats,
@@ -65,6 +66,7 @@ function MobileMetricCard({
     accentClass,
     iconClass,
     highlight,
+    href,
 }: {
     icon: string;
     label: string;
@@ -73,9 +75,10 @@ function MobileMetricCard({
     accentClass: string;
     iconClass: string;
     highlight?: boolean;
+    href: string;
 }) {
     return (
-        <div className="relative flex h-20 flex-col justify-center overflow-hidden rounded-xl border border-border/50 bg-card p-3 shadow-sm">
+        <Link href={href} className="relative flex min-h-20 flex-col justify-center overflow-hidden rounded-xl border border-border/50 bg-card p-3 shadow-sm active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <div className={cn('absolute right-0 top-0 h-full w-1', accentClass)} />
             {highlight ? (
                 <div className="absolute right-[-10px] top-[-10px] h-16 w-16 rounded-full bg-primary/5 transition-transform duration-500 group-hover:scale-150" />
@@ -90,7 +93,8 @@ function MobileMetricCard({
                     {suffix ? <span className="text-[10px] font-bold text-muted-foreground">{suffix}</span> : null}
                 </div>
             </div>
-        </div>
+            <MaterialIcon name="arrow_forward" size="xs" className="absolute bottom-2 right-2 text-primary/70" />
+        </Link>
     );
 }
 
@@ -112,6 +116,7 @@ export function MobileDashboardMetrics({
                         accentClass="bg-primary/0"
                         iconClass="text-primary"
                         highlight
+                        href="/members?from=dashboard&view=all"
                     />
                 </div>
                 <MobileMetricCard
@@ -121,6 +126,7 @@ export function MobileDashboardMetrics({
                     suffix={`(${stats.registeredMembersRate || 0}%)`}
                     accentClass="bg-indigo-500"
                     iconClass="text-indigo-500"
+                    href="/members?tier=등기조합원&from=dashboard&view=registered"
                 />
                 <MobileMetricCard
                     icon="folder"
@@ -129,6 +135,7 @@ export function MobileDashboardMetrics({
                     suffix="건"
                     accentClass="bg-violet-500"
                     iconClass="text-violet-500"
+                    href="/members?tier=권리증보유자&from=dashboard&view=certificates"
                 />
                 <MobileMetricCard
                     icon="groups_2"
@@ -137,6 +144,7 @@ export function MobileDashboardMetrics({
                     suffix="명"
                     accentClass="bg-rose-500"
                     iconClass="text-rose-500"
+                    href="/members?role=related&from=dashboard&view=related"
                 />
                 <MobileMetricCard
                     icon="account_balance_wallet"
@@ -144,6 +152,7 @@ export function MobileDashboardMetrics({
                     value={formatAmount(stats.totalExpectedRefund)}
                     accentClass="bg-amber-500"
                     iconClass="text-amber-500"
+                    href="/settlements?from=dashboard&view=expected"
                 />
                 <MobileMetricCard
                     icon="paid"
@@ -151,6 +160,7 @@ export function MobileDashboardMetrics({
                     value={formatAmount(stats.totalPaidRefund)}
                     accentClass="bg-emerald-500"
                     iconClass="text-emerald-500"
+                    href="/settlements?status=paid&from=dashboard&view=paid"
                 />
                 <MobileMetricCard
                     icon="receipt_long"
@@ -158,10 +168,11 @@ export function MobileDashboardMetrics({
                     value={formatAmount(stats.totalRemainingRefund)}
                     accentClass={(stats.totalRemainingRefund || 0) > 0 ? 'bg-rose-500' : 'bg-emerald-500'}
                     iconClass={(stats.totalRemainingRefund || 0) > 0 ? 'text-rose-500' : 'text-emerald-500'}
+                    href="/settlements?remaining=1&from=dashboard&view=remaining"
                 />
             </div>
 
-            <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm">
+            <Link href="/payments?from=dashboard&view=collections" className="block rounded-xl border border-border/50 bg-card p-4 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                         <MaterialIcon name="payments" size="sm" className="text-success" />
@@ -190,7 +201,8 @@ export function MobileDashboardMetrics({
                     <span>₩{Math.round(stats.collectedAmount / 100000000)}억 수납</span>
                     <span>₩{Math.round((stats.totalAmount - stats.collectedAmount) / 100000000)}억 미납</span>
                 </div>
-            </div>
+                <div className="mt-3 flex min-h-11 items-center justify-end gap-1 border-t border-border/50 pt-2 text-xs font-black text-primary">분담금 관리에서 보기 <MaterialIcon name="arrow_forward" size="xs" /></div>
+            </Link>
         </div>
     );
 }

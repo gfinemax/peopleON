@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { Header } from '@/components/layout/Header';
+import { DashboardEntryNotice } from '@/components/layout/DashboardEntryNotice';
 import {
     SettlementsActionPanel,
     SettlementsCasesTableSection,
@@ -21,6 +22,9 @@ type SettlementSearchParams = {
     diag?: SettlementDiagFilter;
     q?: string;
     page?: string;
+    remaining?: string;
+    from?: string;
+    view?: string;
 };
 
 export default async function SettlementsPage({
@@ -43,12 +47,14 @@ export default async function SettlementsPage({
     const query = (params.q || '').trim();
     const page = Math.max(1, Number(params.page) || 1);
     const pageSize = 30;
+    const remainingOnly = params.remaining === '1';
+    const expectedOnly = params.from === 'dashboard' && params.view === 'expected';
 
     const supabase = await createClient();
     const {
-        rows,
+        rows: fetchedRows,
         loadErrorMessage,
-        totalCases,
+        totalCases: fetchedTotalCases,
         expectedTotal,
         paidTotal,
         remainingTotal,
@@ -63,6 +69,13 @@ export default async function SettlementsPage({
         diagFilter,
         query,
     );
+
+    const rows = remainingOnly
+        ? fetchedRows.filter((row) => row.remaining > 0)
+        : expectedOnly
+          ? fetchedRows.filter((row) => row.expected > 0)
+          : fetchedRows;
+    const totalCases = remainingOnly || expectedOnly ? rows.length : fetchedTotalCases;
 
     const totalPages = Math.max(1, Math.ceil(totalCases / pageSize));
     const normalizedPage = Math.min(page, totalPages);
@@ -103,6 +116,9 @@ export default async function SettlementsPage({
         if (nextStatus && nextStatus !== 'all') search.set('status', nextStatus);
         if (nextDiag && nextDiag !== 'all') search.set('diag', nextDiag);
         if (nextQ) search.set('q', nextQ);
+        if (remainingOnly) search.set('remaining', '1');
+        if (params.from) search.set('from', params.from);
+        if (params.view) search.set('view', params.view);
         search.set('page', String(next.page || 1));
         return `/settlements?${search.toString()}`;
     };
@@ -127,6 +143,7 @@ export default async function SettlementsPage({
 
             <div className="flex-1 min-h-0 overflow-y-auto">
                 <div className="px-3 lg:px-6 py-3 lg:py-4 space-y-3">
+                    <DashboardEntryNotice from={params.from} view={params.view} resetHref="/settlements" />
                     <SettlementsActionPanel
                         diagnosticsExportHref={diagnosticsExportHref}
                         diagnosticsFullExportHref={diagnosticsFullExportHref}

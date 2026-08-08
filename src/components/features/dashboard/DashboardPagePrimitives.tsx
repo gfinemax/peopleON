@@ -13,6 +13,8 @@ type KpiCardProps = {
     subtitle: string;
     iconColor: string;
     iconBg: string;
+    href: string;
+    destinationLabel: string;
 };
 
 type DuplicateConflictMember = {
@@ -59,9 +61,9 @@ type RetentionStats = {
     totalHistorical: number;
 };
 
-export function KpiCard({ title, icon, value, unit, trend, trendIcon, subtitle, iconColor, iconBg }: KpiCardProps) {
+export function KpiCard({ title, icon, value, unit, trend, trendIcon, subtitle, iconColor, iconBg, href, destinationLabel }: KpiCardProps) {
     return (
-        <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card/78 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/8">
+        <Link href={href} aria-label={`${title} ${destinationLabel}에서 보기`} className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card/78 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
             <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-primary to-success" />
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -81,7 +83,10 @@ export function KpiCard({ title, icon, value, unit, trend, trendIcon, subtitle, 
                 {unit ? <span className="text-base font-bold text-muted-foreground">{unit}</span> : null}
             </div>
             <p className="text-[10px] font-bold text-muted-foreground/60">{subtitle}</p>
-        </div>
+            <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-black text-primary/80 transition-colors group-hover:text-primary">
+                {destinationLabel}에서 보기 <MaterialIcon name="arrow_forward" size="xs" />
+            </span>
+        </Link>
     );
 }
 
@@ -260,7 +265,7 @@ export function RetentionWidget({ retention }: { retention: RetentionStats }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-2 gap-y-3 mt-2">
-                    <div className="flex flex-col p-2 rounded bg-emerald-500/5 border border-emerald-500/10">
+                    <Link href="/members?retention=registered-active&from=dashboard&view=registered-active" className="flex min-h-11 flex-col rounded border border-emerald-500/10 bg-emerald-500/5 p-2 transition-colors hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
                         <div className="flex items-center gap-1.5 mb-1">
                             <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                             <span className="text-[10px] font-bold text-muted-foreground">유지 (등기완료)</span>
@@ -270,9 +275,9 @@ export function RetentionWidget({ retention }: { retention: RetentionStats }) {
                             <span className="text-[10px] text-muted-foreground">명</span>
                             <span className="text-[10px] font-bold text-emerald-500 ml-auto">{pRegAct}%</span>
                         </div>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col p-2 rounded bg-emerald-400/5 border border-emerald-400/10">
+                    <Link href="/members?retention=unregistered-active&from=dashboard&view=unregistered-active" className="flex min-h-11 flex-col rounded border border-emerald-400/10 bg-emerald-400/5 p-2 transition-colors hover:bg-emerald-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
                         <div className="flex items-center gap-1.5 mb-1">
                             <div className="w-2 h-2 rounded-full bg-emerald-400/60"></div>
                             <span className="text-[10px] font-bold text-muted-foreground">유지 (미등기/기타)</span>
@@ -282,9 +287,9 @@ export function RetentionWidget({ retention }: { retention: RetentionStats }) {
                             <span className="text-[10px] text-muted-foreground">명</span>
                             <span className="text-[10px] font-bold text-emerald-500/70 ml-auto">{pUnregAct}%</span>
                         </div>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col p-2 rounded bg-rose-400/5 border border-rose-400/10">
+                    <Link href="/members?retention=registered-withdrawn&from=dashboard&view=registered-withdrawn" className="flex min-h-11 flex-col rounded border border-rose-400/10 bg-rose-400/5 p-2 transition-colors hover:bg-rose-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400">
                         <div className="flex items-center gap-1.5 mb-1">
                             <div className="w-2 h-2 rounded-full bg-rose-400"></div>
                             <span className="text-[10px] font-bold text-muted-foreground">이탈 (등기 후)</span>
@@ -294,9 +299,9 @@ export function RetentionWidget({ retention }: { retention: RetentionStats }) {
                             <span className="text-[10px] text-muted-foreground">명</span>
                             <span className="text-[10px] font-bold text-rose-500 ml-auto">{pRegWd}%</span>
                         </div>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col p-2 rounded bg-rose-500/5 border border-rose-500/10">
+                    <Link href="/members?retention=unregistered-withdrawn&from=dashboard&view=unregistered-withdrawn" className="flex min-h-11 flex-col rounded border border-rose-500/10 bg-rose-500/5 p-2 transition-colors hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400">
                         <div className="flex items-center gap-1.5 mb-1">
                             <div className="w-2 h-2 rounded-full bg-rose-500/50"></div>
                             <span className="text-[10px] font-bold text-muted-foreground">이탈 (미등기)</span>
@@ -306,7 +311,7 @@ export function RetentionWidget({ retention }: { retention: RetentionStats }) {
                             <span className="text-[10px] text-muted-foreground">명</span>
                             <span className="text-[10px] font-bold text-rose-500/70 ml-auto">{pUnregWd}%</span>
                         </div>
-                    </div>
+                    </Link>
                 </div>
             </div>
         </div>

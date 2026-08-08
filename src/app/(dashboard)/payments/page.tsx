@@ -1,4 +1,5 @@
 import { Header } from '@/components/layout/Header';
+import { DashboardEntryNotice } from '@/components/layout/DashboardEntryNotice';
 import { createClient } from '@/lib/supabase/server';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
 import { fetchPaymentDashboardData } from '@/lib/server/paymentDashboard';
@@ -17,6 +18,8 @@ type PaymentSearchParams = {
     tier?: string;
     status?: string;
     page?: string;
+    from?: string;
+    view?: string;
 };
 
 export default async function PaymentsPage({
@@ -73,6 +76,7 @@ export default async function PaymentsPage({
 
             <main className="flex-1 overflow-y-auto bg-background">
                 <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-4 p-4 lg:p-6">
+                    <DashboardEntryNotice from={params.from} view={params.view} resetHref="/payments" />
                     <PaymentsHeroSection />
                     <PaymentsStatsSection
                         totalRows={totalRows}

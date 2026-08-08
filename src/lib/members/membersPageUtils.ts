@@ -15,6 +15,9 @@ export type MembersSearchParams = {
     status?: string;
     tag?: string;
     rel?: string;
+    from?: string;
+    view?: string;
+    retention?: string;
 };
 
 export const tierOrder = [
@@ -117,6 +120,7 @@ export function isRoleMatch(person: UnifiedPerson, targetRole: string) {
     if (targetRole === 'member' && person.role_types.includes('member')) return true;
     if (targetRole === 'investor' && person.role_types.includes('certificate_holder')) return true;
     if (targetRole === 'party' && person.role_types.includes('related_party')) return true;
+    if (targetRole === 'related' && (person.role_types.includes('agent') || person.role_types.includes('related_party'))) return true;
     if (!['member', 'investor', 'party'].includes(targetRole) && person.ui_role === targetRole) return true;
     return false;
 }
@@ -158,6 +162,7 @@ export function filterMembers({
     statusFilter,
     relFilter,
     tagFilter,
+    retentionFilter = 'all',
     matchedEntityIds,
 }: {
     peopleInCurrentRole: UnifiedPerson[];
@@ -166,9 +171,19 @@ export function filterMembers({
     statusFilter: string;
     relFilter: string;
     tagFilter: string;
+    retentionFilter?: string;
     matchedEntityIds: Set<string>;
 }) {
     return peopleInCurrentRole.filter((person) => {
+        if (retentionFilter !== 'all') {
+            const withdrawn = ['탈퇴', '제명'].includes(person.status || '');
+            const historicalMember = person.role_types.includes('member') || withdrawn;
+            if (!historicalMember) return false;
+            if (retentionFilter === 'registered-active' && (!person.is_registered || withdrawn)) return false;
+            if (retentionFilter === 'unregistered-active' && (person.is_registered || withdrawn)) return false;
+            if (retentionFilter === 'registered-withdrawn' && (!person.is_registered || !withdrawn)) return false;
+            if (retentionFilter === 'unregistered-withdrawn' && (person.is_registered || !withdrawn)) return false;
+        }
         if (query) {
             const queryLower = query.toLowerCase();
             const certificateText = `${person.certificate_display || ''} ${(person.certificate_search_tokens || []).join(' ')}`;
@@ -258,6 +273,7 @@ export function buildMembersPageLink({
     statusFilter,
     relFilter,
     tagFilter,
+    retentionFilter,
     targetPage,
 }: {
     query: string;
@@ -268,6 +284,7 @@ export function buildMembersPageLink({
     statusFilter: string;
     relFilter: string;
     tagFilter: string;
+    retentionFilter?: string;
     targetPage: number;
 }) {
     const searchParams = new URLSearchParams();
@@ -279,6 +296,7 @@ export function buildMembersPageLink({
     if (statusFilter !== 'all') searchParams.set('status', statusFilter);
     if (relFilter !== 'all') searchParams.set('rel', relFilter);
     if (tagFilter) searchParams.set('tag', tagFilter);
+    if (retentionFilter && retentionFilter !== 'all') searchParams.set('retention', retentionFilter);
     searchParams.set('page', String(targetPage));
     return `/members?${searchParams.toString()}`;
 }

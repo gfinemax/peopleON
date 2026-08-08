@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { Header } from '@/components/layout/Header';
+import { DashboardEntryNotice } from '@/components/layout/DashboardEntryNotice';
 import { MaterialIcon } from '@/components/ui/icon';
 import { MembersKpiStrip } from '@/components/features/members/MembersKpiStrip';
 import { DashboardManager } from '@/components/features/members/DashboardManager';
@@ -72,6 +73,7 @@ export default async function MembersPage({
     const statusFilter = params.status || 'all';
     const relFilter = params.rel || 'all';
     const tagFilter = params.tag?.trim() || '';
+    const retentionFilter = params.retention || 'all';
     const pageSize = 50;
 
     const supabase = await createClient();
@@ -111,6 +113,7 @@ export default async function MembersPage({
         statusFilter,
         relFilter,
         tagFilter,
+        retentionFilter,
         matchedEntityIds,
     });
 
@@ -224,6 +227,7 @@ export default async function MembersPage({
                     filteredCount: totalCount,
                 }}
             >
+                <DashboardEntryNotice from={params.from} view={params.view} resetHref="/members" />
                 <MembersDataSection
                     displayedMembers={displayedMembers}
                     exportRows={filteredExportRows}
@@ -249,6 +253,7 @@ export default async function MembersPage({
                         statusFilter,
                         relFilter,
                         tagFilter,
+                        retentionFilter,
                         targetPage,
                     })}
                 />

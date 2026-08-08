@@ -82,7 +82,8 @@ export function MembersDataSection({
                         ) : (
                             <div className="flex h-full flex-col items-center justify-center gap-4 py-12 text-muted-foreground">
                                 <MaterialIcon name="search_off" size="xl" className="opacity-20" />
-                                <p className="font-bold">검색 결과가 없습니다.</p>
+                                <div className="text-center"><p className="font-bold">선택한 조건에 맞는 인물이 없습니다.</p><p className="mt-1 text-xs">필터를 해제하면 전체 인물 목록으로 돌아갈 수 있습니다.</p></div>
+                                <Link href="/members" className="inline-flex min-h-11 items-center rounded-lg border border-primary/30 bg-primary/10 px-4 text-xs font-black text-primary">전체 인물 보기</Link>
                             </div>
                         )}
                     </div>

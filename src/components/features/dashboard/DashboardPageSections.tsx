@@ -1,5 +1,6 @@
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 import {
     KpiCard,
     PaymentProgressRow,
@@ -52,9 +53,11 @@ export function DashboardKpiSection({
                 subtitle="조합원관리 집계 기준"
                 iconColor="text-blue-500"
                 iconBg="bg-blue-500/10"
+                href="/members?from=dashboard&view=all"
+                destinationLabel="조합원 관리"
             />
 
-            <div className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card/78 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/8">
+            <Link href="/members?tier=등기조합원&from=dashboard&view=registered" aria-label="등기 조합원 조합원 관리에서 보기" className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card/78 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-primary to-success" />
                 <div className="flex flex-col mb-4">
                     <div className="flex items-center gap-4 mb-4">
@@ -78,7 +81,8 @@ export function DashboardKpiSection({
                         +{recentRegisteredCount}명
                     </span>
                 </div>
-            </div>
+                <span className="inline-flex items-center gap-1 text-[10px] font-black text-primary/80">조합원 관리에서 보기 <MaterialIcon name="arrow_forward" size="xs" /></span>
+            </Link>
 
             <KpiCard
                 title="원천 권리증"
@@ -88,6 +92,8 @@ export function DashboardKpiSection({
                 subtitle="중복 제외 원천 권리증"
                 iconColor="text-violet-500"
                 iconBg="bg-violet-500/10"
+                href="/members?tier=권리증보유자&from=dashboard&view=certificates"
+                destinationLabel="조합원 관리"
             />
 
             <KpiCard
@@ -98,6 +104,8 @@ export function DashboardKpiSection({
                 subtitle="대리인 포함"
                 iconColor="text-rose-500"
                 iconBg="bg-rose-500/10"
+                href="/members?role=related&from=dashboard&view=related"
+                destinationLabel="조합원 관리"
             />
 
             <KpiCard
@@ -107,6 +115,8 @@ export function DashboardKpiSection({
                 subtitle="세입자 제외"
                 iconColor="text-amber-500"
                 iconBg="bg-amber-500/10"
+                href="/settlements?from=dashboard&view=expected"
+                destinationLabel="정산/환불"
             />
 
             <KpiCard
@@ -116,6 +126,8 @@ export function DashboardKpiSection({
                 subtitle="누적 현황"
                 iconColor="text-emerald-500"
                 iconBg="bg-emerald-500/10"
+                href="/settlements?status=paid&from=dashboard&view=paid"
+                destinationLabel="정산/환불"
             />
 
             <KpiCard
@@ -125,6 +137,8 @@ export function DashboardKpiSection({
                 subtitle="예정 - 지급"
                 iconColor={stats.totalRemainingRefund > 0 ? 'text-rose-500' : 'text-emerald-500'}
                 iconBg={stats.totalRemainingRefund > 0 ? 'bg-rose-500/10' : 'bg-emerald-500/10'}
+                href="/settlements?remaining=1&from=dashboard&view=remaining"
+                destinationLabel="정산/환불"
             />
         </div>
     );
@@ -199,6 +213,7 @@ export function DashboardCollectionsSection({
                         </div>
                     </div>
                 )}
+                <Link href="/payments?from=dashboard&view=collections" className="mt-3 inline-flex min-h-11 items-center justify-end gap-1 text-xs font-black text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">분담금 관리에서 보기 <MaterialIcon name="arrow_forward" size="xs" /></Link>
             </div>
 
             <RetentionWidget retention={retention} />
