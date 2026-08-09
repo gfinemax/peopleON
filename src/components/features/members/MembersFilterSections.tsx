@@ -191,7 +191,7 @@ export function MembersFilterControls({
                     {Object.entries(statusCounts)
                         .filter(([status]) => !['기타', 'null', '비조합원', '미정', '소송'].includes(status))
                         .sort(([left], [right]) => {
-                            const order = ['정상', '환불', '제명', '탈퇴', '정산대기', '지급완료', '연결필요', '케이스누락'];
+                            const order = ['정상', '환불', '통합멸실', '제명', '탈퇴', '정산대기', '지급완료', '연결필요', '케이스누락'];
                             return order.indexOf(left) - order.indexOf(right);
                         })
                         .map(([status, count]) => (

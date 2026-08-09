@@ -10,8 +10,10 @@ import {
     MemberNameCell,
     MemberRoleBadges,
     MembersTableSectionsProps,
+    getCombinedStatusValues,
     roleOptions,
     statusOptions,
+    supplementalRoleValues,
 } from './MembersTableSectionHelpers';
 import {
     getMemberPhoneSummary,
@@ -170,11 +172,28 @@ export function MembersDesktopTable(props: MembersTableSectionsProps) {
                                 <td className="flex h-[46px] items-center justify-center px-2 py-1.5">
                                     <InlineCellDropdown
                                         options={statusOptions}
-                                        currentValue={member.display_status || member.status}
-                                        onSelect={(value) => onInlineUpdate(member.id, 'status', value, member.entity_ids || [member.id])}
+                                        currentValue={getCombinedStatusValues(member)}
+                                        multiple={true}
+                                        onSelect={(value) => {
+                                            if (supplementalRoleValues.has(value)) {
+                                                const isSelected = (member.tiers || []).includes(value);
+                                                return onInlineUpdate(
+                                                    member.id,
+                                                    'role',
+                                                    { action: isSelected ? 'remove' : 'add', role_code: value },
+                                                    member.entity_ids || [member.id],
+                                                );
+                                            }
+                                            return onInlineUpdate(member.id, 'status', value, member.entity_ids || [member.id]);
+                                        }}
                                         disabled={!member.id}
                                     >
-                                        {getStatusBadge(member.display_status || member.status)}
+                                        <div className="flex max-w-[180px] flex-wrap items-center justify-center gap-1">
+                                            {(member.tiers || []).filter((tier) => supplementalRoleValues.has(tier)).map((tier) => (
+                                                <span key={`${member.id}-status-role-${tier}`}>{getStatusBadge(tier)}</span>
+                                            ))}
+                                            {getStatusBadge(member.status === '환불조합원' ? '환불' : member.status)}
+                                        </div>
                                     </InlineCellDropdown>
                                 </td>
                                 <td className="px-2 py-1.5 font-mono tracking-tight text-gray-400">

@@ -160,7 +160,10 @@ export const getStatusBadge = (status: string | null) => {
         case '관계인':
             return <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-200 border border-amber-400/20">관계인</span>;
         case '환불':
+        case '환불조합원':
             return <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/10 px-2 py-1 text-xs text-cyan-200 border border-cyan-400/20">환불</span>;
+        case '통합멸실':
+            return <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-1 text-xs text-violet-200 border border-violet-400/20">통합멸실</span>;
         case '제명':
             return <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-200 border border-amber-400/20">제명</span>;
         case '탈퇴':

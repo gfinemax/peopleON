@@ -38,13 +38,22 @@ export const roleOptions = [
 
 export const statusOptions = [
     { label: '등기', value: '정상', colorClass: 'text-emerald-400' },
-    { label: '대리인', value: '대리인', colorClass: 'text-emerald-300', disabled: true },
-    { label: '관계인', value: '관계인', colorClass: 'text-amber-300', disabled: true },
+    { label: '대리인', value: '대리인', colorClass: 'text-emerald-300' },
+    { label: '관계인', value: '관계인', colorClass: 'text-amber-300' },
     { label: '환불', value: '환불', colorClass: 'text-cyan-300' },
+    { label: '통합멸실', value: '통합멸실', colorClass: 'text-violet-300' },
     { label: '명의대여', value: '차명', colorClass: 'text-sky-400' },
     { label: '제명', value: '제명', colorClass: 'text-amber-400' },
     { label: '탈퇴', value: '탈퇴', colorClass: 'text-rose-400' },
 ];
+
+export const supplementalRoleValues = new Set(['대리인', '관계인']);
+
+export const getCombinedStatusValues = (member: Member) => {
+    const roles = (member.tiers || []).filter((tier) => supplementalRoleValues.has(tier));
+    const rawStatus = member.status === '환불조합원' ? '환불' : member.status;
+    return Array.from(new Set([...roles, rawStatus].filter((value): value is string => Boolean(value))));
+};
 
 export const getSourceCertificateValues = (member: Member) =>
     parseCertificateDisplay(member.certificate_display)

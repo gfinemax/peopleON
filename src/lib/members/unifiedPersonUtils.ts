@@ -42,6 +42,14 @@ export const getDisplayMemberStatus = (person: UnifiedPerson) => {
         return '차명';
     }
 
+    if (person.status === '환불조합원') {
+        return '환불';
+    }
+
+    if (person.status === '통합멸실') {
+        return '통합멸실';
+    }
+
     if (person.status === '탈퇴' || person.status === '제명') {
         return person.status;
     }
