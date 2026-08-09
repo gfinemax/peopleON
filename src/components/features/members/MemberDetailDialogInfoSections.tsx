@@ -125,6 +125,17 @@ export function MemberDetailDialogHeader({
                 </div>
             </div>
             <div className="flex items-center gap-2">
+                {presentation === 'page' ? (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onClose}
+                        className="h-8 shrink-0 border-white/10 bg-white/5 px-3 text-xs font-bold text-gray-200 hover:bg-white/10 hover:text-white"
+                    >
+                        <MaterialIcon name="arrow_back" size="xs" className="mr-1.5" />
+                        조합원 목록
+                    </Button>
+                ) : null}
                 {isEditing ? (
                     <>
                         <Button
@@ -188,17 +199,19 @@ export function MemberDetailDialogHeader({
                         공유/PDF
                     </Button>
                 ) : null}
-                <button
-                    onClick={onClose}
-                    aria-label={presentation === 'page' ? '조합원 목록으로 돌아가기' : '상세 창 닫기'}
-                    className="group flex items-center justify-center rounded-full p-2 transition-colors hover:bg-white/10"
-                >
-                    <MaterialIcon
-                        name={presentation === 'page' ? 'arrow_back' : 'close'}
-                        className="text-gray-400 transition-colors group-hover:text-white"
-                        size="sm"
-                    />
-                </button>
+                {presentation === 'dialog' ? (
+                    <button
+                        onClick={onClose}
+                        aria-label="상세 창 닫기"
+                        className="group flex items-center justify-center rounded-full p-2 transition-colors hover:bg-white/10"
+                    >
+                        <MaterialIcon
+                            name="close"
+                            className="text-gray-400 transition-colors group-hover:text-white"
+                            size="sm"
+                        />
+                    </button>
+                ) : null}
             </div>
         </div>
     );

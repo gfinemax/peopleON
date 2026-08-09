@@ -50,9 +50,8 @@ export function MembersTable({ members, tableKey, startIndex }: MembersTableProp
 
     const handleRowClick = (member: Member) => {
         if (!member.member_id) return;
-        const returnTo = `${window.location.pathname}${window.location.search}`;
-        const tab = member._matchedLog ? 'timeline' : 'info';
-        router.push(`/members/${member.member_id}?tab=${tab}&returnTo=${encodeURIComponent(returnTo)}`);
+        setSelectedMemberId(member.member_id);
+        setDialogOpen(true);
     };
 
     const handleToggleFavorite = async (member: Member) => {

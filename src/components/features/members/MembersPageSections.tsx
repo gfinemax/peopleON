@@ -62,7 +62,10 @@ export function MembersDataSection({
         <div className="mb-4 flex flex-col lg:mb-6 lg:rounded-xl lg:border lg:border-white/[0.08] lg:bg-card lg:shadow-sm">
             <div className="mb-1 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.04] px-3 pt-3 pb-2">
                 <div className="flex min-w-0 flex-wrap items-center gap-3">
-                    <h2 className="text-sm font-bold text-slate-200">데이터 리스트</h2>
+                    <div>
+                        <h2 className="text-sm font-bold text-slate-100">조합원 목록</h2>
+                        <p className="mt-0.5 text-[11px] text-slate-500">행을 클릭하면 빠른보기가 열립니다.</p>
+                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <SlimQualityChip label="검수 필요" count={reviewPendingCount} href="/certificate-audit" />
                         <SlimQualityChip label="중복 검토" count={duplicateExcludedCount} href="/certificate-audit" />
