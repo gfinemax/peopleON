@@ -26,7 +26,7 @@ const loadUnifiedMembersSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-snapshot');
         }
     },
-    ['unified-members-snapshot-v2'],
+    ['unified-members-snapshot-v3'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
@@ -53,7 +53,7 @@ const loadUnifiedMembersLiteSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-lite-snapshot');
         }
     },
-    ['unified-members-lite-snapshot-v2'],
+    ['unified-members-lite-snapshot-v3'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,

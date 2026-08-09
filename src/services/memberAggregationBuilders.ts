@@ -59,6 +59,9 @@ export function buildRawUnifiedPeople(
                 role.role_status === 'active' &&
                 ['등기조합원', '1차'].includes(normalizeTierLabel(role.role_code, role.is_registered) || ''),
         );
+        const hasRefundMemberRole = entityRoles.some(
+            (role) => role.role_status === 'active' && normalizeTierLabel(role.role_code, role.is_registered) === '권리증환불',
+        );
 
         if (activeTiers.length === 0 && (isRegistered || hasMemberRoleCode)) {
             activeTiers = ['등기조합원'];
@@ -89,6 +92,8 @@ export function buildRawUnifiedPeople(
             if (uiRole === 'agent') roleTypes.add('agent');
             if (uiRole === 'party') roleTypes.add('related_party');
         }
+
+        if (hasRefundMemberRole) roleTypes.add('member');
 
         const agentConnections = actsAsAgentFor.get(entity.id) || [];
         const hasAgentRole = agentConnections.some((agent) => classifyAgentRelation(agent.relation));
