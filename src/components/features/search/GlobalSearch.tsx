@@ -12,7 +12,6 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { searchMembers, SearchResult } from '@/app/actions/members';
-import { MemberDetailDialog } from '@/components/features/members/MemberDetailDialog';
 
 interface GlobalSearchProps {
     trigger?: React.ReactNode;
@@ -24,17 +23,10 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
     const [query, setQuery] = React.useState('');
     const [results, setResults] = React.useState<SearchResult[]>([]);
     const [loading, setLoading] = React.useState(false);
-    const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null);
-    const [detailOpen, setDetailOpen] = React.useState(false);
     const [position, setPosition] = React.useState<{ x: number; y: number } | null>(null);
     const [isDragging, setIsDragging] = React.useState(false);
     const contentRef = React.useRef<HTMLDivElement | null>(null);
     const dragOffsetRef = React.useRef({ x: 0, y: 0 });
-    const selectedMemberIds = React.useMemo(
-        () => (selectedMemberId ? [selectedMemberId] : null),
-        [selectedMemberId],
-    );
-
     const clampPosition = React.useCallback((nextX: number, nextY: number) => {
         const content = contentRef.current;
         const width = content?.offsetWidth ?? 720;
@@ -102,8 +94,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
 
     const handleSelect = (id: string) => {
         setOpen(false);
-        setSelectedMemberId(id);
-        setDetailOpen(true);
+        router.push(`/members/${id}`);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -243,13 +234,6 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                 </DialogContent>
             </Dialog>
 
-            <MemberDetailDialog
-                memberId={selectedMemberId}
-                memberIds={selectedMemberIds}
-                open={detailOpen}
-                onOpenChange={setDetailOpen}
-                onSaved={() => router.refresh()}
-            />
         </>
     );
 }
