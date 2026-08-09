@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { MaterialIcon } from '@/components/ui/icon';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 async function normalizeProfileImage(file: File) {
     const bitmap = await createImageBitmap(file);
@@ -26,6 +27,7 @@ export function MemberProfilePhoto({ memberId, name, hasImage, onChanged }: { me
     const [url, setUrl] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -69,12 +71,20 @@ export function MemberProfilePhoto({ memberId, name, hasImage, onChanged }: { me
     };
 
     return <div className="group relative shrink-0">
-        <div className="relative flex size-14 items-center justify-center overflow-hidden rounded-full border-2 border-white/15 bg-slate-100 text-2xl font-black text-sky-700 shadow-lg">
+        <button type="button" disabled={!url} onClick={() => setPreviewOpen(true)} className="relative flex size-14 items-center justify-center overflow-hidden rounded-full border-2 border-white/15 bg-slate-100 text-2xl font-black text-sky-700 shadow-lg disabled:cursor-default" aria-label={url ? `${name} 사진 크게 보기` : undefined} title={url ? '사진 크게 보기' : undefined}>
             {url ? <Image src={url} alt={`${name} 조합원 사진`} fill sizes="56px" unoptimized className="object-cover" onError={() => setUrl(null)} /> : name.slice(0, 1) || '조'}
-        </div>
+        </button>
         <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border border-cyan-300/30 bg-[#0a2237] text-cyan-300 shadow-md hover:bg-cyan-500/20" aria-label="조합원 사진 업로드"><MaterialIcon name={busy ? 'progress_activity' : 'photo_camera'} size="xs" className={busy ? 'animate-spin' : ''} /></button>
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ''; }} />
         {url ? <button type="button" onClick={() => void remove()} className="absolute -left-1 -top-1 hidden size-5 items-center justify-center rounded-full bg-rose-500 text-white group-hover:flex" aria-label="조합원 사진 삭제"><MaterialIcon name="close" size="xs" /></button> : null}
         {feedback ? <span className="absolute left-0 top-16 z-50 w-56 rounded border border-rose-400/20 bg-[#101d2b] p-2 text-xs text-rose-300 shadow-xl">{feedback}</span> : null}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+            <DialogContent className="max-w-3xl border-white/10 bg-[#071521] p-3">
+                <DialogTitle className="px-2 text-base font-bold text-slate-100">{name} 사진</DialogTitle>
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black/30">
+                    {url ? <Image src={url} alt={`${name} 조합원 사진 크게 보기`} fill sizes="min(90vw, 768px)" unoptimized className="object-contain" /> : null}
+                </div>
+            </DialogContent>
+        </Dialog>
     </div>;
 }
