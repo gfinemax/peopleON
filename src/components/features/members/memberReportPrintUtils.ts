@@ -12,7 +12,7 @@ export const DEFAULT_PRINT_CONFIG: PrintConfig = {
         { id: 'phone', label: '연락처', enabled: true, width: '120px' },
         { id: 'tier', label: '구분/차수', enabled: true },
         { id: 'unit', label: '동호수', enabled: true, width: '80px' },
-        { id: 'cert_status', label: '권리현황', enabled: true, width: '100px' },
+        { id: 'cert_status', label: '가입신청필증 현황', enabled: true, width: '100px' },
         { id: 'cert', label: '필증번호', enabled: true, width: '30%' },
         { id: 'status', label: '상태', enabled: true, width: '60px' },
     ],

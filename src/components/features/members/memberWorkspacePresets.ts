@@ -10,7 +10,7 @@ export const MEMBER_WORKSPACE_COLUMNS: Array<{
 }> = [
     { id: 'profile', label: '기본·관계인', icon: 'person' },
     { id: 'relations', label: '관계인', icon: 'group' },
-    { id: 'finance', label: '권리·납부', icon: 'payments' },
+    { id: 'finance', label: '가입신청필증·납부', icon: 'payments' },
     { id: 'timeline', label: '상담·활동', icon: 'history' },
     { id: 'documents', label: '문서', icon: 'description' },
 ];
