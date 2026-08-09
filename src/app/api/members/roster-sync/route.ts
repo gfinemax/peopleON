@@ -38,7 +38,6 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
     const { data: roleData, error: roleError } = await supabase
         .from('membership_roles')
         .select('id,entity_id')
-        .eq('role_status', 'active')
         .eq('is_registered', true);
     if (roleError) throw roleError;
 
