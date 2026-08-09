@@ -1,4 +1,5 @@
 import { type SupabaseClient } from '@supabase/supabase-js';
+import { getMemberRelationLabel } from '@/lib/members/memberRelation';
 
 export type AccountEntityRecord = {
     id: string;
@@ -302,7 +303,7 @@ export function buildRelationshipMaps(relationsList: RelationshipLookupRecord[])
             existingAgents.push({
                 id: rel.from_entity_id,
                 name: rel.agent_entity?.display_name || '알 수 없음',
-                relation: rel.relation_note || '대리인',
+                relation: getMemberRelationLabel(rel.relation_note) || '대리인',
             });
             agentsByEntity.set(rel.to_entity_id, existingAgents);
 
@@ -310,7 +311,7 @@ export function buildRelationshipMaps(relationsList: RelationshipLookupRecord[])
             existingOwners.push({
                 owner_id: rel.to_entity_id,
                 owner_name: rel.owner_entity?.display_name || '알 수 없음',
-                relation: rel.relation_note || '대리인',
+                relation: getMemberRelationLabel(rel.relation_note) || '대리인',
                 phone: rel.owner_entity?.phone || null,
             });
             actsAsAgentFor.set(rel.from_entity_id, existingOwners);

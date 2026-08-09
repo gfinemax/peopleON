@@ -8,6 +8,7 @@ import {
     type RightNumberStatus,
 } from '@/lib/certificates/rightNumbers';
 import type { MemberDetailDialogMember } from './memberDetailDialogTypes';
+import { getMemberRelationLabel } from '@/lib/members/memberRelation';
 import {
     type AssetRight,
     type CertificateSummaryReviewStatus,
@@ -188,7 +189,7 @@ export async function fetchMemberDetail(ids: string[]) {
                 ? {
                       id: uniqueRelations[0].from_entity_id,
                       name: (uniqueRelations[0].agent_entity as { display_name?: string } | null)?.display_name || 'N/A',
-                      relation: uniqueRelations[0].relation_note || '대리인',
+                      relation: getMemberRelationLabel(uniqueRelations[0].relation_note) || '대리인',
                       phone: (uniqueRelations[0].agent_entity as { phone?: string | null } | null)?.phone || null,
                   }
                 : null,
@@ -197,7 +198,7 @@ export async function fetchMemberDetail(ids: string[]) {
                 ? {
                       id: uniqueRelations[1].from_entity_id,
                       name: (uniqueRelations[1].agent_entity as { display_name?: string } | null)?.display_name || 'N/A',
-                      relation: uniqueRelations[1].relation_note || '대리인',
+                      relation: getMemberRelationLabel(uniqueRelations[1].relation_note) || '대리인',
                       phone: (uniqueRelations[1].agent_entity as { phone?: string | null } | null)?.phone || null,
                   }
                 : null,
@@ -205,7 +206,7 @@ export async function fetchMemberDetail(ids: string[]) {
             ? revRelRes.data.map((relation) => ({
                   id: relation.to_entity_id,
                   name: (relation.owner_entity as { display_name?: string } | null)?.display_name || 'N/A',
-                  relation: relation.relation_note || '대리인',
+                  relation: getMemberRelationLabel(relation.relation_note) || '대리인',
                   phone: (relation.owner_entity as { phone?: string | null } | null)?.phone || null,
               }))
             : null,
