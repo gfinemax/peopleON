@@ -1,48 +1,43 @@
-# PeopleON unified member workspace design QA
+# Design QA
 
-- Source visual truth: `C:\Users\finemax\.codex\attachments\9502d4c0-9c42-4b09-ae8d-618fcc65baaf\image-1.png`
-- Implementation route: `https://people-on.vercel.app/members/{memberId}?tab=info`
-- Implementation screenshot: unavailable
-- Intended viewport: desktop 1746 x 1408 CSS px, device scale factor 1
-- Source pixels: 1746 x 1408
+- Source visual truth: user-attached first reference image in the 2026-08-09 request
+- Implementation route: `http://localhost:3001/members/[id]`
+- Intended viewport: desktop, 1488 x 1027 CSS px, device scale factor 1
+- State: authenticated member detail, entire comparison preset
+- Source pixels: 1488 x 1027
 - Implementation pixels: unavailable
-- State: authenticated member detail, unified-info tab
-- Density normalization: not possible without an implementation capture
+- Density normalization: not performed because browser capture was blocked
 
 ## Full-view comparison evidence
 
-The source screenshot was opened and inspected. The implementation could not be opened in the available browser because the browser security policy could not be verified for either the local or deployed PeopleON URL. A valid same-viewport comparison therefore could not be produced.
+The reference image was available in the conversation and used to implement the top member summary bar, compact workspace toolbar, dark navy palette, dense table rows, and multi-column comparison frame. The in-app browser could not open the local implementation because the admin-enforced browser access policy could not be verified, so a browser-rendered implementation screenshot could not be captured.
 
-## Focused-region comparison evidence
+## Focused region comparison evidence
 
-Unavailable for the same blocker. The intended focused regions are the member header/actions, tab bar, unified-info content, and compact quick-preview dialog.
+Blocked for the same reason. Code-level checks confirm that the retained preset menu and column picker render independently from the newly replaced member summary and five workspace columns, but code inspection is not a substitute for visual evidence.
 
 ## Findings
 
-- P0: Browser-rendered implementation evidence is missing.
-  - Impact: layout, interaction, responsive behavior, console errors, typography, spacing, colors, icons, and copy cannot be visually accepted.
-  - Required fix: restore permitted browser access, capture the authenticated implementation, compare it with the source, and fix any P0/P1/P2 differences.
+- [P1] Browser visual comparison unavailable
+  - Location: full member workspace
+  - Evidence: local navigation was denied before rendering.
+  - Impact: exact typography, vertical density, overflow, and responsive alignment cannot be certified against the source image.
+  - Fix: repeat the browser capture and side-by-side comparison after the admin browser policy becomes available.
 
-## Required fidelity surfaces
+## Primary interactions tested
 
-- Fonts and typography: blocked pending implementation capture.
-- Spacing and layout rhythm: blocked pending implementation capture.
-- Colors and visual tokens: blocked pending implementation capture.
-- Image quality and asset fidelity: the source contains no new raster imagery requiring generation; implementation inspection remains blocked.
-- Copy and content: code-level review completed, visual verification blocked.
+- Static validation only: preset definitions, custom column parsing, production TypeScript build.
+- Browser clicks for preset switching, column checkbox selection, and list return were not executable due to the browser policy block.
 
-## Primary interactions pending browser verification
+## Console errors checked
 
-- Member row opens `/members/{id}` and preserves the filtered return URL.
-- Name opens compact quick preview.
-- Rights, activity, and settlement controls open their corresponding URL tab.
-- Tab selection updates the URL.
-- Back control restores the prior member-list state.
-- Existing edit, save, rights merge/unmerge, payment, and activity workflows remain operational.
-- Browser console contains no errors.
+- Not available because the local page could not be opened in the in-app browser.
 
 ## Comparison history
 
-- Initial pass: blocked before implementation capture; no visual fixes can be evidence-backed yet.
+- Initial implementation: replaced legacy nested cards with source-aligned summary, workspace toolbar, and compact five-column sections.
+- Browser QA attempt: blocked before capture; no post-capture visual iteration was possible.
+
+## Final result
 
 final result: blocked

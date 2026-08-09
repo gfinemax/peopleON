@@ -42,7 +42,7 @@ export function MemberDetailPageClient({ memberId, initialTab, initialWorkspaceP
     }, [returnTo]);
 
     return (
-        <main className="flex min-h-full flex-1 flex-col overflow-y-auto bg-[#0b1118] p-2 md:p-3">
+        <main className="flex min-h-full flex-1 flex-col overflow-y-auto bg-[#071e32] p-0">
             <div className="w-full">
                 <MemberDetailDialog
                     memberId={memberId}

@@ -1,6 +1,6 @@
 import type { TabType } from './memberDetailDialogTypes';
 
-export type MemberWorkspaceColumnId = 'profile' | 'relations' | 'rights' | 'payment' | 'timeline';
+export type MemberWorkspaceColumnId = 'profile' | 'relations' | 'finance' | 'timeline' | 'documents';
 export type MemberWorkspacePresetId = 'consultation' | 'payment' | 'contract' | 'compare' | 'custom';
 
 export const MEMBER_WORKSPACE_COLUMNS: Array<{
@@ -10,9 +10,9 @@ export const MEMBER_WORKSPACE_COLUMNS: Array<{
 }> = [
     { id: 'profile', label: '기본정보', icon: 'person' },
     { id: 'relations', label: '관계인', icon: 'group' },
-    { id: 'rights', label: '권리증·계약', icon: 'description' },
-    { id: 'payment', label: '납부·정산', icon: 'payments' },
+    { id: 'finance', label: '권리·납부', icon: 'payments' },
     { id: 'timeline', label: '상담·활동', icon: 'history' },
+    { id: 'documents', label: '문서', icon: 'description' },
 ];
 
 export const MEMBER_WORKSPACE_PRESETS: Array<{
@@ -21,9 +21,9 @@ export const MEMBER_WORKSPACE_PRESETS: Array<{
     columns: MemberWorkspaceColumnId[];
 }> = [
     { id: 'consultation', label: '상담 업무', columns: ['profile', 'timeline', 'relations'] },
-    { id: 'payment', label: '납부 점검', columns: ['profile', 'payment', 'rights'] },
-    { id: 'contract', label: '계약 검토', columns: ['profile', 'relations', 'rights', 'timeline'] },
-    { id: 'compare', label: '전체 비교', columns: ['profile', 'relations', 'rights', 'payment', 'timeline'] },
+    { id: 'payment', label: '납부 점검', columns: ['profile', 'finance', 'documents'] },
+    { id: 'contract', label: '계약 검토', columns: ['profile', 'relations', 'finance', 'documents'] },
+    { id: 'compare', label: '전체 비교', columns: ['profile', 'relations', 'finance', 'timeline', 'documents'] },
 ];
 
 export function getMemberWorkspacePreset(id: MemberWorkspacePresetId) {

@@ -10,6 +10,7 @@ import {
 } from './MemberDetailDialogSections';
 import { MemberDetailDialogLineageDialog } from './MemberDetailDialogAdmin';
 import { MemberWorkspaceHeader } from './MemberWorkspaceHeader';
+import { MemberWorkspaceSummary } from './MemberWorkspacePage';
 import {
     getMemberWorkspacePreset,
     getWorkspacePresetFromTab,
@@ -392,31 +393,27 @@ export function MemberDetailDialog({
                     onColumnsChange={handleWorkspaceColumnsChange}
                 />
             ) : null}
-            <div onPointerDown={presentation === 'dialog' ? handlePointerDown : undefined}>
-                <MemberDetailDialogHeader
-                    member={member}
-                    formData={formData}
-                    isEditing={isEditing}
-                    saving={saving}
-                    deleting={deleting}
-                    onStartEditing={() => setIsEditing(true)}
-                    onCancelEditing={() => setIsEditing(false)}
-                    onSave={handleSave}
-                    onDelete={handleDeleteMember}
-                    onClose={handleClose}
-                    setFormData={setFormData}
-                    presentation={presentation}
-                    onPrint={() => window.print()}
-                />
-            </div>
             {presentation === 'page' && member ? (
-                <div className="grid shrink-0 grid-cols-2 divide-x divide-white/[0.06] border-y border-white/[0.06] bg-[#10243a] sm:grid-cols-4">
-                    <WorkspaceMetric label="입주 희망 평형" value={formData.preferred_unit_type || '미입력'} tone="cyan" />
-                    <WorkspaceMetric label="배정 평형·동호" value={formData.unit_group || '미정'} />
-                    <WorkspaceMetric label="권리증" value={`${rightsFlowSummary.rawCount.toLocaleString()}건`} />
-                    <WorkspaceMetric label="현재 구성" value={`${visibleWorkspaceColumns.length}열 비교`} tone="emerald" />
+                <MemberWorkspaceSummary member={{ ...member, ...formData }} visibleCount={visibleWorkspaceColumns.length} onEdit={() => setIsEditing(true)} onBack={handleClose} />
+            ) : (
+                <div onPointerDown={handlePointerDown}>
+                    <MemberDetailDialogHeader
+                        member={member}
+                        formData={formData}
+                        isEditing={isEditing}
+                        saving={saving}
+                        deleting={deleting}
+                        onStartEditing={() => setIsEditing(true)}
+                        onCancelEditing={() => setIsEditing(false)}
+                        onSave={handleSave}
+                        onDelete={handleDeleteMember}
+                        onClose={handleClose}
+                        setFormData={setFormData}
+                        presentation={presentation}
+                        onPrint={() => window.print()}
+                    />
                 </div>
-            ) : null}
+            )}
             <MemberDetailDialogBody
                 loading={loading || isInitialLoading}
                 activeTab={activeTab}
@@ -461,7 +458,7 @@ export function MemberDetailDialog({
     if (presentation === 'page') {
         return (
             <>
-                <section className="flex min-h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0F151B] shadow-2xl">{workspace}</section>
+                <section className="flex min-h-[calc(100vh-5rem)] flex-col overflow-hidden bg-[#071e32] shadow-2xl">{workspace}</section>
                 <MemberDetailDialogLineageDialog member={member} showLineageId={showLineageId} isMerging={isMerging} onClose={() => setShowLineageId(null)} onUnmerge={handleUnmerge} />
             </>
         );
@@ -483,15 +480,5 @@ export function MemberDetailDialog({
                 onUnmerge={handleUnmerge}
             />
         </Dialog>
-    );
-}
-
-function WorkspaceMetric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'cyan' | 'emerald' }) {
-    const valueClass = tone === 'cyan' ? 'text-cyan-300' : tone === 'emerald' ? 'text-emerald-300' : 'text-slate-100';
-    return (
-        <div className="min-w-0 px-4 py-3 text-center">
-            <p className="text-[10px] font-bold text-slate-500">{label}</p>
-            <p className={`mt-1 truncate text-sm font-black ${valueClass}`} title={value}>{value}</p>
-        </div>
     );
 }

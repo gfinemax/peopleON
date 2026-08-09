@@ -1,6 +1,6 @@
 'use client';
 
-import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
@@ -15,9 +15,9 @@ import type {
 } from './memberDetailDialogTypes';
 import type { AssetRight } from './memberDetailDialogUtils';
 import {
-    MEMBER_WORKSPACE_COLUMNS,
     type MemberWorkspaceColumnId,
 } from './memberWorkspacePresets';
+import { MemberWorkspaceBoard } from './MemberWorkspacePage';
 
 export const MEMBER_DETAIL_DIALOG_TABS: Array<{
     id: TabType;
@@ -192,124 +192,9 @@ export function MemberDetailDialogBody({
     onRightChange,
     onShowLineage,
 }: MemberDetailDialogBodyProps) {
-    const renderWorkspaceColumn = (columnId: MemberWorkspaceColumnId) => {
-        if (!member) return null;
-
-        if (columnId === 'profile') {
-            return (
-                <MemberDetailDialogInfoTab
-                    member={member}
-                    formData={formData}
-                    isEditing={isEditing}
-                    isSsnRevealed={isSsnRevealed}
-                    setIsSsnRevealed={setIsSsnRevealed}
-                    setFormData={setFormData}
-                    saveFeedback={saveFeedback}
-                    section="profile"
-                />
-            );
-        }
-
-        if (columnId === 'relations') {
-            return (
-                <MemberDetailDialogInfoTab
-                    member={member}
-                    formData={formData}
-                    isEditing={isEditing}
-                    isSsnRevealed={isSsnRevealed}
-                    setIsSsnRevealed={setIsSsnRevealed}
-                    setFormData={setFormData}
-                    saveFeedback={saveFeedback}
-                    section="relations"
-                />
-            );
-        }
-
-        if (columnId === 'rights') {
-            return (
-                <MemberDetailDialogAdminTab
-                    member={member}
-                    formData={formData}
-                    isEditing={isEditing}
-                    isAdmin={isAdmin}
-                    saving={saving}
-                    deleting={deleting}
-                    canEditCertificateSummary={canEditCertificateSummary}
-                    rightsFlowSummary={rightsFlowSummary}
-                    managedCertificateNumbers={managedCertificateNumbers}
-                    sortedAssetRights={sortedAssetRights}
-                    manageableRights={manageableRights}
-                    conflictRightNumbers={conflictRightNumbers}
-                    selectedRightIds={selectedRightIds}
-                    setSelectedRightIds={setSelectedRightIds}
-                    isMerging={isMerging}
-                    rightInput={rightInput}
-                    setRightInput={setRightInput}
-                    isAddingRight={isAddingRight}
-                    saveFeedback={saveFeedback}
-                    setFormData={setFormData}
-                    onStartEditing={onStartEditing}
-                    onCancelEditing={onCancelEditing}
-                    onSave={onSave}
-                    onAddRight={onAddRight}
-                    onMergeSelectedRights={onMergeSelectedRights}
-                    onDeleteRight={onDeleteRight}
-                    onRightChange={onRightChange}
-                    onShowLineage={onShowLineage}
-                />
-            );
-        }
-
-        if (columnId === 'timeline' && memberIds) {
-            return <ActivityTimelineTab memberIds={memberIds} />;
-        }
-
-        if (columnId === 'payment' && memberIds) {
-            return (
-                <PaymentStatusTab
-                    memberIds={memberIds}
-                    memberName={member.name ?? ''}
-                    unitGroup={member.unit_group}
-                    memberTiers={member.tiers}
-                    isRegistered={member.is_registered}
-                />
-            );
-        }
-
-        return null;
-    };
-
     if (presentation === 'page') {
-        const minimumColumnWidth = visibleWorkspaceColumns.length >= 5 ? 320 : visibleWorkspaceColumns.length === 4 ? 350 : 410;
-        return (
-            <div className="relative flex min-h-0 flex-1 flex-col bg-[#132237]">
-                {loading ? (
-                    <div className="flex min-h-[520px] flex-col items-center justify-center gap-3 text-slate-400">
-                        <MaterialIcon name="refresh" className="animate-spin" />
-                        <span className="text-xs font-bold">조합원 작업대를 불러오는 중...</span>
-                    </div>
-                ) : (
-                    <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 scrollbar-thin scrollbar-thumb-white/10">
-                        <div
-                            className="grid h-full items-stretch gap-3"
-                            style={{
-                                gridTemplateColumns: `repeat(${visibleWorkspaceColumns.length}, minmax(${minimumColumnWidth}px, 1fr))`,
-                                minWidth: `${visibleWorkspaceColumns.length * minimumColumnWidth + (visibleWorkspaceColumns.length - 1) * 12}px`,
-                            }}
-                        >
-                            {visibleWorkspaceColumns.map((columnId) => {
-                                const definition = MEMBER_WORKSPACE_COLUMNS.find((column) => column.id === columnId);
-                                return (
-                                    <MemberWorkspaceColumn key={columnId} title={definition?.label || columnId} icon={definition?.icon || 'view_column'}>
-                                        {renderWorkspaceColumn(columnId)}
-                                    </MemberWorkspaceColumn>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
+        if (loading || !member || !memberIds) return <div className="flex min-h-[520px] items-center justify-center bg-[#071e32] text-xs font-bold text-slate-500">조합원 작업대를 불러오는 중...</div>;
+        return <MemberWorkspaceBoard memberIds={memberIds} member={member} formData={formData} columns={visibleWorkspaceColumns} />;
     }
 
     return (
@@ -388,19 +273,5 @@ export function MemberDetailDialogBody({
                 </div>
             </div>
         </div>
-    );
-}
-
-function MemberWorkspaceColumn({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
-    return (
-        <section className="flex min-h-[620px] min-w-0 flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#18293d] shadow-sm">
-            <header className="sticky top-0 z-20 flex min-h-12 shrink-0 items-center gap-2 border-b border-white/[0.08] bg-[#10243a] px-4">
-                <MaterialIcon name={icon} size="sm" className="text-cyan-400" />
-                <h2 className="text-sm font-black text-slate-100">{title}</h2>
-            </header>
-            <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-white/10">
-                {children}
-            </div>
-        </section>
     );
 }
