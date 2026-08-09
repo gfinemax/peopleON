@@ -20,7 +20,7 @@ type AggregationMaps = {
     finalRefundByCase: Map<string, number>;
     paidByCase: Map<string, number>;
     agentsByEntity: Map<string, { id?: string; name: string; relation: string; phone?: string }[]>;
-    actsAsAgentFor: Map<string, { owner_id: string; owner_name: string; relation: string }[]>;
+    actsAsAgentFor: Map<string, { owner_id: string; owner_name: string; relation: string; phone?: string | null }[]>;
     realOwnerByNominee: Map<string, { id: string; name: string }>;
     nomineesByOwner: Map<string, { id: string; name: string }[]>;
 };
@@ -241,6 +241,7 @@ export function buildRawUnifiedPeople(
                     relation: agentFor.relation,
                     type: ownerType,
                     category: classifyAgentRelation(agentFor.relation) ? '대리인' : '관계인',
+                    phone: agentFor.phone,
                 };
             }),
         });

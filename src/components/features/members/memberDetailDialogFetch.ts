@@ -206,6 +206,7 @@ export async function fetchMemberDetail(ids: string[]) {
                   id: relation.to_entity_id,
                   name: (relation.owner_entity as { display_name?: string } | null)?.display_name || 'N/A',
                   relation: relation.relation_note || '대리인',
+                  phone: (relation.owner_entity as { phone?: string | null } | null)?.phone || null,
               }))
             : null,
         assetRights,

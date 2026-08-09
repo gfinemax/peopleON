@@ -43,7 +43,7 @@ export interface MemberDetailDialogMember {
     nominees?: { id: string; name: string }[] | null;
     birth_date?: string | null;
     resident_registration_number?: string | null;
-    acts_as_agent_for?: { id: string; name: string; relation: string }[] | null;
+    acts_as_agent_for?: { id: string; name: string; relation: string; phone?: string | null }[] | null;
     owner_group?: 'registered' | 'others' | null;
     provisional_certificate_count?: number | null;
     manual_certificate_count?: number | null;

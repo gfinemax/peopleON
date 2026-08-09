@@ -51,7 +51,7 @@ export type UnifiedPerson = {
     meta?: Record<string, unknown> | null;
     tiers?: string[];
     is_duplicate_name?: boolean;
-    acts_as_agent_for?: { id?: string; name: string; relation: string; type: string; category?: string }[] | null;
+    acts_as_agent_for?: { id?: string; name: string; relation: string; type: string; category?: string; phone?: string | null }[] | null;
     real_owner?: { id: string; name: string } | null;
     nominees?: { id: string; name: string }[] | null;
     _hasLiveCertData?: boolean;

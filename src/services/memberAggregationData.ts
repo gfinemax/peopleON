@@ -83,7 +83,7 @@ export type RelationshipLookupRecord = {
     relation_type: 'agent' | 'nominee_owner';
     relation_note: string | null;
     agent_entity?: { display_name?: string | null } | null;
-    owner_entity?: { display_name?: string | null } | null;
+    owner_entity?: { display_name?: string | null; phone?: string | null } | null;
 };
 
 const parseMoney = (value: number | string | null | undefined) => {
@@ -164,7 +164,7 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
         fetchLatestSettlementCases(supabase),
         supabase
             .from('entity_relationships')
-            .select('to_entity_id, from_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name), owner_entity:account_entities!to_entity_id(display_name)')
+            .select('to_entity_id, from_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name), owner_entity:account_entities!to_entity_id(display_name, phone)')
             .in('relation_type', ['agent', 'nominee_owner']),
     ]);
 
@@ -292,7 +292,7 @@ export async function fetchSettlementAmounts(
 
 export function buildRelationshipMaps(relationsList: RelationshipLookupRecord[]) {
     const agentsByEntity = new Map<string, { id?: string; name: string; relation: string; phone?: string }[]>();
-    const actsAsAgentFor = new Map<string, { owner_id: string; owner_name: string; relation: string }[]>();
+    const actsAsAgentFor = new Map<string, { owner_id: string; owner_name: string; relation: string; phone?: string | null }[]>();
     const realOwnerByNominee = new Map<string, { id: string; name: string }>();
     const nomineesByOwner = new Map<string, { id: string; name: string }[]>();
 
@@ -311,6 +311,7 @@ export function buildRelationshipMaps(relationsList: RelationshipLookupRecord[])
                 owner_id: rel.to_entity_id,
                 owner_name: rel.owner_entity?.display_name || '알 수 없음',
                 relation: rel.relation_note || '대리인',
+                phone: rel.owner_entity?.phone || null,
             });
             actsAsAgentFor.set(rel.from_entity_id, existingOwners);
         } else if (rel.relation_type === 'nominee_owner') {
