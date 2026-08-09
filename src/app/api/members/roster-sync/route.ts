@@ -4,10 +4,8 @@ import { createAuditLog } from '@/app/actions/audit';
 import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 import {
-    calculateRosterAdjustment,
     MEMBER_ROLE_CODES,
     normalizeRosterName,
-    ROSTER_PAYMENT_NOTE,
     ROSTER_REGISTERED_COUNT,
     ROSTER_TOTAL_COUNT,
     type RosterSyncRow,
@@ -15,7 +13,6 @@ import {
 
 type RoleRow = { id: string; entity_id: string };
 type EntityRow = { id: string; display_name: string; status: string | null; unit_group: string | null };
-type PaymentRow = { id: string; entity_id: string; amount_paid: number | string; receipt_note: string | null };
 
 async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, rows: RosterSyncRow[]) {
     const errors: string[] = [];
@@ -23,15 +20,14 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
         ...row,
         name: String(row.name || '').trim(),
         unitGroup: String(row.unitGroup || '').trim(),
-        totalPaid: Math.round(Number(row.totalPaid)),
         normalizedName: normalizeRosterName(row.name),
     }));
 
     if (normalizedRows.length !== ROSTER_REGISTERED_COUNT) {
         errors.push(`엑셀 유효 인원이 ${normalizedRows.length}명이야. 정확히 ${ROSTER_REGISTERED_COUNT}명이어야 해.`);
     }
-    if (normalizedRows.some((row) => !row.normalizedName || !row.unitGroup || !Number.isFinite(row.totalPaid) || row.totalPaid < 0)) {
-        errors.push('이름, 평형 또는 총납입금액이 비어 있거나 올바르지 않은 행이 있어.');
+    if (normalizedRows.some((row) => !row.normalizedName || !row.unitGroup)) {
+        errors.push('이름 또는 평형이 비어 있는 행이 있어.');
     }
 
     const sourceNameCounts = new Map<string, number>();
@@ -52,29 +48,15 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
         errors.push(`현재 등기조합원 범위가 ${entityIds.length}명이야. 예상한 ${ROSTER_TOTAL_COUNT}명과 달라서 반영을 중단해.`);
     }
 
-    const [{ data: entityData, error: entityError }, { data: paymentData, error: paymentError }] = await Promise.all([
-        supabase.from('account_entities').select('id,display_name,status,unit_group').in('id', entityIds),
-        supabase.from('member_payments').select('id,entity_id,amount_paid,receipt_note').in('entity_id', entityIds),
-    ]);
+    const { data: entityData, error: entityError } = await supabase
+        .from('account_entities').select('id,display_name,status,unit_group').in('id', entityIds);
     if (entityError) throw entityError;
-    if (paymentError) throw paymentError;
 
     const entities = (entityData || []) as EntityRow[];
-    const payments = (paymentData || []) as PaymentRow[];
     const entitiesByName = new Map<string, EntityRow[]>();
     entities.forEach((entity) => {
         const key = normalizeRosterName(entity.display_name);
         entitiesByName.set(key, [...(entitiesByName.get(key) || []), entity]);
-    });
-
-    const paymentTotals = new Map<string, number>();
-    const adjustmentLines = new Map<string, PaymentRow>();
-    payments.forEach((payment) => {
-        if (payment.receipt_note === ROSTER_PAYMENT_NOTE) {
-            adjustmentLines.set(payment.entity_id, payment);
-        } else {
-            paymentTotals.set(payment.entity_id, (paymentTotals.get(payment.entity_id) || 0) + Number(payment.amount_paid || 0));
-        }
     });
 
     const unmatched: RosterSyncRow[] = [];
@@ -84,7 +66,6 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
         if (candidates.length === 0) { unmatched.push(row); return []; }
         if (candidates.length > 1) { ambiguous.push(row); return []; }
         const entity = candidates[0];
-        const existingDetailTotal = paymentTotals.get(entity.id) || 0;
         return [{
             rowNumber: row.rowNumber,
             entityId: entity.id,
@@ -92,10 +73,6 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
             beforeUnitGroup: entity.unit_group,
             unitGroup: row.unitGroup,
             beforeStatus: entity.status,
-            existingDetailTotal,
-            targetTotalPaid: row.totalPaid,
-            adjustmentAmount: calculateRosterAdjustment(row.totalPaid, existingDetailTotal),
-            adjustmentLineId: adjustmentLines.get(entity.id)?.id || null,
         }];
     });
 
@@ -151,35 +128,11 @@ export async function POST(request: Request) {
         const { error: refundRoleError } = await supabase.from('membership_roles').update({ role_code: '권리증환불', role_status: 'active', is_registered: false }).in('entity_id', refundIds).in('role_code', [...MEMBER_ROLE_CODES]);
         if (refundRoleError) throw refundRoleError;
 
-        const inserts: Record<string, unknown>[] = [];
-        await applyInChunks(preview.matched, async (row) => {
-            const payload = {
-                entity_id: row.entityId,
-                payment_type: 'other',
-                amount_due: 0,
-                amount_paid: row.adjustmentAmount,
-                receipt_note: ROSTER_PAYMENT_NOTE,
-                is_contribution: true,
-                status: 'paid',
-                sort_order: 90,
-            };
-            if (row.adjustmentLineId) {
-                const { error } = await supabase.from('member_payments').update(payload).eq('id', row.adjustmentLineId);
-                if (error) throw error;
-            } else {
-                inserts.push(payload);
-            }
-        });
-        if (inserts.length) {
-            const { error } = await supabase.from('member_payments').insert(inserts);
-            if (error) throw error;
-        }
-
         await createAuditLog('APPLY_REGISTERED_ROSTER', undefined, {
             file_name: body.fileName || null,
             registered_count: registeredIds.length,
             refund_count: refundIds.length,
-            payment_basis: 'total_paid_adjustment',
+            payment_data_changed: false,
         });
         revalidateUnifiedMembersTag();
 
