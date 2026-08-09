@@ -36,6 +36,7 @@ Blocked for the same reason. Code-level checks confirm that the retained preset 
 ## Comparison history
 
 - Initial implementation: replaced legacy nested cards with source-aligned summary, workspace toolbar, and compact five-column sections.
+- Readability iteration: raised workspace labels and values from 10-11px to 12-16px by hierarchy, expanded row height and column minimum widths, and reserved a 130px no-wrap relationship phone field. Long general values now truncate to one line with their full value available in the native title tooltip; consultation content remains the intentional two-line exception.
 - Browser QA attempt: blocked before capture; no post-capture visual iteration was possible.
 
 ## Final result
