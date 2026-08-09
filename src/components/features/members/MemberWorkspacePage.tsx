@@ -28,7 +28,7 @@ const money = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}�
 const date = (value?: string | null) => value ? value.slice(0, 10) : '-';
 const value = (input?: string | null) => input?.trim() || '-';
 const getMemberCategory = (member: MemberDetailDialogMember) => {
-    const tiers = [...(member.tiers || []), member.tier || '', member.role_code || ''];
+    const tiers = [...(member.tiers || []), member.tier || '', member.role_code || '', member.status || ''];
     const hasTier = (keyword: string) => tiers.some((tier) => tier.includes(keyword));
 
     if (hasTier('환불')) return '환불조합원';
