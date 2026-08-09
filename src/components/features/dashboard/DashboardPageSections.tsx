@@ -85,11 +85,11 @@ export function DashboardKpiSection({
             </Link>
 
             <KpiCard
-                title="원천 권리증"
+                title="원천 가입신청필증"
                 icon="folder"
                 value={stats.certificateHolderCount.toLocaleString()}
                 unit="건"
-                subtitle="중복 제외 원천 권리증"
+                subtitle="중복 제외 원천 가입신청필증"
                 iconColor="text-violet-500"
                 iconBg="bg-violet-500/10"
                 href="/members?tier=권리증보유자&from=dashboard&view=certificates"

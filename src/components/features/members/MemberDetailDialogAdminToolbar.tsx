@@ -66,7 +66,7 @@ export function MemberDetailDialogAdminToolbar({
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-400">권리증 작업</span>
+                            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-400">가입신청필증 작업</span>
                             <span className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-sm font-bold text-white">
                                 {getRightsFlowHeadline(rightsFlowSummary.rawCount, rightsFlowSummary.managedCount)}
                             </span>
@@ -81,7 +81,7 @@ export function MemberDetailDialogAdminToolbar({
                             </span>
                         </div>
                         <p className="text-xs text-slate-400">
-                            먼저 권리증번호를 수정하고 저장한 뒤, 아래에서 원천과 관리번호 흐름을 검토합니다.
+                            먼저 필증번호를 수정하고 저장한 뒤, 아래에서 원천과 관리번호 흐름을 검토합니다.
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -123,19 +123,19 @@ export function MemberDetailDialogAdminToolbar({
                                     ? '통합 중...'
                                     : selectedRightIds.length >= 2
                                       ? `${selectedRightIds.length}개 선택 - 통합하기`
-                                      : '선택 권리증 통합'}
+                                      : '선택 가입신청필증 통합'}
                             </Button>
                         ) : null}
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
                     <div className="rounded-xl border border-sky-500/20 bg-[#162234] px-4 py-3">
-                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-sky-400">권리증 추가</p>
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-sky-400">가입신청필증 추가</p>
                         <div className="flex gap-3">
                             <Input
                                 value={rightInput}
                                 onChange={(event) => setRightInput(event.target.value)}
-                                placeholder="권리증 번호 입력"
+                                placeholder="필증번호 입력"
                                 className="h-9 border-slate-700 bg-slate-900 font-mono text-sm text-sky-100"
                                 onKeyDown={(event) => event.key === 'Enter' && onAddRight()}
                             />
@@ -169,7 +169,7 @@ export function MemberDetailDialogAdminToolbar({
                 </div>
                 {isEditing ? (
                     <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-100">
-                        권리증번호를 우선 수정하고 저장하세요. 저장 후 목록과 상세 번호가 다시 계산됩니다.
+                        필증번호를 우선 수정하고 저장하세요. 저장 후 목록과 상세 번호가 다시 계산됩니다.
                     </div>
                 ) : null}
                 {saveFeedback ? (
@@ -179,7 +179,7 @@ export function MemberDetailDialogAdminToolbar({
                 ) : null}
                 {manageableRights.length > 1 ? (
                     <div className="rounded-xl border border-blue-500/15 bg-blue-500/5 px-4 py-3 text-xs text-blue-100">
-                        통합할 권리증을 체크한 뒤 `선택 권리증 통합`을 누르세요.
+                        통합할 가입신청필증을 체크한 뒤 `선택 가입신청필증 통합`을 누르세요.
                     </div>
                 ) : null}
             </div>

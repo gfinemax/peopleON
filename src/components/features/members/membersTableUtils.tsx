@@ -57,7 +57,7 @@ const settlementStatusLabel: Record<NonNullable<MembersTableMember['settlement_s
 
 export const roleLabel: Record<RoleType, string> = {
     member: '조합원',
-    certificate_holder: '권리증보유',
+    certificate_holder: '가입신청필증 보유',
     related_party: '관계인',
     refund_applicant: '환불신청',
     agent: '대리인',
@@ -229,7 +229,7 @@ export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) 
     }
 
     if (role === 'certificate_holder') {
-        return '권리증보유';
+        return '가입신청필증 보유';
     }
 
     return roleLabel[role];

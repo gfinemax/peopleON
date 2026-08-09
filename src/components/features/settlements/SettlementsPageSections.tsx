@@ -78,7 +78,7 @@ export function SettlementsActionPanel({
                             </Link>
                             <Link href="/certificate-audit" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-xs font-bold text-violet-200 hover:bg-violet-500/20">
                                 <MaterialIcon name="fact_check" size="sm" />
-                                권리증 검수 이동
+                                가입신청필증 검수 이동
                             </Link>
                         </div>
                     </div>
@@ -132,7 +132,7 @@ export function SettlementsDiagnosticsSection({
                     </span>
                     <Link href="/certificate-audit" className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-200 hover:bg-violet-500/15">
                         <MaterialIcon name="fact_check" size="xs" />
-                        <span>권리증 검수센터</span>
+                        <span>가입신청필증 검수센터</span>
                     </Link>
                 </div>
             </div>

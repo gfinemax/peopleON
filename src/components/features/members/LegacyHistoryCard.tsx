@@ -45,7 +45,7 @@ export function LegacyHistoryCard({ records }: { records: LegacyRecord[] }) {
                     <div className="size-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
                         <MaterialIcon name="history_edu" size="sm" />
                     </div>
-                    <h3 className="text-sm font-black text-foreground">과거 권리증 기록 (Legacy Data)</h3>
+                    <h3 className="text-sm font-black text-foreground">과거 가입신청필증 기록 (Legacy Data)</h3>
                 </div>
                 <Badge variant="outline" className="bg-orange-500/5 text-orange-500 border-orange-500/20 font-mono">
                     {records.length}건 발견됨
@@ -80,7 +80,7 @@ export function LegacyHistoryCard({ records }: { records: LegacyRecord[] }) {
                                             </span>
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            보유 권리증: <span className="font-mono text-orange-500 font-bold">{record.rights_count}개</span>
+                                            보유 가입신청필증: <span className="font-mono text-orange-500 font-bold">{record.rights_count}개</span>
                                         </p>
                                     </div>
                                 </div>

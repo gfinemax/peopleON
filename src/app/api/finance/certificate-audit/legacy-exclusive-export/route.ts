@@ -143,7 +143,7 @@ export async function GET() {
         })
         .sort((a, b) => a.number.localeCompare(b.number, 'ko'));
 
-    const header = ['권리증번호', '소유자(legacy)', '상태', '연락처', '출처 파일'];
+    const header = ['필증번호', '소유자(legacy)', '상태', '연락처', '출처 파일'];
     const lines = [
         header.map(escapeCsvCell).join(','),
         ...rows.map((row) =>

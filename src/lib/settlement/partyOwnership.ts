@@ -41,7 +41,7 @@ function isActiveCertificateStatus(status: string | null | undefined) {
 
 export function ownerTypeLabel(ownerType: SettlementOwnerType) {
     if (ownerType === 'member_linked') return '회원 연결';
-    if (ownerType === 'certificate_holder') return '권리증 소유자';
+    if (ownerType === 'certificate_holder') return '가입신청필증 소유자';
     return '미연결 인물';
 }
 

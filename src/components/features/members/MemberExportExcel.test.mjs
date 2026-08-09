@@ -23,7 +23,7 @@ describe('member export formatting', () => {
                 raw_certificate_count: 1,
                 managed_certificate_count: 1,
             }),
-            '조합원(등기), 권리증보유',
+            '조합원(등기), 가입신청필증 보유',
         );
     });
 

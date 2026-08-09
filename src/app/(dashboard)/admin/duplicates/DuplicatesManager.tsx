@@ -134,11 +134,11 @@ export default function DuplicatesManager({ initialGroups }: { initialGroups: Du
                                         </CardHeader>
                                         <CardContent className="p-4 text-sm space-y-3 w-full grow">
                                             <div className="grid grid-cols-3 gap-1">
-                                                <span className="text-muted-foreground font-medium">회원번호</span>
+                                                <span className="text-muted-foreground font-medium">회원번호(필증번호)</span>
                                                 <span className="col-span-2 font-mono">{(entity.membership_roles && entity.membership_roles[0]?.source_member_id) || '-'}</span>
                                             </div>
                                             <div className="grid grid-cols-3 gap-1">
-                                                <span className="text-muted-foreground font-medium">권리증</span>
+                                                <span className="text-muted-foreground font-medium">가입신청필증</span>
                                                 <span className="col-span-2">{certsCount > 0 ? <span className="text-emerald-600 font-bold">{certsCount}개</span> : '없음'}</span>
                                             </div>
                                             {entity.memo && (

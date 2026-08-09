@@ -78,7 +78,7 @@ export function LegacyFilter() {
                         <input
                             key={query}
                             type="text"
-                            placeholder="이름 / 권리증번호 검색"
+                            placeholder="이름 / 필증번호 검색"
                             className="h-9 w-full rounded-lg border border-border bg-card/60 pl-9 pr-4 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                             defaultValue={query}
                             ref={queryInputRef}
@@ -108,8 +108,8 @@ export function LegacyFilter() {
                         value={`${sort}:${order}`}
                         onChange={handleSortChange}
                     >
-                        <option value="certificate_count:desc">권리증 많은순</option>
-                        <option value="certificate_count:asc">권리증 적은순</option>
+                        <option value="certificate_count:desc">가입신청필증 많은순</option>
+                        <option value="certificate_count:asc">가입신청필증 적은순</option>
                         <option value="original_name:asc">이름 오름차순</option>
                         <option value="original_name:desc">이름 내림차순</option>
                     </select>

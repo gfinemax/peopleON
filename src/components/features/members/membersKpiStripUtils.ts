@@ -127,7 +127,7 @@ export function exportAnalysisRows(
 
     const sheet = XLSX.utils.json_to_sheet(excelRows);
     const book = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(book, sheet, '권리증분석');
+    XLSX.utils.book_append_sheet(book, sheet, '가입신청필증분석');
     XLSX.writeFile(book, filename);
 }
 

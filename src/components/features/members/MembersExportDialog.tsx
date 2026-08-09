@@ -15,7 +15,7 @@ interface MembersExportDialogProps {
 const AVAILABLE_COLUMNS = [
     { id: 'name', label: '성명', defaultChecked: true },
     { id: 'phone', label: '연락처', defaultChecked: true },
-    { id: 'certificate_numbers', label: '권리증번호', defaultChecked: true, required: true },
+    { id: 'certificate_numbers', label: '필증번호', defaultChecked: true, required: true },
     { id: 'tier', label: '구분', defaultChecked: true },
     { id: 'unit_group', label: '동호수', defaultChecked: true },
     { id: 'relationships', label: '관계', defaultChecked: true },
@@ -103,7 +103,7 @@ export function MembersExportDialog({ isOpen, onClose, data }: MembersExportDial
                     <div className="mt-6 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex gap-3">
                         <MaterialIcon name="info" className="text-emerald-400 shrink-0 mt-0.5" size="sm" />
                         <div className="text-xs text-emerald-200">
-                            <strong>권리증번호 전체 출력:</strong> 엑셀로 추출 시, 화면 상의 축약 표시와 무관하게 <strong>보유한 모든 권리증 번호가 온전히 표기</strong>됩니다.
+                            <strong>필증번호 전체 출력:</strong> 엑셀로 추출 시, 화면 상의 축약 표시와 무관하게 <strong>보유한 모든 필증번호가 온전히 표기</strong>됩니다.
                         </div>
                     </div>
                 </div>

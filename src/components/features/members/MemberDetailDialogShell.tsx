@@ -27,7 +27,7 @@ export const MEMBER_DETAIL_DIALOG_TABS: Array<{
     { id: 'info', label: '통합정보', icon: 'person' },
     { id: 'timeline', label: '상담·활동', icon: 'history' },
     { id: 'payment', label: '납부·정산', icon: 'payments' },
-    { id: 'admin', label: '권리증', icon: 'description' },
+    { id: 'admin', label: '가입신청필증', icon: 'description' },
 ];
 
 interface MemberDetailDialogEmptyStateProps {

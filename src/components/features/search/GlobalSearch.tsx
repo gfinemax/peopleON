@@ -175,7 +175,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                             <MaterialIcon name="search" size="lg" className="text-primary/80" />
                             <input
                                 className="flex-1 bg-transparent border-none text-xl font-light text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 h-10"
-                                placeholder="이름, 주소, 권리증번호, 전화번호 검색..."
+                                placeholder="이름, 주소, 필증번호, 전화번호 검색..."
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={handleKeyDown}

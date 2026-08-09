@@ -35,7 +35,7 @@ export function MemberQuickPreview({ memberId, memberIds, open, onOpenChange, re
                             <PreviewField icon="badge" label="구분" value={(member.tiers || [member.tier]).filter(Boolean).join(', ') || '미지정'} />
                             <PreviewField icon="home" label="주소" value={member.address_legal || '미입력'} wide />
                             <PreviewField icon="groups" label="대표 관계인" value={member.representative ? `${member.representative.name} · ${member.representative.relation}` : '없음'} wide />
-                            <PreviewField icon="description" label="대표 권리증" value={member.certificate_display || '없음'} wide />
+                            <PreviewField icon="description" label="대표 가입신청필증" value={member.certificate_display || '없음'} wide />
                             <PreviewField icon="notes" label="관리자 메모" value={member.memo || '메모 없음'} wide />
                         </div>
                         <footer className="flex items-center justify-end gap-2 border-t border-white/10 bg-[#121c27] px-5 py-4"><button onClick={() => onOpenChange(false)} className="min-h-11 rounded-lg border border-white/10 px-4 text-xs font-bold text-slate-300">닫기</button><Link href={workspaceHref} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-sky-600 px-4 text-xs font-black text-white hover:bg-sky-500"><MaterialIcon name="open_in_new" size="xs" />통합정보 열기</Link></footer>

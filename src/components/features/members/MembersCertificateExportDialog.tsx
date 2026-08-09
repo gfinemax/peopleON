@@ -50,7 +50,7 @@ export function MembersCertificateExportDialog({
                         <MaterialIcon name="download" className="text-sky-300" />
                         엑셀 다운로드 설정
                     </DialogTitle>
-                    <p className="mt-2 text-sm text-slate-400">현재 권리증 분석 결과에서 내려받을 항목을 선택하세요.</p>
+                    <p className="mt-2 text-sm text-slate-400">현재 가입신청필증 분석 결과에서 내려받을 항목을 선택하세요.</p>
                 </div>
 
                 <div className="space-y-4 py-2">

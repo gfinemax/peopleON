@@ -38,7 +38,7 @@ export function LegacyRecordsTable({ records, tableKey }: LegacyRecordsTableProp
                             <SortableHeader label="이름 (Original Name)" field="original_name" />
                         </TableHead>
                         <TableHead>
-                            <SortableHeader label="보유 권리증 수" field="rights_count" />
+                            <SortableHeader label="보유 가입신청필증 수" field="rights_count" />
                         </TableHead>
                         <TableHead>
                             <SortableHeader label="상태" field="member_id" />

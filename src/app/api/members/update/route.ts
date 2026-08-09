@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
         if (!rightsResult.success) {
             return NextResponse.json(
-                { success: false, error: rightsResult.error || rightsResult.message || '권리증 업데이트 실패' },
+                { success: false, error: rightsResult.error || rightsResult.message || '가입신청필증 업데이트 실패' },
                 { status: 500 },
             );
         }
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 
         if (!summaryResult.success) {
             return NextResponse.json(
-                { success: false, error: summaryResult.error || '권리증 요약 업데이트 실패' },
+                { success: false, error: summaryResult.error || '가입신청필증 요약 업데이트 실패' },
                 { status: 500 },
             );
         }

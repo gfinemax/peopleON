@@ -72,7 +72,7 @@ export function MembersCertificatePrintDialog({
                         <MaterialIcon name="print" className="text-emerald-300" />
                         보고서 인쇄 설정
                     </DialogTitle>
-                    <p className="mt-2 text-sm text-slate-400">현재 권리증 분석 결과를 인쇄하기 전에 레이아웃과 컬럼을 고르세요.</p>
+                    <p className="mt-2 text-sm text-slate-400">현재 가입신청필증 분석 결과를 인쇄하기 전에 레이아웃과 컬럼을 고르세요.</p>
                 </div>
 
                 <div className="space-y-6 py-2">

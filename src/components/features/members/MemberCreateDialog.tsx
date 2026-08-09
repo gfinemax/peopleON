@@ -57,7 +57,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
             return false;
         };
         if (formData.right_number && isDateLike(formData.right_number)) {
-            if (!confirm('입력하신 권리증 번호가 생년월일 형식과 유사합니다. 권리증 번호가 확실한가요?')) {
+            if (!confirm('입력하신 필증번호가 생년월일 형식과 유사합니다. 필증번호가 확실한가요?')) {
                 return;
             }
         }
@@ -171,13 +171,13 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="right_number" className="text-right text-sky-400 font-bold">권리증번호</Label>
+                        <Label htmlFor="right_number" className="text-right text-sky-400 font-bold">회원번호(필증번호)</Label>
                         <Input
                             id="right_number"
                             value={formData.right_number}
                             onChange={(e) => setFormData({ ...formData, right_number: e.target.value })}
                             className="col-span-3 bg-slate-800 border-slate-700 border-sky-500/30 font-mono text-sky-200"
-                            placeholder="권리증 번호 입력"
+                            placeholder="필증번호 입력"
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -196,7 +196,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                                     <SelectItem value="2차">2차</SelectItem>
                                     <SelectItem value="일반분양">조합원(일반분양)</SelectItem>
                                     <SelectItem value="예비조합원">조합원(예비)</SelectItem>
-                                    <SelectItem value="권리증보유자">권리증보유</SelectItem>
+                                    <SelectItem value="권리증보유자">가입신청필증 보유</SelectItem>
                                     <SelectItem value="지주">원지주</SelectItem>
                                     <SelectItem value="대리인">대리인</SelectItem>
                                     <SelectItem value="관계인">관계인</SelectItem>

@@ -101,12 +101,12 @@ export function DuplicateConflictRow({ member }: { member: DuplicateConflictMemb
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2 mb-1 cursor-default">
-                                <span className="font-extrabold text-red-500 text-sm">권리증 충돌 오류</span>
+                                <span className="font-extrabold text-red-500 text-sm">가입신청필증 충돌 오류</span>
                                 <span className="text-[10px] font-bold text-red-500/70 tracking-wider font-mono bg-red-500/10 px-2 py-0.5 rounded-full">{member.member_number}</span>
                                 <span className="text-[10px] font-black text-red-500 border border-red-500/30 bg-red-500/10 px-2 py-0.5 rounded uppercase tracking-wider">{member.tier}</span>
                             </div>
                             <p className="text-xs font-bold text-muted-foreground">
-                                해당 권리증 번호를 <strong className="text-foreground">{member.phone}</strong> 님이 중복해서 소유하고 있습니다.
+                                해당 필증번호를 <strong className="text-foreground">{member.phone}</strong> 님이 중복해서 소유하고 있습니다.
                             </p>
                         </div>
                     </div>

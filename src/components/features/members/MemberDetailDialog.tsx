@@ -199,14 +199,14 @@ export function MemberDetailDialog({
     };
     const handleMergeSelectedRights = async () => {
         if (!member || selectedRightIds.length < 2) return;
-        const targetNumber = prompt('선택한 권리증을 묶을 통합 관리번호를 입력하세요:');
+        const targetNumber = prompt('선택한 가입신청필증을 묶을 통합 관리번호를 입력하세요:');
         if (!targetNumber) return;
 
         setIsMerging(true);
         try {
             const result = await mergeMemberRights({ member, selectedRightIds, targetNumber });
             if (result.success) {
-                alert('선택한 권리증이 하나의 통합 관리번호로 묶였습니다.');
+                alert('선택한 가입신청필증이 하나의 통합 관리번호로 묶였습니다.');
                 setSelectedRightIds([]);
                 await refreshMember(memberIds || [member.id]);
             } else {
@@ -222,7 +222,7 @@ export function MemberDetailDialog({
     const handleAddRight = async () => {
         if (!rightInput.trim() || !member) return;
         if (isDateLikeValue(rightInput)) {
-            alert('이 입력값은 생년월일 형식입니다. 권리증 번호가 확실한지 확인하시거나, 생년월일 칸에 입력해 주세요.');
+            alert('이 입력값은 생년월일 형식입니다. 필증번호가 확실한지 확인하시거나, 생년월일 칸에 입력해 주세요.');
             return;
         }
 
@@ -233,7 +233,7 @@ export function MemberDetailDialog({
             const refreshedMember = await refreshMember(memberIds && memberIds.length > 0 ? memberIds : [member.id]);
             if (onSaved) onSaved(refreshedMember || member);
         } catch (error) {
-            alert('권리증 추가 중 오류가 발생했습니다: ' + (error as Error).message);
+            alert('가입신청필증 추가 중 오류가 발생했습니다: ' + (error as Error).message);
         } finally {
             setIsAddingRight(false);
         }
@@ -250,7 +250,7 @@ export function MemberDetailDialog({
     };
 
     const handleDeleteRight = (rightId: string) => {
-        if (!confirm('해당 권리증을 목록에서 제외하시겠습니까?\n(우측 상단의 [저장] 버튼을 누르셔야 실제 DB에서 삭제됩니다.)')) return;
+        if (!confirm('해당 가입신청필증을 목록에서 제외하시겠습니까?\n(우측 상단의 [저장] 버튼을 누르셔야 실제 DB에서 삭제됩니다.)')) return;
 
         setFormData((prev) => {
             if (!prev.assetRights) return prev;
@@ -269,7 +269,7 @@ export function MemberDetailDialog({
         if (!member) return;
         const targetIds = memberIds && memberIds.length > 0 ? memberIds : [member.id];
         const label = targetIds.length > 1 ? `${member.name || '선택한 인물'} 포함 ${targetIds.length}건` : member.name || '선택한 인물';
-        const confirmed = confirm(`${label} 정보를 삭제하시겠습니까?\n권리증, 정산, 납부 이력이 있으면 삭제가 차단됩니다.`);
+        const confirmed = confirm(`${label} 정보를 삭제하시겠습니까?\n가입신청필증, 정산, 납부 이력이 있으면 삭제가 차단됩니다.`);
         if (!confirmed) return;
 
         setDeleting(true);
@@ -323,7 +323,7 @@ export function MemberDetailDialog({
         }).length;
 
         if (!member || !showLineageId) return;
-        if (!confirm(`정말 이 통합 관리번호를 해제하시겠습니까?\n원천 권리증 ${sourceCount || 0}개가 다시 독립적으로 분리됩니다.`)) return;
+        if (!confirm(`정말 이 통합 관리번호를 해제하시겠습니까?\n원천 가입신청필증 ${sourceCount || 0}개가 다시 독립적으로 분리됩니다.`)) return;
 
         try {
             setIsMerging(true);

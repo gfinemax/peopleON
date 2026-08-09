@@ -6,7 +6,7 @@ import type { AnalysisMode, AnalysisNumberDetail, AnalysisView } from './members
 function EmptyAnalysisState() {
     return (
         <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-sm font-semibold text-slate-400">
-            검색 조건에 맞는 원천 권리증 데이터가 없습니다.
+            검색 조건에 맞는 원천 가입신청필증 데이터가 없습니다.
         </div>
     );
 }
@@ -110,12 +110,12 @@ function PersonAnalysisList({
                                         </span>
                                     ))
                                 ) : (
-                                    <span className="text-xs font-semibold text-slate-500">표시 가능한 원천 권리증번호가 없습니다.</span>
+                                    <span className="text-xs font-semibold text-slate-500">표시 가능한 원천 필증번호가 없습니다.</span>
                                 )}
                             </div>
                             {analysisMode !== 'registered_internal' && detail.excludedSourceNumbers.length > 0 ? (
                                 <div className="mt-3 border-t border-white/8 pt-3">
-                                    <p className="mb-2 text-[11px] font-bold text-amber-300">중복으로 제외된 권리증번호</p>
+                                    <p className="mb-2 text-[11px] font-bold text-amber-300">중복으로 제외된 필증번호</p>
                                     <div className="flex flex-wrap gap-2">
                                         {detail.excludedSourceNumbers.map((number, index) => (
                                             <span key={`${detail.id}-excluded-${number}-${index}`} className="rounded-md border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-100">

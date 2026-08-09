@@ -52,7 +52,7 @@ export function MembersCertificateAnalysisCard({
 
     const certificateSegments = [
         { label: '조합원 보유분', value: certificates.memberHeld, colorClass: 'bg-violet-400', stroke: '#a78bfa', interactive: true },
-        { label: '환불 권리증', value: certificates.externalHeld, colorClass: 'bg-emerald-400', stroke: '#34d399', interactive: true },
+        { label: '환불 가입신청필증', value: certificates.externalHeld, colorClass: 'bg-emerald-400', stroke: '#34d399', interactive: true },
     ];
 
     const sourcePeopleCount = useMemo(() => allSourceDetails.filter((detail) => detail.sourceCount > 0).length, [allSourceDetails]);
@@ -155,13 +155,13 @@ export function MembersCertificateAnalysisCard({
     }, [duplicateSourceDetails, normalizedQuery]);
 
     const filteredResultCount = analysisMode === 'duplicates' ? filteredDuplicateDetails.length : analysisView === 'number' ? filteredNumberDetails.length : filteredSourceDetails.length;
-    const analysisTitle = analysisMode === 'all' ? '전체 원천 권리증' : analysisMode === 'registered_global' ? '조합원 원천 권리증' : analysisMode === 'registered_internal' ? '조합원 원천 권리증' : analysisMode === 'refund' ? '환불 권리증' : '중복 권리증';
+    const analysisTitle = analysisMode === 'all' ? '전체 원천 가입신청필증' : analysisMode === 'registered_global' ? '조합원 원천 가입신청필증' : analysisMode === 'registered_internal' ? '조합원 원천 가입신청필증' : analysisMode === 'refund' ? '환불 가입신청필증' : '중복 가입신청필증';
 
     const exportRows = useMemo<AnalysisExportRow[]>(() => {
         if (analysisMode === 'duplicates') {
             return filteredDuplicateDetails.map((detail) => ({
-                구분: '중복 권리증',
-                권리증번호: detail.number,
+                구분: '중복 가입신청필증',
+                필증번호: detail.number,
                 중복건수: detail.duplicateCount,
                 조합원수: detail.registeredCount,
                 기타수: detail.refundCount,
@@ -174,7 +174,7 @@ export function MembersCertificateAnalysisCard({
         if (analysisView === 'number') {
             return filteredNumberDetails.map((detail) => ({
                 구분: analysisTitle,
-                권리증번호: detail.number,
+                필증번호: detail.number,
                 보유자수: detail.owners.length,
                 보유자명단: detail.owners.map((owner) => owner.name).join(', '),
                 연락처: detail.owners.map((owner) => owner.phone || '').filter(Boolean).join(' / '),
@@ -188,9 +188,9 @@ export function MembersCertificateAnalysisCard({
             연락처: detail.phone || '',
             주소: detail.address || '',
             권리흐름: detail.rightsFlow,
-            원천권리증수: detail.sourceCount,
-            원천권리증번호: detail.sourceNumbers.join(', '),
-            중복제외권리증번호: detail.excludedSourceNumbers.join(', '),
+            원천가입신청필증수: detail.sourceCount,
+            원천필증번호: detail.sourceNumbers.join(', '),
+            중복제외필증번호: detail.excludedSourceNumbers.join(', '),
         }));
     }, [analysisMode, analysisTitle, analysisView, filteredDuplicateDetails, filteredNumberDetails, filteredSourceDetails]);
 
@@ -200,7 +200,7 @@ export function MembersCertificateAnalysisCard({
     const exportFilename = useMemo(() => {
         const date = new Date().toISOString().slice(0, 10);
         const viewLabel = analysisMode === 'duplicates' ? '번호기준' : analysisView === 'person' ? '사람기준' : '번호기준';
-        return `권리증_분석_${analysisTitle.replace(/\s+/g, '_')}_${viewLabel}_${date}.xlsx`;
+        return `가입신청필증_분석_${analysisTitle.replace(/\s+/g, '_')}_${viewLabel}_${date}.xlsx`;
     }, [analysisMode, analysisTitle, analysisView]);
     const effectiveSelectedExportColumns = useMemo(() => {
         const filtered = selectedExportColumns.filter((column) => availableExportColumns.includes(column));
@@ -237,8 +237,8 @@ export function MembersCertificateAnalysisCard({
         <>
             <CompactDonutCard
                 icon="folder"
-                title="권리증"
-                subtitle="중복 제외 원천 권리증 현황"
+                title="가입신청필증"
+                subtitle="중복 제외 원천 가입신청필증 현황"
                 total={certificates.total}
                 unit="건"
                 pillText={`중복 제외 ${certificates.duplicateExcluded.toLocaleString()}건`}
@@ -248,7 +248,7 @@ export function MembersCertificateAnalysisCard({
                 segments={certificateSegments}
                 onSegmentClick={(segment) => {
                     if (segment.label === '조합원 보유분') openAnalysis('registered_global');
-                    if (segment.label === '환불 권리증') openAnalysis('refund');
+                    if (segment.label === '환불 가입신청필증') openAnalysis('refund');
                 }}
                 onPillClick={() => openAnalysis('duplicates')}
             />

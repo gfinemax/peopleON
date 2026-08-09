@@ -8,7 +8,7 @@ export interface ExportColumn {
 
 const roleLabelMap: Record<string, string> = {
     member: '조합원',
-    certificate_holder: '권리증보유',
+    certificate_holder: '가입신청필증 보유',
     related_party: '관계인',
     refund_applicant: '환불신청',
     agent: '대리인',
@@ -111,7 +111,7 @@ export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) 
                     row[col.label] = p.phone || '';
                     break;
                 case 'certificate_numbers':
-                    // 권리증 번호는 축약 없이 배열 내용 전체를 콤마로 연결
+                    // 필증번호는 축약 없이 배열 내용 전체를 콤마로 연결
                     row[col.label] = Array.isArray(p.certificate_numbers) && p.certificate_numbers.length > 0 
                         ? p.certificate_numbers.join(', ') 
                         : '';

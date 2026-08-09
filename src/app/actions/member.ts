@@ -164,7 +164,7 @@ export async function deleteMemberEntities(entityIds: string[]): Promise<DeleteM
         }
 
         const blockers: string[] = [];
-        if (assetRightsCount > 0) blockers.push(`권리증 ${assetRightsCount}건`);
+        if (assetRightsCount > 0) blockers.push(`가입신청필증 ${assetRightsCount}건`);
         if (settlementCasesCount > 0) blockers.push(`정산 케이스 ${settlementCasesCount}건`);
         if (memberPaymentsCount + legacyPaymentsCount > 0) blockers.push(`납부 이력 ${memberPaymentsCount + legacyPaymentsCount}건`);
 
@@ -182,7 +182,7 @@ export async function deleteMemberEntities(entityIds: string[]): Promise<DeleteM
         if (deleteError) {
             console.error('Delete member error:', deleteError);
             if (/foreign key|violates foreign key constraint/i.test(deleteError.message || '')) {
-                return { error: '연결된 데이터가 남아 있어 삭제할 수 없습니다. 권리증, 정산, 납부 정보를 먼저 정리해 주세요.' };
+                return { error: '연결된 데이터가 남아 있어 삭제할 수 없습니다. 가입신청필증, 정산, 납부 정보를 먼저 정리해 주세요.' };
             }
             return { error: '인물 정보 삭제에 실패했습니다.' };
         }

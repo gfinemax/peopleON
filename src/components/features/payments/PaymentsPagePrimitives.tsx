@@ -70,7 +70,7 @@ export function PersonPaymentRow({
                         <span className="rounded-md border border-violet-400/20 bg-violet-500/10 px-2 py-1 text-[11px] font-bold text-violet-200">원천 {row.sourceCertificateCount}건</span>
                         {row.managedCertificateCount > 0 && <span className="rounded-md border border-sky-400/20 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-200">관리 {row.managedCertificateCount}건</span>}
                     </div>
-                    <p className="break-all text-[11px] text-slate-300">{row.certificateDisplay || '권리증번호 없음'}</p>
+                    <p className="break-all text-[11px] text-slate-300">{row.certificateDisplay || '필증번호 없음'}</p>
                     <div className="flex flex-wrap gap-1.5">
                         {row.unitTypeNames.length > 0 ? row.unitTypeNames.map((unitName) => (
                             <span key={unitName} className="rounded border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">{unitName}</span>

@@ -77,7 +77,7 @@ export function CertificateAnalysisCard() {
         <section className="rounded-xl border border-white/[0.08] bg-[#101725] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <h3 className="text-sm font-extrabold text-foreground">권리증 정밀 분석</h3>
+                    <h3 className="text-sm font-extrabold text-foreground">가입신청필증 정밀 분석</h3>
                     <p className="mt-1 text-[11px] text-slate-400">
                         certificate_registry 기준 등기조합원/비등기 보유 현황
                     </p>
@@ -103,14 +103,14 @@ export function CertificateAnalysisCard() {
             {stats && (
                 <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
                     <KpiCard
-                        label="등기조합원 권리증"
+                        label="등기조합원 가입신청필증"
                         value={stats.registered_total_cert_sum}
                         sub={`${stats.registered_owner_count}명 · 고유 ${stats.registered_unique_cert_count}번호`}
                         icon="verified_user"
                         color="emerald"
                     />
                     <KpiCard
-                        label="기타 보유자 권리증"
+                        label="기타 보유자 가입신청필증"
                         value={stats.others_total_cert_sum}
                         sub={`${stats.others_owner_count}명 · 고유 ${stats.others_unique_cert_count}번호`}
                         icon="group"
@@ -124,7 +124,7 @@ export function CertificateAnalysisCard() {
                         color="slate"
                     />
                     <KpiCard
-                        label="공유 권리증"
+                        label="공유 가입신청필증"
                         value={stats.shared_cert_count}
                         sub="2명 이상 보유"
                         icon="warning"
@@ -161,19 +161,19 @@ export function CertificateAnalysisCard() {
                         {activeTab === 'registered' && (
                             <PersonTable
                                 rows={data.registered}
-                                emptyMessage="등기조합원 권리증 데이터가 없습니다."
+                                emptyMessage="등기조합원 가입신청필증 데이터가 없습니다."
                             />
                         )}
                         {activeTab === 'shared' && (
                             <SharedTable
                                 rows={data.shared}
-                                emptyMessage="공유/중복 권리증이 없습니다."
+                                emptyMessage="공유/중복 가입신청필증이 없습니다."
                             />
                         )}
                         {activeTab === 'others' && (
                             <PersonTable
                                 rows={data.others}
-                                emptyMessage="비등기 권리증 보유자가 없습니다."
+                                emptyMessage="비등기 가입신청필증 보유자가 없습니다."
                             />
                         )}
                     </div>
@@ -234,7 +234,7 @@ function PersonTable({ rows, emptyMessage }: { rows: PersonDetail[]; emptyMessag
                 <tr className="border-b border-white/[0.06] text-slate-400">
                     <th className="py-2 pr-2 font-bold">성명</th>
                     <th className="py-2 pr-2 font-bold text-right w-16">보유 수</th>
-                    <th className="py-2 font-bold">권리증 번호</th>
+                    <th className="py-2 font-bold">필증번호</th>
                 </tr>
             </thead>
             <tbody>
@@ -276,7 +276,7 @@ function SharedTable({ rows, emptyMessage }: { rows: SharedHolder[]; emptyMessag
         <table className="w-full text-left text-[11px]">
             <thead>
                 <tr className="border-b border-white/[0.06] text-slate-400">
-                    <th className="py-2 pr-2 font-bold">권리증 번호</th>
+                    <th className="py-2 pr-2 font-bold">필증번호</th>
                     <th className="py-2 pr-2 font-bold text-right w-16">공유 인원</th>
                     <th className="py-2 font-bold">보유자</th>
                 </tr>

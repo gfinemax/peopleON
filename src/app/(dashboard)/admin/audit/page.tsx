@@ -41,7 +41,7 @@ export default async function AuditLogsPage() {
 
     const formatActionType = (type: string) => {
         switch (type) {
-            case 'UPDATE_ASSET_RIGHTS': return '권리증 수정';
+            case 'UPDATE_ASSET_RIGHTS': return '가입신청필증 수정';
             case 'UPDATE_MEMBER_INFO': return '회원정보 수정';
             case 'UPDATE_MULTIPLE_MEMBERS_INFO': return '다수 회원 일괄 수정';
             default: return type;
@@ -55,9 +55,9 @@ export default async function AuditLogsPage() {
             if (log.action_type === 'UPDATE_ASSET_RIGHTS') {
                 const rights = log.details.rightsInfo;
                 if (Array.isArray(rights)) {
-                    if (rights.length === 0) return '권리증 전체 삭제됨';
+                    if (rights.length === 0) return '가입신청필증 전체 삭제됨';
                     const certs = rights.map((right) => right.right_number || '번호없음').join(', ');
-                    return `권리증 ${rights.length}건: ${certs}`;
+                    return `가입신청필증 ${rights.length}건: ${certs}`;
                 }
             } else if (log.action_type === 'UPDATE_MEMBER_INFO') {
                 if (log.details.updates) {

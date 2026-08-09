@@ -57,7 +57,7 @@ export function CertificateAuditDetailSection({
         <section className="rounded-xl border border-white/[0.08] bg-card overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-sm lg:text-base font-extrabold text-foreground">권리증 상세 리스트</h3>
+                    <h3 className="text-sm lg:text-base font-extrabold text-foreground">가입신청필증 상세 리스트</h3>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary font-bold">
                         {currentStatusLabel}
                     </span>

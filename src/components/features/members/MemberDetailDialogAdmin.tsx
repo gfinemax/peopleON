@@ -192,7 +192,7 @@ export function MemberDetailDialogLineageDialog({
                         <div className="absolute left-4 top-[-10px] bottom-4 w-px bg-white/10 pointer-events-none"></div>
                         <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2 pl-2">
                             <MaterialIcon name="subdirectory_arrow_right" size="xs" className="text-gray-600" />
-                            원천 권리증 목록
+                            원천 가입신청필증 목록
                         </p>
                         {sources.length > 0 ? sources.map((source) => {
                             const sourceMeta = parseCertificateMeta(source.right_number_note);
@@ -223,7 +223,7 @@ export function MemberDetailDialogLineageDialog({
                 </div>
                 <div className="mt-6 flex justify-between items-center gap-3 pt-4 border-t border-white/10">
                     <div className="text-[11px] text-gray-400 font-medium">
-                        {sources.length > 0 ? `통합 해제 시 원천 권리증 ${sources.length}개가 다시 분리됩니다.` : '통합 해제 시 원천 권리증이 다시 분리됩니다.'}
+                        {sources.length > 0 ? `통합 해제 시 원천 가입신청필증 ${sources.length}개가 다시 분리됩니다.` : '통합 해제 시 원천 가입신청필증이 다시 분리됩니다.'}
                     </div>
                     <Button
                         size="sm"

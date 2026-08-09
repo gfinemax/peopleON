@@ -219,7 +219,7 @@ export function buildDashboardDuplicateConflicts(unifiedPeople: UnifiedPerson[])
 
         duplicateConflicts.push({
             id: `dup-${certificateNumber}`,
-            name: `🛑 [권리증 충돌]`,
+            name: `🛑 [가입신청필증 충돌]`,
             member_number: rawNumber,
             tier: `중복 (${people.length}명)`,
             phone: namesText,

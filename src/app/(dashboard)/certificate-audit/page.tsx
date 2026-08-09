@@ -207,17 +207,17 @@ export default async function FinancePage({
 
     return (
         <div className="flex flex-1 flex-col h-full bg-background overflow-hidden">
-            <Header title="권리증 검수" />
+            <Header title="가입신청필증 검수" />
 
             <main className="flex-1 overflow-y-auto">
                 <div className="flex flex-col gap-5 px-4 py-4 lg:px-6 lg:py-6 max-w-[1600px] mx-auto w-full">
                     <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
                         <div className="space-y-1">
                             <h2 className="text-xl lg:text-2xl font-extrabold tracking-tight text-foreground">
-                                권리증 검수센터
+                                가입신청필증 검수센터
                             </h2>
                             <p className="text-xs lg:text-sm text-muted-foreground">
-                                등기·레거시 권리증을 대조하고 중복, 미연결, 검수 필요 이슈를 운영 관점에서 정리합니다.
+                                등기·레거시 가입신청필증을 대조하고 중복, 미연결, 검수 필요 이슈를 운영 관점에서 정리합니다.
                             </p>
                             {rightsError && (
                                 <p className="text-xs text-destructive font-bold">
@@ -230,18 +230,18 @@ export default async function FinancePage({
                     <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
                         {personSummaryAvailable ? (
                             <>
-                                <CertificateAuditKpiCard title="등기 최종 권리증" value={`${registeredPersonRollup.effective_certificate_count}개`} tone="emerald" />
-                                <CertificateAuditKpiCard title="등기 잠정 권리증" value={`${registeredPersonRollup.provisional_certificate_count}개`} tone="blue" />
-                                <CertificateAuditKpiCard title="기타 최종 권리증" value={`${othersPersonRollup.effective_certificate_count}개`} tone="amber" />
+                                <CertificateAuditKpiCard title="등기 최종 가입신청필증" value={`${registeredPersonRollup.effective_certificate_count}개`} tone="emerald" />
+                                <CertificateAuditKpiCard title="등기 잠정 가입신청필증" value={`${registeredPersonRollup.provisional_certificate_count}개`} tone="blue" />
+                                <CertificateAuditKpiCard title="기타 최종 가입신청필증" value={`${othersPersonRollup.effective_certificate_count}개`} tone="amber" />
                                 <CertificateAuditKpiCard title="수동 고정 인원" value={`${totalManualLockedCount}명`} tone="slate" />
                                 <CertificateAuditKpiCard title="사람별 검수대기" value={`${totalPendingReviewCount}명`} tone="red" />
                                 <CertificateAuditKpiCard title="등기 미보유 인원" value={`${Math.max(registeredPersonRollup.owner_count - registeredPersonRollup.owner_with_certificate_count, 0)}명`} tone="red" />
                             </>
                         ) : (
                             <>
-                                <CertificateAuditKpiCard title="통합 권리증번호(A∪B)" value={`${mergedNumberSet.size}개`} tone="blue" />
-                                <CertificateAuditKpiCard title="등기 권리증(A)" value={`${registeredMemberNumberSet.size}개`} tone="emerald" />
-                                <CertificateAuditKpiCard title="Legacy 권리증(B, 비등기)" value={`${legacyNumberSet.size}개`} tone="amber" />
+                                <CertificateAuditKpiCard title="통합 필증번호(A∪B)" value={`${mergedNumberSet.size}개`} tone="blue" />
+                                <CertificateAuditKpiCard title="등기 가입신청필증(A)" value={`${registeredMemberNumberSet.size}개`} tone="emerald" />
+                                <CertificateAuditKpiCard title="Legacy 가입신청필증(B, 비등기)" value={`${legacyNumberSet.size}개`} tone="amber" />
                                 <CertificateAuditKpiCard title="교집합 중복(A∩B)" value={`${overlapNumbers.length}개`} tone="red" />
                                 <CertificateAuditKpiCard title="등기만(A-B)" value={`${registeredOnlyNumbers.length}개`} tone="slate" />
                                 <CertificateAuditKpiCard title="Legacy만(B-A)" value={`${legacyOnlyNumbers.length}개`} tone="slate" />
@@ -272,7 +272,7 @@ export default async function FinancePage({
                     />
                     <CertificateAuditReviewQueueSection reviewRequiredRightRows={reviewRequiredRightRows} />
                     <p className="text-[11px] text-muted-foreground px-1">
-                        Legacy 내부 중복은 B(비등기 Legacy)에서 같은 권리증번호가 2건 이상인 번호 수입니다.
+                        Legacy 내부 중복은 B(비등기 Legacy)에서 같은 필증번호가 2건 이상인 번호 수입니다.
                     </p>
 
                     <Suspense fallback={

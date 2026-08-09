@@ -54,7 +54,7 @@ export function CertificateAuditPersonSummarySection({
         <section className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#101725]">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
                 <div>
-                    <h3 className="text-sm font-extrabold text-foreground">사람별 최종 권리증 확정</h3>
+                    <h3 className="text-sm font-extrabold text-foreground">사람별 최종 가입신청필증 확정</h3>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                         `person_certificate_summaries` 기준입니다. 수동 고정된 최종 개수가 있으면 registry 잠정값보다 우선합니다.
                     </p>
@@ -172,9 +172,9 @@ export function CertificateAuditReviewQueueSection({
         <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
                 <div>
-                    <h3 className="text-sm font-extrabold text-foreground">권리증 검수 대기</h3>
+                    <h3 className="text-sm font-extrabold text-foreground">가입신청필증 검수 대기</h3>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        자동 분류로 확정하지 못한 권리증 원문입니다. 멤버 상세에서 상태를 수동 확정하세요.
+                        자동 분류로 확정하지 못한 가입신청필증 원문입니다. 멤버 상세에서 상태를 수동 확정하세요.
                     </p>
                 </div>
                 <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] font-bold text-amber-200">
@@ -214,7 +214,7 @@ export function CertificateAuditReviewQueueSection({
                         </tbody>
                     </table>
                 ) : (
-                    <p className="p-4 text-center text-xs text-muted-foreground">검수 대기 권리증이 없습니다.</p>
+                    <p className="p-4 text-center text-xs text-muted-foreground">검수 대기 가입신청필증이 없습니다.</p>
                 )}
             </div>
         </section>

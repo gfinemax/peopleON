@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { MaterialIcon } from '@/components/ui/icon';
 
 const labels: Record<string, string> = {
-    all: '전체 인물', registered: '등기 조합원', certificates: '원천 권리증',
+    all: '전체 인물', registered: '등기 조합원', certificates: '원천 가입신청필증',
     related: '대리인·관계인', expected: '환불 예정', paid: '지급 완료',
     remaining: '잔여 환불', collections: '분담금 수납 현황',
     'registered-active': '유지 · 등기완료', 'unregistered-active': '유지 · 미등기/기타',

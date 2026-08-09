@@ -38,7 +38,7 @@ export function MembersDesktopTable(props: MembersTableSectionsProps) {
                             <SortableHeader label="성명" field="name" className="justify-center" />
                         </th>
                         <th className="px-2 py-2">
-                            <SortableHeader label="권리증번호" field="member_number" className="justify-center" />
+                            <SortableHeader label="회원번호(필증번호)" field="member_number" className="justify-center" />
                         </th>
                         <th className="px-2 py-2">권리 흐름</th>
                         <th className="px-2 py-2">관계</th>

@@ -216,7 +216,7 @@ export async function buildSettlementQaPayload({
             label: '명의 미연결 케이스',
             severity: unlinkedCases > 0 ? 'warn' : 'pass',
             count: unlinkedCases,
-            detail: 'member_id 또는 권리증 소유 연결 확인',
+            detail: 'member_id 또는 가입신청필증 소유 연결 확인',
             link: '/settlements?diag=unlinked',
         },
         {

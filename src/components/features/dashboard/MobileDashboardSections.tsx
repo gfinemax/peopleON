@@ -130,7 +130,7 @@ export function MobileDashboardMetrics({
                 />
                 <MobileMetricCard
                     icon="folder"
-                    label="원천 권리증"
+                    label="원천 가입신청필증"
                     value={(stats.certificateHolderCount || 0).toLocaleString()}
                     suffix="건"
                     accentClass="bg-violet-500"

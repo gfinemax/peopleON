@@ -141,7 +141,7 @@ export async function syncCertificateRights({
 
         if (createRightError) {
             console.error('New merged certificate creation error:', createRightError);
-            return { success: false, message: `통합 권리증 생성 실패: ${createRightError.message}` };
+            return { success: false, message: `통합 가입신청필증 생성 실패: ${createRightError.message}` };
         }
 
         if (newRight) {

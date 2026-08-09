@@ -20,9 +20,9 @@ export function PaymentsHeroSection() {
                         <MaterialIcon name="payments" size="xs" />
                         사람 기준 납부 운영
                     </div>
-                    <h2 className="text-xl font-black tracking-tight text-white">권리증 근거를 유지한 사람별 분담금 관리</h2>
+                    <h2 className="text-xl font-black tracking-tight text-white">가입신청필증 근거를 유지한 사람별 분담금 관리</h2>
                     <p className="text-sm text-slate-400">
-                        권리증 금액 근거는 유지하고, 청구·수납·미납은 인물 기준으로 합산해 확인합니다.
+                        가입신청필증 금액 근거는 유지하고, 청구·수납·미납은 인물 기준으로 합산해 확인합니다.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -32,7 +32,7 @@ export function PaymentsHeroSection() {
                     </Link>
                     <Link href="/certificate-audit" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-xs font-bold text-slate-200">
                         <MaterialIcon name="fact_check" size="sm" />
-                        권리증 검수 이동
+                        가입신청필증 검수 이동
                     </Link>
                 </div>
             </div>
@@ -101,7 +101,7 @@ export function PaymentsQualitySection({
                     </span>
                     <Link href="/certificate-audit" className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-200 hover:bg-violet-500/15">
                         <MaterialIcon name="fact_check" size="xs" />
-                        <span>권리증 검수센터</span>
+                        <span>가입신청필증 검수센터</span>
                     </Link>
                 </div>
             </div>
@@ -134,7 +134,7 @@ export function PaymentsFilterSection({
                 <input
                     name="q"
                     defaultValue={query}
-                    placeholder="성명, 연락처, 주소, 권리증번호, 평형, 계좌 검색"
+                    placeholder="성명, 연락처, 주소, 필증번호, 평형, 계좌 검색"
                     className="h-11 rounded-lg border border-[#334a69] bg-[#0b1220] px-3 text-sm text-slate-100 placeholder:text-slate-500"
                 />
                 <select name="tier" defaultValue={tierFilter} className="h-11 rounded-lg border border-[#334a69] bg-[#0b1220] px-3 text-sm text-slate-100">

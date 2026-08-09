@@ -72,7 +72,7 @@ export function LegacyRecordDetailHeader({
 
             <div className="flex items-center gap-2">
                 <div className="flex flex-col items-end mr-2">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">보유 권리증</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">보유 가입신청필증</span>
                     <span className="text-xl font-black text-blue-400 font-mono tracking-tight">{certificateCount}개</span>
                 </div>
                 <button
@@ -210,7 +210,7 @@ export function LegacyRecordDetailBody({
                 <div className="flex flex-col gap-0">
                     <InfoRow icon="person" label="원장 명부 이름" value={record.legacy_name || record.original_name} />
                     <InfoRow icon="link" label="조합원 매칭" value={record.member_id ? '매칭 완료 (회원 ID 연동됨)' : '매칭되지 않음 (미가입/탈퇴)'} />
-                    <InfoRow icon="confirmation_number" label="권리증 번호 기준 보유 수" value={`${certificateNumbers.length}개`} />
+                    <InfoRow icon="confirmation_number" label="필증번호 기준 보유 수" value={`${certificateNumbers.length}개`} />
                     <InfoRow icon="database" label="DB 저장 보유 수(rights_count)" value={`${record.rights_count || 0}개`} />
                     <InfoRow icon="schedule" label="데이터 생성일" value={formatSafeDateTime(record.created_at)} />
                 </div>
@@ -219,10 +219,10 @@ export function LegacyRecordDetailBody({
             <div className="bg-[#233040] rounded-xl shadow-sm border border-white/5 p-6">
                 <h3 className="text-white text-base font-bold mb-5 flex items-center gap-2">
                     <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
-                    권리증 번호 목록
+                    필증번호 목록
                 </h3>
                 {certificateNumbers.length === 0 ? (
-                    <p className="text-sm text-gray-400">인식된 권리증 번호가 없습니다.</p>
+                    <p className="text-sm text-gray-400">인식된 필증번호가 없습니다.</p>
                 ) : (
                     <div className="flex flex-wrap gap-2">
                         {certificateNumbers.map((number) => (

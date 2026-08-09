@@ -26,7 +26,7 @@ interface LegacyRecord {
 
 function ownerTypeLabel(ownerType: LegacyRecord['owner_type']) {
     if (ownerType === 'member_linked') return '회원연결';
-    if (ownerType === 'certificate_holder_linked') return '권리증소유자';
+    if (ownerType === 'certificate_holder_linked') return '가입신청필증소유자';
     return '원장기준';
 }
 
@@ -95,12 +95,12 @@ export function LegacyTable({ records, tableKey }: LegacyTableProps) {
                         </th>
                         <th className="px-6 py-3.5">
                             <div className="flex justify-center">
-                                <span className="text-xs font-semibold cursor-default">권리증번호</span>
+                                <span className="text-xs font-semibold cursor-default">필증번호</span>
                             </div>
                         </th>
                         <th className="px-6 py-3.5">
                             <div className="flex justify-center">
-                                <SortableHeader label="보유 권리증(번호기준)" field="certificate_count" className="justify-center" />
+                                <SortableHeader label="보유 가입신청필증(번호기준)" field="certificate_count" className="justify-center" />
                             </div>
                         </th>
                         <th className="px-6 py-3.5">

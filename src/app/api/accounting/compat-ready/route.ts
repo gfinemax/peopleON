@@ -206,7 +206,7 @@ export async function GET(request: Request) {
         makeCheck('roles_member_active', '활성 조합원 역할', legacyRoleCount.member, compatRoleCount.member),
         makeCheck(
             'roles_certificate_holder_active',
-            '활성 권리증보유 역할',
+            '활성 가입신청필증 보유 역할',
             legacyRoleCount.certificate_holder,
             compatRoleCount.certificate_holder,
         ),
@@ -216,14 +216,14 @@ export async function GET(request: Request) {
             legacyRoleCount.related_party,
             compatRoleCount.related_party,
         ),
-        makeCheck('certificates_total', '권리증 총건수', legacyCertificates.length, compatCertificates.length),
+        makeCheck('certificates_total', '가입신청필증 총건수', legacyCertificates.length, compatCertificates.length),
         makeCheck(
             'certificates_active_like',
-            '권리증 활성/병합 건수',
+            '가입신청필증 활성/병합 건수',
             legacyCertificates.filter((row) => isActiveCertificateStatus(row.status)).length,
             compatCertificates.filter((row) => isActiveCertificateStatus(row.status)).length,
         ),
-        makeCheck('certificate_holders', '권리증 보유자 수', legacyHolderCount, compatHolderCount),
+        makeCheck('certificate_holders', '가입신청필증 보유자 수', legacyHolderCount, compatHolderCount),
     ];
 
     const failCount = checks.filter((item) => item.status === 'fail').length;
@@ -250,7 +250,7 @@ export async function GET(request: Request) {
         checks,
         notes: [
             '대리인(role_code=대리인)은 legacy party_roles 비교에서 제외됩니다.',
-            '권리증 보유자 비교는 account_entities.source_party_id 기준으로 계산됩니다.',
+            '가입신청필증 보유자 비교는 account_entities.source_party_id 기준으로 계산됩니다.',
         ],
         config: {
             accounting_compat_only: compatOnly,

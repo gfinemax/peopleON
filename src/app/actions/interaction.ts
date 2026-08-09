@@ -115,7 +115,7 @@ export async function checkAndLogAssetRightConflicts(
         );
 
         if (normalizedChangedNumbers.length === 0) {
-            return { success: false, error: '유효한 권리증 번호가 없습니다.' };
+            return { success: false, error: '유효한 필증번호가 없습니다.' };
         }
 
         const { data: allSameRights, error } = await supabase
@@ -165,7 +165,7 @@ export async function checkAndLogAssetRightConflicts(
 
             // Log for current user(s)
             for (const currentId of currentIds) {
-                const summaryMsg = `[시스템 알림] 다른 회원(${otherNames})과 동일한 권리증 번호(${displayNumber})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
+                const summaryMsg = `[시스템 알림] 다른 회원(${otherNames})과 동일한 필증번호(${displayNumber})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
                 const appendText = `\n\n${summaryMsg}`;
 
                 const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', currentId).single();
@@ -183,7 +183,7 @@ export async function checkAndLogAssetRightConflicts(
 
             // Log for conflicting others
             for (const otherId of otherEntityIds) {
-                const summaryMsg = `[시스템 알림] 다른 회원(${currentNames})과 동일한 권리증 번호(${displayNumber})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
+                const summaryMsg = `[시스템 알림] 다른 회원(${currentNames})과 동일한 필증번호(${displayNumber})가 등록(저장)되었습니다. 권리자 확인 바랍니다.`;
                 const appendText = `\n\n${summaryMsg}`;
 
                 const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', otherId).single();

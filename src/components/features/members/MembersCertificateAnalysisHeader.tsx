@@ -49,12 +49,12 @@ export function MembersCertificateAnalysisHeader({
                 <div className="min-w-0">
                     <DialogTitle className="flex items-center gap-2 text-xl font-black">
                         <MaterialIcon name="folder" className="text-violet-300" />
-                        권리증 분석
+                        가입신청필증 분석
                     </DialogTitle>
                     <p className="mt-2 text-sm text-slate-400">
                         {analysisMode === 'duplicates'
-                            ? '중복된 원천 권리증번호와 보유 명단을 확인합니다. 통합 관리번호는 제외됩니다.'
-                            : `${analysisTitle} 기준의 활성 원천 권리증번호 목록입니다. 통합 관리번호는 제외됩니다.`}
+                            ? '중복된 원천 필증번호와 보유 명단을 확인합니다. 통합 관리번호는 제외됩니다.'
+                            : `${analysisTitle} 기준의 활성 원천 필증번호 목록입니다. 통합 관리번호는 제외됩니다.`}
                     </p>
                 </div>
                 {analysisMode !== 'duplicates' ? (
@@ -101,11 +101,11 @@ export function MembersCertificateAnalysisHeader({
                 </button>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" onClick={() => onOpenAnalysis('all')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'all' ? 'border-violet-400/20 bg-violet-500/10 text-violet-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>전체 원천권리증 {certificates.total.toLocaleString()}건</button>
-                <button type="button" onClick={() => onOpenAnalysis('registered_global')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'registered_global' ? 'border-violet-400/20 bg-violet-500/10 text-violet-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>등기조합원 원천권리증 {certificates.memberHeld.toLocaleString()}건</button>
+                <button type="button" onClick={() => onOpenAnalysis('all')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'all' ? 'border-violet-400/20 bg-violet-500/10 text-violet-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>전체 원천가입신청필증 {certificates.total.toLocaleString()}건</button>
+                <button type="button" onClick={() => onOpenAnalysis('registered_global')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'registered_global' ? 'border-violet-400/20 bg-violet-500/10 text-violet-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>등기조합원 원천가입신청필증 {certificates.memberHeld.toLocaleString()}건</button>
                 <button type="button" onClick={() => onOpenAnalysis('registered_internal')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'registered_internal' ? 'border-sky-400/20 bg-sky-500/10 text-sky-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>116명 내부 중복 제거 {certificates.registeredInternalDistinct.toLocaleString()}건</button>
-                <button type="button" onClick={() => onOpenAnalysis('refund')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'refund' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>환불 권리증 {certificates.externalHeld.toLocaleString()}건</button>
-                <button type="button" onClick={() => onOpenAnalysis('duplicates')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'duplicates' ? 'border-amber-400/20 bg-amber-500/10 text-amber-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>중복 권리증 {certificates.duplicateExcluded.toLocaleString()}건</button>
+                <button type="button" onClick={() => onOpenAnalysis('refund')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'refund' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>환불 가입신청필증 {certificates.externalHeld.toLocaleString()}건</button>
+                <button type="button" onClick={() => onOpenAnalysis('duplicates')} className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${analysisMode === 'duplicates' ? 'border-amber-400/20 bg-amber-500/10 text-amber-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'}`}>중복 가입신청필증 {certificates.duplicateExcluded.toLocaleString()}건</button>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-slate-300">
                     {analysisMode === 'duplicates'
                         ? `중복 보유자 ${duplicateSourceDetails.reduce((sum, detail) => sum + detail.holders.length, 0).toLocaleString()}명`
@@ -119,7 +119,7 @@ export function MembersCertificateAnalysisHeader({
                         type="text"
                         value={analysisQuery}
                         onChange={(event) => onSetAnalysisQuery(event.target.value)}
-                        placeholder="이름, 권리증번호, 연락처, 주소 검색"
+                        placeholder="이름, 필증번호, 연락처, 주소 검색"
                         className="w-full bg-transparent text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none"
                     />
                     {analysisQuery ? (

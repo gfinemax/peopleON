@@ -51,8 +51,8 @@ export function CertificateAuditStatisticsSection({
     return (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-                <h3 className="text-sm font-extrabold text-foreground">권리증 통합 검수 통계</h3>
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">A:등기조합원 asset_rights 권리증 / B:비등기 Legacy 권리증번호</span>
+                <h3 className="text-sm font-extrabold text-foreground">가입신청필증 통합 검수 통계</h3>
+                <span className="text-[10px] font-bold uppercase text-muted-foreground">A:등기조합원 asset_rights 가입신청필증 / B:비등기 Legacy 필증번호</span>
             </div>
             <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-2">
                 <div className="overflow-hidden rounded-lg border border-border/60">
@@ -88,7 +88,7 @@ export function CertificateAuditStatisticsSection({
                 </div>
                 <div className="overflow-hidden rounded-lg border border-border/60">
                     <div className="border-b border-border/60 bg-muted/20 px-3 py-2">
-                        <p className="text-xs font-bold text-foreground">등기 권리증 미연결</p>
+                        <p className="text-xs font-bold text-foreground">등기 가입신청필증 미연결</p>
                     </div>
                     <div className="max-h-52 overflow-auto">
                         {registeredMissingRightsRows.length > 0 ? (
@@ -131,7 +131,7 @@ export function CertificateAuditLegacyExclusiveSection({
                 <div>
                     <h3 className="text-sm font-extrabold text-foreground">중복없는 Legacy - 등기제외 리스트</h3>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        B(비등기 Legacy) 중 1회만 나온 번호에서 A(등기 권리증)와 겹치는 번호를 제외한 목록
+                        B(비등기 Legacy) 중 1회만 나온 번호에서 A(등기 가입신청필증)와 겹치는 번호를 제외한 목록
                     </p>
                 </div>
                 <a
@@ -147,7 +147,7 @@ export function CertificateAuditLegacyExclusiveSection({
                     <table className="w-full text-xs">
                         <thead className="sticky top-0 border-b border-border/60 bg-[#161B22] text-muted-foreground">
                             <tr>
-                                <th className="px-4 py-2 text-left font-bold">권리증번호</th>
+                                <th className="px-4 py-2 text-left font-bold">필증번호</th>
                                 <th className="px-4 py-2 text-left font-bold">소유자(legacy)</th>
                                 <th className="px-4 py-2 text-left font-bold">상태</th>
                                 <th className="px-4 py-2 text-left font-bold">연락처</th>
@@ -189,7 +189,7 @@ export function CertificateAuditSegmentOverviewSection({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             <section className="overflow-hidden rounded-xl border border-border bg-card lg:col-span-8">
                 <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-                    <h3 className="text-sm font-extrabold text-foreground">조합원 상태별 권리증번호 집계</h3>
+                    <h3 className="text-sm font-extrabold text-foreground">조합원 상태별 필증번호 집계</h3>
                     <span className="text-[10px] font-bold uppercase text-muted-foreground">검색 기준</span>
                 </div>
                 <div className="overflow-x-auto">
@@ -198,7 +198,7 @@ export function CertificateAuditSegmentOverviewSection({
                             <tr>
                                 <th className="px-4 py-2 text-left text-xs font-bold">상태</th>
                                 <th className="px-4 py-2 text-right text-xs font-bold">인원</th>
-                                <th className="px-4 py-2 text-right text-xs font-bold">권리증번호 수</th>
+                                <th className="px-4 py-2 text-right text-xs font-bold">필증번호 수</th>
                                 <th className="px-4 py-2 text-right text-xs font-bold">보기</th>
                             </tr>
                         </thead>
@@ -223,7 +223,7 @@ export function CertificateAuditSegmentOverviewSection({
             <section className="flex flex-col gap-4 lg:col-span-4">
                 <div className="overflow-hidden rounded-xl border border-border bg-card">
                     <div className="border-b border-border/60 px-4 py-3">
-                        <h3 className="text-sm font-extrabold text-foreground">환불자 권리증 보유 Top</h3>
+                        <h3 className="text-sm font-extrabold text-foreground">환불자 가입신청필증 보유 Top</h3>
                     </div>
                     <div className="flex flex-col gap-2 p-3">
                         {refundedPriorityRows.length > 0 ? (
@@ -237,14 +237,14 @@ export function CertificateAuditSegmentOverviewSection({
                                 </div>
                             ))
                         ) : (
-                            <p className="py-4 text-center text-xs text-muted-foreground">환불자 권리증 데이터가 없습니다.</p>
+                            <p className="py-4 text-center text-xs text-muted-foreground">환불자 가입신청필증 데이터가 없습니다.</p>
                         )}
                     </div>
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-border bg-card">
                     <div className="border-b border-border/60 px-4 py-3">
-                        <h3 className="text-sm font-extrabold text-foreground">중복 권리증번호 경고</h3>
+                        <h3 className="text-sm font-extrabold text-foreground">중복 필증번호 경고</h3>
                     </div>
                     <div className="flex max-h-56 flex-col gap-2 overflow-auto p-3">
                         {duplicateNumbers.length > 0 ? (

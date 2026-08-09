@@ -70,7 +70,7 @@ export function EditMemberDialog({ member }: { member: EditableMember }) {
                             <Input id="name" name="name" defaultValue={member.name} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="member_number">권리증NO</Label>
+                            <Label htmlFor="member_number">회원번호(필증번호)</Label>
                             <Input id="member_number" name="member_number" defaultValue={member.member_number ?? ''} />
                         </div>
                     </div>

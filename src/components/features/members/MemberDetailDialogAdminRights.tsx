@@ -71,8 +71,8 @@ export function MemberDetailDialogRightsList({
                                                 {isManaged
                                                     ? '통합 관리번호'
                                                     : right.right_type === 'certificate'
-                                                      ? '원천 권리증'
-                                                      : right.right_type || '원천 권리증'}
+                                                      ? '원천 가입신청필증'
+                                                      : right.right_type || '원천 가입신청필증'}
                                             </span>
                                             {isManaged ? (
                                                 <span className="shrink-0 rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-black text-purple-400">
@@ -134,7 +134,7 @@ export function MemberDetailDialogRightsList({
                                                         setSelectedRightIds((prev) => prev.filter((id) => id !== right.id));
                                                     }}
                                                     className="size-4 rounded border-white/10 bg-white/5 accent-emerald-500"
-                                                    title="통합 관리번호로 묶을 권리증 선택"
+                                                    title="통합 관리번호로 묶을 가입신청필증 선택"
                                                 />
                                             ) : null}
                                             {isEditing ? (

@@ -31,7 +31,7 @@ function getTierDisplay(tier: string) {
     if (tier === '일반분양') return '조합원(일반분양)';
     if (tier === '예비조합원') return '조합원(예비)';
     if (tier === '지주') return '원지주';
-    if (tier === '권리증보유자') return '권리증보유';
+    if (tier === '권리증보유자') return '가입신청필증 보유';
     return tier;
 }
 

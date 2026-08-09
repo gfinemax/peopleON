@@ -25,7 +25,7 @@ export function AssetRightsCard({ rights }: { rights: AssetRight[] }) {
     if (!rights || rights.length === 0) return (
         <div className="flex flex-col items-center justify-center p-12 rounded-lg border border-dashed border-border/30 bg-muted/5 text-muted-foreground">
             <MaterialIcon name="inventory_2" size="lg" className="mb-2 opacity-30" />
-            <p className="text-sm font-medium">등록된 권리증이나 토지권이 없습니다.</p>
+            <p className="text-sm font-medium">등록된 가입신청필증이나 토지권이 없습니다.</p>
         </div>
     );
 
@@ -64,7 +64,7 @@ export function AssetRightsCard({ rights }: { rights: AssetRight[] }) {
                                     <div className="flex flex-col gap-0.5">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-bold text-foreground">
-                                                {isCert ? '권리증' : '토지권'} {right.right_number}
+                                                {isCert ? '가입신청필증' : '토지권'} {right.right_number}
                                             </span>
                                             <Badge variant="outline" className={cn(
                                                 "text-[10px] h-5",

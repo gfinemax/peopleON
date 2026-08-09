@@ -98,7 +98,7 @@ export function buildSettlementDiagnostics(rows: SettlementDashboardRow[]) {
             label: '명의 미연결 케이스',
             value: unlinkedCount,
             level: unlinkedCount > 0 ? 'warn' : 'ok',
-            message: 'member_id 또는 권리증 소유 연결 필요',
+            message: 'member_id 또는 가입신청필증 소유 연결 필요',
         },
         {
             label: '최종환불선 미설정',

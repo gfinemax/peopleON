@@ -58,8 +58,8 @@ export function MemberBulkUploadDialog({ open, onOpenChange }: MemberBulkUploadD
             const mapped = data.map((row) => ({
                 name: cellToString(row["성명"] || row["이름"] || row["Name"]),
                 phone: cellToString(row["연락처"] || row["전화번호"] || row["Phone"]),
-                member_number: cellToString(row["번호"] || row["회원번호"] || row["Number"]),
-                right_number: cellToString(row["권리증"] || row["권리증번호"] || row["권칙"] || row["No"] || row["증서"] || row["Right"]),
+                member_number: cellToString(row["회원번호(필증번호)"] || row["필증번호"] || row["번호"] || row["회원번호"] || row["Number"]),
+                right_number: cellToString(row["가입신청필증"] || row["필증번호"] || row["권리증"] || row["권리증번호"] || row["권칙"] || row["No"] || row["증서"] || row["Right"]),
                 tier: cellToString(row["구분"] || row["등급"] || row["Tier"] || "예비조합원"),
                 unit_group: cellToString(row["그룹"] || row["동호수"] || row["Group"]),
                 address_legal: cellToString(row["주소"] || row["Address"]),

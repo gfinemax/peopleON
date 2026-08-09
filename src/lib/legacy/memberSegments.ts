@@ -17,7 +17,7 @@ export const LEGACY_MEMBER_SEGMENT_OPTIONS: Array<{
     { value: "landlord_member", label: "지주조합원" },
     { value: "general_sale", label: "일반분양" },
     { value: "refunded", label: "환불자" },
-    { value: "investor", label: "권리증보유자" },
+    { value: "investor", label: "가입신청필증 보유자" },
   ];
 
 export const LEGACY_MEMBER_SEGMENT_LABEL_MAP: Record<LegacyMemberSegment, string> =

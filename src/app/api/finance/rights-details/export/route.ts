@@ -203,7 +203,7 @@ export async function GET(request: Request) {
         return String(left).localeCompare(String(right), 'ko') * direction;
     });
 
-    const header = ['No', '이름', '연락처', '권리증번호', '원문값', '상태', '보유 권리증(번호기준)', '조합원 상태', '출처 파일'];
+    const header = ['No', '이름', '연락처', '필증번호', '원문값', '상태', '보유 가입신청필증(번호기준)', '조합원 상태', '출처 파일'];
     const lines = [
         header.map(escapeCsvCell).join(','),
         ...sortedRecords.map((record, index) =>
@@ -223,7 +223,7 @@ export async function GET(request: Request) {
 
     const csvText = `\uFEFF${lines.join('\r\n')}`;
     const dateStamp = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
-    const fileName = `권리증_상세리스트_${dateStamp}.csv`;
+    const fileName = `가입신청필증_상세리스트_${dateStamp}.csv`;
 
     return new Response(csvText, {
         status: 200,
