@@ -154,6 +154,14 @@ export async function fetchMemberDetail(ids: string[]) {
             typeof entity.meta === 'object' && entity.meta !== null && typeof entity.meta.preferred_unit_type === 'string'
                 ? entity.meta.preferred_unit_type
                 : null,
+        profile_image_path:
+            typeof entity.meta === 'object' && entity.meta !== null && typeof entity.meta.profile_image_path === 'string'
+                ? entity.meta.profile_image_path
+                : null,
+        profile_image_updated_at:
+            typeof entity.meta === 'object' && entity.meta !== null && typeof entity.meta.profile_image_updated_at === 'string'
+                ? entity.meta.profile_image_updated_at
+                : null,
         name: entity.display_name,
         phone: uniqueDisplayPhones.join(', '),
         secondary_phone: uniqueSecondaryPhones.join(', ') || null,

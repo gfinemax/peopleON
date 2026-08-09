@@ -20,6 +20,8 @@ export interface MemberDetailDialogMember {
     is_registered: boolean;
     unit_group: string | null;
     preferred_unit_type?: string | null;
+    profile_image_path?: string | null;
+    profile_image_updated_at?: string | null;
     memo: string | null;
     tags?: string[] | null;
     tiers?: string[] | null;

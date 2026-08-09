@@ -102,7 +102,7 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
                     summary: d.summary || '',
                     staff_name: d.staff_name || null,
                     created_at: formatSafeDateTime(d.created_at),
-                    attachment: null
+                    attachment: d.attachment || null
                 }));
 
                 if (page === 1) {

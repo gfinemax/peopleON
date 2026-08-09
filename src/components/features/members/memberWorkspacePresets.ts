@@ -8,7 +8,7 @@ export const MEMBER_WORKSPACE_COLUMNS: Array<{
     label: string;
     icon: string;
 }> = [
-    { id: 'profile', label: '기본정보', icon: 'person' },
+    { id: 'profile', label: '기본·관계인', icon: 'person' },
     { id: 'relations', label: '관계인', icon: 'group' },
     { id: 'finance', label: '권리·납부', icon: 'payments' },
     { id: 'timeline', label: '상담·활동', icon: 'history' },
