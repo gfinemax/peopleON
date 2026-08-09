@@ -69,7 +69,12 @@ export async function fetchMemberDetail(ids: string[]) {
             .select('from_entity_id, to_entity_id, relation_type, relation_note, owner_entity:account_entities!to_entity_id(display_name, phone)')
             .in('from_entity_id', ids)
             .eq('relation_type', 'agent'),
-        supabase.from('certificate_registry').select('*').in('entity_id', ids).eq('is_active', true),
+        supabase
+            .from('certificate_registry')
+            .select('*')
+            .in('entity_id', ids)
+            .eq('is_active', true)
+            .order('created_at', { ascending: true }),
         supabase.from('entity_private_info').select('entity_id, resident_registration_number').in('entity_id', ids),
     ]);
 
@@ -101,6 +106,7 @@ export async function fetchMemberDetail(ids: string[]) {
 
     const certNumbers = getConfirmedCertificateNumbers(assetRights);
     const certificateDisplay = getCertificateDisplayText(assetRights, { includeFallbackStatus: true });
+    const latestCertificateNumber = certNumbers.at(-1) || null;
 
     const allPhonesNumeric = new Set<string>();
     const uniqueDisplayPhones: string[] = [];
@@ -165,7 +171,7 @@ export async function fetchMemberDetail(ids: string[]) {
         name: entity.display_name,
         phone: uniqueDisplayPhones.join(', '),
         secondary_phone: uniqueSecondaryPhones.join(', ') || null,
-        member_number: entity.member_number || '-',
+        member_number: latestCertificateNumber || entity.member_number || '-',
         certificate_display: certificateDisplay,
         certificate_numbers: certNumbers,
         tiers,

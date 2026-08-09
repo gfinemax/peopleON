@@ -9,6 +9,7 @@ export type AssetRight = {
     right_number_status?: RightNumberStatus | null;
     right_number_note?: string | null;
     issued_at?: string | null;
+    created_at?: string | null;
     principal_amount?: number | string | null;
     holder_name?: string | null;
     issued_date?: string | null;
