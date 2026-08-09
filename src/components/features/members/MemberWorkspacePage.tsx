@@ -9,6 +9,7 @@ import type { MemberWorkspaceColumnId } from './memberWorkspacePresets';
 import { MEMBER_WORKSPACE_COLUMNS } from './memberWorkspacePresets';
 import { PAYMENT_TYPE_LABELS, type PaymentRecord } from './paymentStatusTabUtils';
 import { MemberProfilePhoto } from './MemberProfilePhoto';
+import { formatAssignedUnitType } from '@/lib/members/memberUnitDisplay';
 
 type LogRow = {
     id: string;
@@ -55,22 +56,6 @@ const splitUnitAssignment = (input?: string | null) => {
     return { unitType: unitType || '-', dongHo: dongHoMatch[0].replace(/\s+/g, ' ') };
 };
 
-const convertUnitType = (unitType: string, displayUnit: 'sqm' | 'pyeong') => {
-    if (unitType === '-') return '-';
-    const sqmMatch = unitType.match(/\d+(?:\.\d+)?/u);
-    if (!sqmMatch) return unitType;
-
-    const sqm = Number(sqmMatch[0]);
-    if (!Number.isFinite(sqm)) return unitType;
-
-    const suffix = unitType
-        .replace(sqmMatch[0], '')
-        .replace(/^\s*㎡?\s*/u, '')
-        .trim();
-    const converted = displayUnit === 'sqm' ? `${sqm}㎡` : `${(sqm / 3.305785).toFixed(1)}평`;
-    return suffix ? `${converted} ${suffix}` : converted;
-};
-
 function ResidentNumberValue({ residentNumber }: { residentNumber?: string | null }) {
     const [visibleNumber, setVisibleNumber] = useState<string | null>(null);
     const fullNumber = residentNumber?.trim() || '';
@@ -82,7 +67,7 @@ function ResidentNumberValue({ residentNumber }: { residentNumber?: string | nul
 
 function AssignedUnitValue({ unitType, compact = false }: { unitType: string; compact?: boolean }) {
     const [displayUnit, setDisplayUnit] = useState<'sqm' | 'pyeong'>('sqm');
-    const displayValue = convertUnitType(unitType, displayUnit);
+    const displayValue = formatAssignedUnitType(unitType, displayUnit);
 
     return <span className={`inline-flex min-w-0 items-center ${compact ? 'justify-center gap-1' : 'gap-2'}`}><span className="truncate whitespace-nowrap tabular-nums">{displayValue}</span>{unitType !== '-' ? <span className="inline-flex shrink-0 items-center rounded border border-sky-400/20 bg-sky-500/5 p-0.5" aria-label="평형 표시 단위 선택"><button type="button" onClick={() => setDisplayUnit('sqm')} aria-pressed={displayUnit === 'sqm'} className={`rounded px-1.5 py-0.5 text-[10px] font-black ${displayUnit === 'sqm' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-sky-300'}`}>㎡</button><button type="button" onClick={() => setDisplayUnit('pyeong')} aria-pressed={displayUnit === 'pyeong'} className={`rounded px-1.5 py-0.5 text-[10px] font-black ${displayUnit === 'pyeong' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-sky-300'}`}>평</button></span> : null}</span>;
 }
