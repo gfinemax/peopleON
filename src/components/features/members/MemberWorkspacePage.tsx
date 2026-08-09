@@ -132,12 +132,12 @@ export function MemberWorkspaceSummary({ member, onEdit, onDelete, onPrint, onBa
     const assignment = splitUnitAssignment(member.unit_group);
     return <div className="m-3 grid min-h-[82px] grid-cols-[minmax(300px,1.8fr)_repeat(6,minmax(92px,1fr))_auto] items-center rounded-lg border border-white/[0.06] bg-[#0d2942] px-4 shadow-lg shadow-black/10">
         <div className="flex min-w-0 items-center gap-3 border-r border-white/[0.07] pr-4"><MemberProfilePhoto memberId={member.id} name={member.name} hasImage={Boolean(member.profile_image_path)} onChanged={onPhotoChanged} /><div className="min-w-0"><div className="flex items-center gap-2"><h2 className="truncate text-2xl font-black text-white">{member.name}</h2><span className="whitespace-nowrap rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-xs font-bold text-cyan-300">{memberCategory}</span></div><p className="mt-1 truncate whitespace-nowrap text-xs font-medium text-slate-400">회원번호(필증번호) {member.member_number || '-'}</p></div></div>
+        <Metric label="최근 상담일" text={date(latest)} />
         <div className="min-w-0 px-2 text-center"><p className="whitespace-nowrap text-xs font-bold text-slate-400">배정 평형</p><div className="mt-1 text-sm font-black text-slate-100"><AssignedUnitValue unitType={assignment.unitType} compact /></div></div>
         <Metric label="동·호수" text={assignment.dongHo} />
         <Metric label="증빙서류" text={`${logs.filter((log) => log.type === 'DOC' || log.attachment).length}건`} />
         <Metric label="납부율" text={`${rate}%`} progress={rate} />
         <Metric label="미납금" text={money(Math.max(0, due - paid))} danger />
-        <Metric label="최근 상담일" text={date(latest)} />
         <div className="flex items-center gap-1 pl-3"><button onClick={onDelete} className="flex h-9 items-center gap-1 whitespace-nowrap rounded border border-rose-400/15 px-2 text-xs font-bold text-rose-300 hover:bg-rose-500/10"><MaterialIcon name="delete_outline" size="xs" />삭제</button><button onClick={onEdit} className="flex h-9 items-center gap-1 whitespace-nowrap rounded border border-white/15 px-2 text-xs font-bold text-slate-200 hover:bg-white/5"><MaterialIcon name="edit" size="xs" />수정</button><button onClick={onPrint} className="flex h-9 items-center gap-1 whitespace-nowrap rounded border border-sky-400/15 px-2 text-xs font-bold text-sky-200 hover:bg-sky-500/10"><MaterialIcon name="picture_as_pdf" size="xs" />공유/PDF</button><button onClick={onBack} aria-label="목록으로" className="flex size-9 items-center justify-center text-slate-400 hover:text-white"><MaterialIcon name="chevron_left" size="sm" /></button></div>
     </div>;
 }
