@@ -43,13 +43,13 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
         .from('membership_roles')
         .select('id,entity_id')
         .eq('role_status', 'active')
-        .in('role_code', [...MEMBER_ROLE_CODES]);
+        .eq('is_registered', true);
     if (roleError) throw roleError;
 
     const roles = (roleData || []) as RoleRow[];
     const entityIds = [...new Set(roles.map((role) => role.entity_id))];
     if (entityIds.length !== ROSTER_TOTAL_COUNT) {
-        errors.push(`현재 조합원 범위가 ${entityIds.length}명이야. 예상한 ${ROSTER_TOTAL_COUNT}명과 달라서 반영을 중단해.`);
+        errors.push(`현재 등기조합원 범위가 ${entityIds.length}명이야. 예상한 ${ROSTER_TOTAL_COUNT}명과 달라서 반영을 중단해.`);
     }
 
     const [{ data: entityData, error: entityError }, { data: paymentData, error: paymentError }] = await Promise.all([

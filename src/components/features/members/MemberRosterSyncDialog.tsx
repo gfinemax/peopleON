@@ -88,7 +88,7 @@ export function MemberRosterSyncDialog({ open, onOpenChange }: { open: boolean; 
 
     return <Dialog open={open} onOpenChange={(next) => { if (!next && !loading) reset(); onOpenChange(next); }}>
         <DialogContent className="flex max-h-[92vh] flex-col border-slate-800 bg-slate-900 text-slate-100 sm:max-w-[960px]">
-            <DialogHeader><DialogTitle>등기조합원 명부 반영</DialogTitle><DialogDescription className="text-slate-400">86명은 등기조합원으로, 현재 116명 중 나머지 30명은 환불조합원으로 비교한 뒤 승인 반영해.</DialogDescription></DialogHeader>
+            <DialogHeader><DialogTitle>등기조합원 명부 반영</DialogTitle><DialogDescription className="text-slate-400">현재 등기 116명 중 86명은 등기조합원으로 유지하고 나머지 30명은 환불조합원으로 전환해. 예비조합원 20명은 변경하지 않아.</DialogDescription></DialogHeader>
             <div className="flex-1 space-y-4 overflow-hidden py-2">
                 <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-800/40 p-4"><MaterialIcon name="upload_file" size="md" className="text-sky-400"/><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{fileName || '조합원명부 엑셀 파일을 선택해'}</p><p className="text-xs text-slate-500">원본 파일은 저장하지 않고 브라우저에서 읽어 비교 데이터만 전송해.</p></div><input id="roster-sync-file" type="file" accept=".xlsx,.xls,.csv" onChange={onFile} className="hidden"/><Button asChild variant="secondary" size="sm"><label htmlFor="roster-sync-file" className="cursor-pointer">파일 선택</label></Button></div>
                 {headers.length > 0 ? <div className="grid grid-cols-3 gap-3">{[
