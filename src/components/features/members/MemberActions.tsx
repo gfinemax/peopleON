@@ -7,6 +7,7 @@ import { MemberCreateDialog } from "./MemberCreateDialog"
 import { MemberBulkUploadDialog } from "./MemberBulkUploadDialog"
 import { MembersExportDialog } from "./MembersExportDialog"
 import { ResidentRegistryImportDialog } from "./ResidentRegistryImportDialog"
+import { MemberRosterSyncDialog } from "./MemberRosterSyncDialog"
 import type { MemberExportRow } from "./memberExportTypes"
 
 interface MemberActionsProps {
@@ -18,6 +19,7 @@ export function MemberActions({ data }: MemberActionsProps) {
     const [isBulkOpen, setIsBulkOpen] = React.useState(false)
     const [isExportOpen, setIsExportOpen] = React.useState(false)
     const [isResidentImportOpen, setIsResidentImportOpen] = React.useState(false)
+    const [isRosterSyncOpen, setIsRosterSyncOpen] = React.useState(false)
 
     return (
         <div className="flex items-center gap-2">
@@ -52,6 +54,16 @@ export function MemberActions({ data }: MemberActionsProps) {
             </Button>
 
             <Button
+                onClick={() => setIsRosterSyncOpen(true)}
+                variant="outline"
+                size="sm"
+                className="h-9 gap-1.5 border-emerald-500/30 bg-emerald-600/10 text-emerald-300 hover:bg-emerald-600 hover:text-white"
+            >
+                <MaterialIcon name="sync_alt" size="xs" />
+                <span className="text-xs font-bold">명부 반영</span>
+            </Button>
+
+            <Button
                 onClick={() => setIsResidentImportOpen(true)}
                 variant="outline"
                 size="sm"
@@ -65,6 +77,7 @@ export function MemberActions({ data }: MemberActionsProps) {
             <MemberBulkUploadDialog open={isBulkOpen} onOpenChange={setIsBulkOpen} />
             <MembersExportDialog isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} data={data} />
             <ResidentRegistryImportDialog open={isResidentImportOpen} onOpenChange={setIsResidentImportOpen} />
+            <MemberRosterSyncDialog open={isRosterSyncOpen} onOpenChange={setIsRosterSyncOpen} />
         </div>
     )
 }
