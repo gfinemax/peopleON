@@ -93,9 +93,8 @@ function Metric({ label, text, progress, danger }: { label: string; text: string
 
 export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onOpenManagement }: { memberIds: string[]; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; columns: MemberWorkspaceColumnId[]; onOpenManagement?: (tab: TabType) => void }) {
     const { payments, logs, loading } = useWorkspaceData(memberIds);
-    const width = 360;
     return <div className="flex min-h-0 flex-1 flex-col bg-[#071e32]">
-        <div className="flex-1 overflow-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div className="grid min-h-full items-stretch gap-2" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(${width}px, 1fr))`, minWidth: columns.length * width + (columns.length - 1) * 8 }}>
+        <div className="flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div className="grid min-h-full grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] items-stretch gap-2">
             {columns.map((id) => <WorkspaceColumn key={id} id={id}><ColumnContent id={id} member={member} formData={formData} payments={payments} logs={logs} loading={loading} onOpenManagement={onOpenManagement} /></WorkspaceColumn>)}
         </div></div>
     </div>;
