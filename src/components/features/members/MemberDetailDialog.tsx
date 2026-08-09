@@ -9,6 +9,13 @@ import {
     MemberDetailDialogHeader,
 } from './MemberDetailDialogSections';
 import { MemberDetailDialogLineageDialog } from './MemberDetailDialogAdmin';
+import { MemberWorkspaceHeader } from './MemberWorkspaceHeader';
+import {
+    getMemberWorkspacePreset,
+    getWorkspacePresetFromTab,
+    type MemberWorkspaceColumnId,
+    type MemberWorkspacePresetId,
+} from './memberWorkspacePresets';
 import {
     getManagedCertificateNumbers,
     getRightsFlowSummary,
@@ -39,6 +46,9 @@ interface MemberDetailDialogProps {
     initialTab?: TabType;
     presentation?: 'dialog' | 'page';
     onActiveTabChange?: (tab: TabType) => void;
+    initialWorkspacePreset?: MemberWorkspacePresetId;
+    initialWorkspaceColumns?: MemberWorkspaceColumnId[];
+    onWorkspaceChange?: (preset: MemberWorkspacePresetId, columns: MemberWorkspaceColumnId[]) => void;
 }
 
 type Member = MemberDetailDialogMember;
@@ -52,6 +62,9 @@ export function MemberDetailDialog({
     initialTab,
     presentation = 'dialog',
     onActiveTabChange,
+    initialWorkspacePreset,
+    initialWorkspaceColumns,
+    onWorkspaceChange,
 }: MemberDetailDialogProps) {
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
@@ -63,6 +76,11 @@ export function MemberDetailDialog({
     const [isAdmin, setIsAdmin] = useState(false);
     const [saveFeedback, setSaveFeedback] = useState<MemberDetailDialogSaveFeedback | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('info');
+    const initialPreset = initialWorkspacePreset || getWorkspacePresetFromTab(initialTab);
+    const [activeWorkspacePreset, setActiveWorkspacePreset] = useState<MemberWorkspacePresetId>(initialPreset);
+    const [visibleWorkspaceColumns, setVisibleWorkspaceColumns] = useState<MemberWorkspaceColumnId[]>(
+        initialWorkspaceColumns?.length ? initialWorkspaceColumns : getMemberWorkspacePreset(initialPreset)?.columns || ['profile', 'timeline', 'relations'],
+    );
     const [rightInput, setRightInput] = useState('');
     const [isAddingRight, setIsAddingRight] = useState(false);
     const [conflictRightNumbers] = useState<string[]>([]);
@@ -113,8 +131,15 @@ export function MemberDetailDialog({
     useEffect(() => {
         if (open) {
             setActiveTab(initialTab || 'info');
+            const nextPreset = initialWorkspacePreset || getWorkspacePresetFromTab(initialTab);
+            setActiveWorkspacePreset(nextPreset);
+            setVisibleWorkspaceColumns(
+                initialWorkspaceColumns?.length
+                    ? initialWorkspaceColumns
+                    : getMemberWorkspacePreset(nextPreset)?.columns || ['profile', 'timeline', 'relations'],
+            );
         }
-    }, [open, initialTab]);
+    }, [open, initialTab, initialWorkspaceColumns, initialWorkspacePreset]);
 
     useEffect(() => {
         const checkAdmin = async () => {
@@ -187,6 +212,18 @@ export function MemberDetailDialog({
     const handleTabChange = (tab: TabType) => {
         setActiveTab(tab);
         onActiveTabChange?.(tab);
+    };
+    const handleWorkspacePresetChange = (presetId: Exclude<MemberWorkspacePresetId, 'custom'>) => {
+        const preset = getMemberWorkspacePreset(presetId);
+        if (!preset) return;
+        setActiveWorkspacePreset(presetId);
+        setVisibleWorkspaceColumns(preset.columns);
+        onWorkspaceChange?.(presetId, preset.columns);
+    };
+    const handleWorkspaceColumnsChange = (columns: MemberWorkspaceColumnId[]) => {
+        setActiveWorkspacePreset('custom');
+        setVisibleWorkspaceColumns(columns);
+        onWorkspaceChange?.('custom', columns);
     };
 
     const handleMergeSelectedRights = async () => {
@@ -347,6 +384,14 @@ export function MemberDetailDialog({
 
     const workspace = (
         <>
+            {presentation === 'page' ? (
+                <MemberWorkspaceHeader
+                    activePreset={activeWorkspacePreset}
+                    visibleColumns={visibleWorkspaceColumns}
+                    onPresetChange={handleWorkspacePresetChange}
+                    onColumnsChange={handleWorkspaceColumnsChange}
+                />
+            ) : null}
             <div onPointerDown={presentation === 'dialog' ? handlePointerDown : undefined}>
                 <MemberDetailDialogHeader
                     member={member}
@@ -364,6 +409,14 @@ export function MemberDetailDialog({
                     onPrint={() => window.print()}
                 />
             </div>
+            {presentation === 'page' && member ? (
+                <div className="grid shrink-0 grid-cols-2 divide-x divide-white/[0.06] border-y border-white/[0.06] bg-[#10243a] sm:grid-cols-4">
+                    <WorkspaceMetric label="입주 희망 평형" value={formData.preferred_unit_type || '미입력'} tone="cyan" />
+                    <WorkspaceMetric label="배정 평형·동호" value={formData.unit_group || '미정'} />
+                    <WorkspaceMetric label="권리증" value={`${rightsFlowSummary.rawCount.toLocaleString()}건`} />
+                    <WorkspaceMetric label="현재 구성" value={`${visibleWorkspaceColumns.length}열 비교`} tone="emerald" />
+                </div>
+            ) : null}
             <MemberDetailDialogBody
                 loading={loading || isInitialLoading}
                 activeTab={activeTab}
@@ -390,6 +443,8 @@ export function MemberDetailDialog({
                 rightInput={rightInput}
                 setRightInput={setRightInput}
                 isAddingRight={isAddingRight}
+                presentation={presentation}
+                visibleWorkspaceColumns={visibleWorkspaceColumns}
                 onTabChange={handleTabChange}
                 onStartEditing={() => setIsEditing(true)}
                 onCancelEditing={() => setIsEditing(false)}
@@ -428,5 +483,15 @@ export function MemberDetailDialog({
                 onUnmerge={handleUnmerge}
             />
         </Dialog>
+    );
+}
+
+function WorkspaceMetric({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'cyan' | 'emerald' }) {
+    const valueClass = tone === 'cyan' ? 'text-cyan-300' : tone === 'emerald' ? 'text-emerald-300' : 'text-slate-100';
+    return (
+        <div className="min-w-0 px-4 py-3 text-center">
+            <p className="text-[10px] font-bold text-slate-500">{label}</p>
+            <p className={`mt-1 truncate text-sm font-black ${valueClass}`} title={value}>{value}</p>
+        </div>
     );
 }

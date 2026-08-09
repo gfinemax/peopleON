@@ -150,6 +150,10 @@ export async function fetchMemberDetail(ids: string[]) {
 
     const combinedData: Member = {
         ...entity,
+        preferred_unit_type:
+            typeof entity.meta === 'object' && entity.meta !== null && typeof entity.meta.preferred_unit_type === 'string'
+                ? entity.meta.preferred_unit_type
+                : null,
         name: entity.display_name,
         phone: uniqueDisplayPhones.join(', '),
         secondary_phone: uniqueSecondaryPhones.join(', ') || null,

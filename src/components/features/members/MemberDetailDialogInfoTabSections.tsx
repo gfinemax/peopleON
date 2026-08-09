@@ -25,6 +25,7 @@ interface MemberDetailDialogInfoTabProps {
     setIsSsnRevealed: (next: boolean) => void;
     setFormData: Dispatch<SetStateAction<Partial<MemberDetailDialogMember>>>;
     saveFeedback: MemberDetailDialogSaveFeedback | null;
+    section?: 'all' | 'profile' | 'relations';
 }
 
 export function MemberDetailDialogInfoTab({
@@ -35,6 +36,7 @@ export function MemberDetailDialogInfoTab({
     setIsSsnRevealed,
     setFormData,
     saveFeedback,
+    section = 'all',
 }: MemberDetailDialogInfoTabProps) {
     const updateField = <K extends keyof MemberDetailDialogMember>(
         field: K,
@@ -45,7 +47,7 @@ export function MemberDetailDialogInfoTab({
 
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 text-left">
-            <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/5 bg-gradient-to-br from-[#233040] to-[#1e2836] p-4 shadow-lg">
+            {section !== 'relations' ? <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/5 bg-gradient-to-br from-[#233040] to-[#1e2836] p-4 shadow-lg">
                 <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                         <MaterialIcon name="smart_toy" className="text-xl text-blue-400" />
@@ -80,9 +82,10 @@ export function MemberDetailDialogInfoTab({
                         ))}
                     </div>
                 </div>
-            </div>
+            </div> : null}
 
             <div className="rounded-xl border border-white/5 bg-[#233040] p-5 shadow-sm">
+                <div className={section === 'relations' ? 'hidden' : undefined}>
                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-white">
                     <span className="h-4 w-1 rounded-full bg-blue-500" />
                     기본 연락처
@@ -213,8 +216,40 @@ export function MemberDetailDialogInfoTab({
                             />
                         }
                     />
+                    <div className="grid grid-cols-1 md:grid-cols-2">
+                        <InfoRow
+                            icon="apartment"
+                            label="입주 희망 평형"
+                            value={member.preferred_unit_type || '미입력'}
+                            isEditing={isEditing}
+                            editElement={
+                                <Input
+                                    className="h-8 border-white/10 bg-[#1A2633] text-sm text-white"
+                                    value={formData.preferred_unit_type || ''}
+                                    onChange={(event) => updateField('preferred_unit_type', event.target.value)}
+                                    placeholder="예: 84㎡ A형"
+                                />
+                            }
+                        />
+                        <InfoRow
+                            icon="domain"
+                            label="배정 평형·동호"
+                            value={member.unit_group || '미입력'}
+                            isEditing={isEditing}
+                            editElement={
+                                <Input
+                                    className="h-8 border-white/10 bg-[#1A2633] text-sm text-white"
+                                    value={formData.unit_group || ''}
+                                    onChange={(event) => updateField('unit_group', event.target.value)}
+                                    placeholder="예: 84㎡ A형 · 101동 1203호"
+                                />
+                            }
+                        />
+                    </div>
+                </div>
                 </div>
 
+                <div className={section === 'profile' ? 'hidden' : undefined}>
                 <h3 className="mt-6 mb-3 flex items-center gap-2 text-base font-bold text-white">
                     <span className="h-4 w-1 rounded-full bg-emerald-500" />
                     대리인 정보
@@ -241,8 +276,9 @@ export function MemberDetailDialogInfoTab({
                         </p>
                     </div>
                 )}
+                </div>
 
-                {(member.memo || isEditing || member.acts_as_agent_for?.length) && (
+                {section !== 'relations' && (member.memo || isEditing || member.acts_as_agent_for?.length) && (
                     <div className="flex flex-col gap-3 pt-4">
                         <div className="flex items-center gap-2">
                             <MaterialIcon name="sticky_note_2" className="text-[18px] text-yellow-500/70" />

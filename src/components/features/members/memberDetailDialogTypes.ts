@@ -19,6 +19,7 @@ export interface MemberDetailDialogMember {
     status: string | null;
     is_registered: boolean;
     unit_group: string | null;
+    preferred_unit_type?: string | null;
     memo: string | null;
     tags?: string[] | null;
     tiers?: string[] | null;

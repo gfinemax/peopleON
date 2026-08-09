@@ -50,9 +50,39 @@ export function buildMemberPatch(body: MemberUpdatePayload | null) {
     if (typeof body?.secondary_phone === 'string') patch.phone_secondary = formatMemberPhone(body.secondary_phone);
     if (typeof body?.email === 'string') patch.email = body.email.trim() || null;
     if (typeof body?.address_legal === 'string') patch.address_legal = body.address_legal.trim() || null;
+    if (typeof body?.unit_group === 'string') patch.unit_group = body.unit_group.trim() || null;
     if (typeof body?.birth_date === 'string') patch.birth_date = body.birth_date.trim() || null;
     if (typeof body?.memo === 'string') patch.memo = body.memo.trim() || null;
     return patch;
+}
+
+export async function syncPreferredUnitType({
+    supabase,
+    targetIds,
+    preferredUnitType,
+}: {
+    supabase: SupabaseClient;
+    targetIds: string[];
+    preferredUnitType: string | null | undefined;
+}) {
+    if (typeof preferredUnitType !== 'string') return null;
+
+    const { data: entities, error: selectError } = await supabase
+        .from('account_entities')
+        .select('id, meta')
+        .in('id', targetIds);
+    if (selectError) return selectError;
+
+    const normalizedValue = preferredUnitType.trim() || null;
+    const results = await Promise.all((entities || []).map((entity) => {
+        const currentMeta = typeof entity.meta === 'object' && entity.meta !== null ? entity.meta as Record<string, unknown> : {};
+        return supabase
+            .from('account_entities')
+            .update({ meta: { ...currentMeta, preferred_unit_type: normalizedValue } })
+            .eq('id', entity.id);
+    }));
+
+    return results.find((result) => result.error)?.error || null;
 }
 
 export async function syncRepresentatives({

@@ -11,6 +11,7 @@ import {
     syncPersonCertificateSummary,
     syncRepresentatives,
     syncResidentRegistrationNumber,
+    syncPreferredUnitType,
     type MemberUpdatePayload,
 } from '@/lib/server/memberUpdateRouteUtils';
 
@@ -81,6 +82,20 @@ export async function POST(request: Request) {
             targetIds,
             residentRegistrationNumber: body?.resident_registration_number,
         });
+
+        const preferredUnitTypeError = await syncPreferredUnitType({
+            supabase,
+            targetIds,
+            preferredUnitType: body?.preferred_unit_type,
+        });
+        if (preferredUnitTypeError) {
+            return NextResponse.json({ success: false, error: preferredUnitTypeError.message }, { status: 500 });
+        }
+        if (typeof body?.preferred_unit_type === 'string') {
+            await Promise.all(targetIds.map((targetId) =>
+                safeCreateAuditLog('UPDATE_MEMBER_PREFERRED_UNIT_TYPE', targetId, { preferred_unit_type: body.preferred_unit_type?.trim() || null })
+            ));
+        }
 
         const rightsResult = await syncCertificateRights({
             supabase,

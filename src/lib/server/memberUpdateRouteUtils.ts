@@ -6,6 +6,7 @@ export {
     parseRightMeta,
     syncRepresentatives,
     syncResidentRegistrationNumber,
+    syncPreferredUnitType,
 } from './memberUpdateBasicUtils';
 export {
     syncCertificateRights,
