@@ -61,15 +61,15 @@ export function Sidebar() {
                     <div className="flex flex-col gap-6 flex-1">
                         {/* Brand & Toggle */}
                         <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-3 px-1 overflow-hidden relative">
+                            <div className="relative flex items-center gap-2.5 overflow-hidden px-1">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-success to-primary text-white shadow-lg shadow-primary/20 flex-shrink-0 transition-transform duration-300">
                                     <MaterialIcon name="apartment" size="md" />
                                 </div>
 
                                 {!isCollapsed && (
-                                    <div className="flex flex-col flex-1 overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300 pr-2">
+                                    <div className="flex min-w-0 flex-1 flex-col overflow-visible animate-in fade-in slide-in-from-left-2 duration-300">
                                         <h1
-                                            className="truncate whitespace-nowrap text-[20px] font-extrabold leading-none tracking-[-0.055em] text-slate-100"
+                                            className="w-max whitespace-nowrap text-[18px] font-extrabold leading-none tracking-[-0.055em] text-slate-100"
                                             style={{ fontFamily: 'var(--font-peopleon-logo)' }}
                                         >
                                             <span>People</span><span className="text-cyan-400">ON</span>
