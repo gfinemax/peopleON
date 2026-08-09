@@ -68,8 +68,11 @@ export function Sidebar() {
 
                                 {!isCollapsed && (
                                     <div className="flex flex-col flex-1 overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300 pr-2">
-                                        <h1 className="text-base font-bold leading-none tracking-tight text-foreground truncate">
-                                            People On
+                                        <h1
+                                            className="truncate whitespace-nowrap text-[20px] font-extrabold leading-none tracking-[-0.055em] text-slate-100"
+                                            style={{ fontFamily: 'var(--font-peopleon-logo)' }}
+                                        >
+                                            <span>People</span><span className="text-cyan-400">ON</span>
                                         </h1>
                                         <p className="mt-1 text-[10px] font-bold text-muted-foreground/40 truncate uppercase tracking-wider">
                                             통합 관리 시스템
