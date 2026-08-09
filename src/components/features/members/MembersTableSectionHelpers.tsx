@@ -29,6 +29,7 @@ export const roleOptions = [
     { label: '조합원(2차)', value: '2차' },
     { label: '조합원(일반분양)', value: '일반분양' },
     { label: '조합원(예비)', value: '예비조합원' },
+    { label: '조합원(환불)', value: '권리증환불' },
     { label: '가입신청필증 보유', value: '권리증보유자' },
     { label: '원지주', value: '지주' },
     { label: '대리인', value: '대리인' },

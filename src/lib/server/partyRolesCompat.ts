@@ -36,11 +36,11 @@ function mapRoleCodeToRoleType(roleCode: string): RoleType | null {
         normalized === '일반분양' ||
         normalized === '지주' ||
         normalized === '지주조합원' ||
-        normalized === '예비조합원'
+        normalized === '예비조합원' ||
+        normalized === '권리증환불'
     ) {
         return 'member';
     }
-    if (normalized === '권리증환불') return 'certificate_holder';
     if (normalized === '관계인') return 'related_party';
     if (normalized === '대리인') return null;
     return null;

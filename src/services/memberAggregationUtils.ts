@@ -91,10 +91,10 @@ export const getUiRoleFromTier = (
 ): 'member' | 'landowner' | 'general' | 'investor' | 'agent' | 'party' | 'other' => {
     const t = normalizeText(tier);
     if (!t) return 'other';
-    if (['등기조합원', '1차', '2차', '예비조합원', '예비', '지주조합원', '일반조합원', '임시원장'].includes(t)) return 'member';
+    if (['등기조합원', '1차', '2차', '예비조합원', '예비', '지주조합원', '일반조합원', '임시원장', '권리증환불'].includes(t)) return 'member';
     if (['지주'].includes(t)) return 'landowner';
     if (['일반분양', '일반', '3차'].includes(t)) return 'general';
-    if (['권리증보유자', '권리증', '권리증환불', '비조합원권리증'].includes(t)) return 'investor';
+    if (['권리증보유자', '권리증', '비조합원권리증'].includes(t)) return 'investor';
     if (['대리인', '대리'].includes(t)) return 'agent';
     if (['관계인'].includes(t)) return 'party';
     return 'other';

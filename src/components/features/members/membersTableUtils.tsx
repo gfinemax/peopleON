@@ -213,7 +213,7 @@ export const getMemberPhoneSummary = (phone: string | null) => {
 
 export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) => {
     const primaryTier = (member.tiers || []).find((tier) =>
-        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양')) ||
+        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양' || tier === '권리증환불')) ||
         (role === 'certificate_holder' && tier.includes('권리증')) ||
         (role === 'related_party' && tier === '관계인') ||
         (role === 'agent' && tier === '대리인')
@@ -225,6 +225,7 @@ export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) 
         if (primaryTier === '2차') return '조합원(2차)';
         if (primaryTier === '일반분양') return '조합원(일반분양)';
         if (primaryTier === '예비조합원') return '조합원(예비)';
+        if (primaryTier === '권리증환불') return '조합원(환불)';
         if (primaryTier === '지주') return '원지주';
     }
 
@@ -237,7 +238,7 @@ export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) 
 
 export const getRolePriority = (member: MembersTableMember, role: RoleType) => {
     const primaryTier = (member.tiers || []).find((tier) =>
-        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양')) ||
+        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양' || tier === '권리증환불')) ||
         (role === 'certificate_holder' && tier.includes('권리증')) ||
         (role === 'related_party' && tier === '관계인') ||
         (role === 'agent' && tier === '대리인')
@@ -249,6 +250,7 @@ export const getRolePriority = (member: MembersTableMember, role: RoleType) => {
         '2차': 3,
         '일반분양': 4,
         '예비조합원': 5,
+        '권리증환불': 6,
         '권리증보유자': 6,
         '지주': 7,
         '대리인': 8,

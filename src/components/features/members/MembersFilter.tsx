@@ -44,9 +44,9 @@ const MAIN_ROLES = [
 ];
 
 const tierGroupsByRole: Record<string, string[]> = {
-    member: ['등기조합원', '지주조합원', '2차', '일반분양', '예비조합원'],
+    member: ['등기조합원', '지주조합원', '2차', '일반분양', '예비조합원', '권리증환불'],
     landowner: ['지주'],
-    investor: ['권리증보유자', '권리증번호있음', '권리증번호없음', '권리증환불'],
+    investor: ['권리증보유자', '권리증번호있음', '권리증번호없음'],
     party: ['대리인', '관계인'],
 };
 
