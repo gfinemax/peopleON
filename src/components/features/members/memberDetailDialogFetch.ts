@@ -106,7 +106,14 @@ export async function fetchMemberDetail(ids: string[]) {
 
     const certNumbers = getConfirmedCertificateNumbers(assetRights);
     const certificateDisplay = getCertificateDisplayText(assetRights, { includeFallbackStatus: true });
-    const latestCertificateNumber = certNumbers.at(-1) || null;
+    const latestCertificateNumber = assetRights
+        .toReversed()
+        .find(
+            (right) =>
+                (right.right_type || 'certificate') === 'certificate' &&
+                Boolean(right.right_number?.trim()),
+        )
+        ?.right_number?.trim() || null;
 
     const allPhonesNumeric = new Set<string>();
     const uniqueDisplayPhones: string[] = [];
