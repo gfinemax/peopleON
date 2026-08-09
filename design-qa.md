@@ -42,6 +42,7 @@ Code inspection confirms the following source-aligned regions:
 
 ## Comparison history
 
+- Sidebar control iteration: moved the fixed collapse/expand control from vertical center to `calc(5mm + env(safe-area-inset-bottom, 0px))`, preserving its expanded/collapsed horizontal positions and 120px vertical form.
 - Removed the prior `PeopleON 조합원 관리` preset menu and column picker from the page header.
 - Replaced the workspace with the fixed four-column unified overview while preserving the detailed editing workflows in a modal.
 - Added private member photo storage, square crop/resize, replace/delete controls, signed delivery, fallback initials, and audit logging.

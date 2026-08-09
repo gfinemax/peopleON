@@ -147,8 +147,9 @@ export function Sidebar() {
                 onClick={toggleSidebar}
                 aria-label={isCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
                 aria-expanded={!isCollapsed}
+                style={{ bottom: 'calc(5mm + env(safe-area-inset-bottom, 0px))' }}
                 className={cn(
-                    "fixed top-1/2 z-[1100] flex h-[120px] w-[38px] -translate-y-1/2 cursor-pointer flex-col items-center justify-center border border-[#8fe900] bg-[#95ed00] text-[#101725] shadow-[6px_0_14px_rgba(2,6,23,0.28)] transition-[left,width,border-radius,background-color,box-shadow] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-2 after:-right-3 after:w-3 after:rounded-r-full after:bg-gradient-to-r after:from-black/35 after:to-transparent after:content-[''] hover:w-[40px] hover:bg-[#a8ff00] hover:shadow-[8px_0_18px_rgba(2,6,23,0.34)] focus-visible:ring-2 focus-visible:ring-[#101725]/30 focus-visible:ring-offset-2",
+                    "fixed z-[1100] flex h-[120px] w-[38px] cursor-pointer flex-col items-center justify-center border border-[#8fe900] bg-[#95ed00] text-[#101725] shadow-[6px_0_14px_rgba(2,6,23,0.28)] transition-[left,width,border-radius,background-color,box-shadow] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-2 after:-right-3 after:w-3 after:rounded-r-full after:bg-gradient-to-r after:from-black/35 after:to-transparent after:content-[''] hover:w-[40px] hover:bg-[#a8ff00] hover:shadow-[8px_0_18px_rgba(2,6,23,0.34)] focus-visible:ring-2 focus-visible:ring-[#101725]/30 focus-visible:ring-offset-2",
                     isCollapsed ? "left-0 rounded-r-[12px] border-l-0" : "left-44 rounded-r-[12px] border-l-0",
                     isCollapsed && "shadow-[6px_0_16px_rgba(2,6,23,0.32)]"
                 )}
