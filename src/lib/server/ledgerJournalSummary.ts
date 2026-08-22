@@ -21,6 +21,22 @@ export type LedgerJournalSummary = {
     journal_url: string | null;
     recent_consultations: LedgerConsultation[];
     pinned_note: { note: string; updated_at: string | null; updated_by: string | null };
+    payment_summary: {
+        total_paid: number;
+        gross_paid: number;
+        withdrawal_sum: number;
+        refund_sum: number;
+        business_promotion_fee: number;
+        allocations: {
+            op_fee: number;
+            business_promotion_fee: number;
+            cert: number;
+            join_fee: number;
+            land1: number;
+            land2: number;
+        };
+        payment_url: string;
+    } | null;
     error: string | null;
 };
 
@@ -31,6 +47,7 @@ const emptySummary = (overrides: Partial<LedgerJournalSummary> = {}): LedgerJour
     journal_url: null,
     recent_consultations: [],
     pinned_note: { note: '', updated_at: null, updated_by: null },
+    payment_summary: null,
     error: null,
     ...overrides,
 });
@@ -61,6 +78,7 @@ export async function fetchLedgerMemberJournalSummary(peopleonId: string): Promi
             journal_url: payload.journal_url || null,
             recent_consultations: payload.recent_consultations || [],
             pinned_note: payload.pinned_note || { note: '', updated_at: null, updated_by: null },
+            payment_summary: payload.payment_summary || null,
             error: null,
         };
     } catch (error) {
