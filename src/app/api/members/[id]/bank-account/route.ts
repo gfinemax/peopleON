@@ -6,7 +6,7 @@ import { normalizeBankAccountNumber } from '@/lib/members/memberBankAccount';
 
 export const dynamic = 'force-dynamic';
 
-type RouteContext = { params: Promise<{ memberId: string }> };
+type RouteContext = { params: Promise<{ id: string }> };
 
 async function requireFinanceAccess() {
     try {
@@ -20,7 +20,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const access = await requireFinanceAccess();
     if (access instanceof NextResponse) return access;
 
-    const { memberId } = await context.params;
+    const { id: memberId } = await context.params;
     const { data, error } = await createAdminClient()
         .from('member_bank_accounts')
         .select('bank_name, account_number, account_holder, purpose, updated_at')
@@ -39,7 +39,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const access = await requireFinanceAccess();
     if (access instanceof NextResponse) return access;
 
-    const { memberId } = await context.params;
+    const { id: memberId } = await context.params;
     const body = await request.json().catch(() => null);
     const bankName = typeof body?.bank_name === 'string' ? body.bank_name.trim() : '';
     const accountNumber = typeof body?.account_number === 'string' ? normalizeBankAccountNumber(body.account_number) : '';
