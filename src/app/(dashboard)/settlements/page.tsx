@@ -14,6 +14,8 @@ import {
     type SettlementDiagFilter,
     type SettlementStatusFilter,
 } from '@/lib/server/settlementDashboard';
+import { SpecialRefundTargetsSection } from '@/components/features/settlements/SpecialRefundTargetsSection';
+import { fetchLedgerRefundTargets } from '@/lib/server/ledgerRefundTargets';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +53,7 @@ export default async function SettlementsPage({
     const expectedOnly = params.from === 'dashboard' && params.view === 'expected';
 
     const supabase = await createClient();
+    const ledgerRefundTargets = await fetchLedgerRefundTargets();
     const {
         rows: fetchedRows,
         loadErrorMessage,
@@ -147,6 +150,11 @@ export default async function SettlementsPage({
                     <SettlementsActionPanel
                         diagnosticsExportHref={diagnosticsExportHref}
                         diagnosticsFullExportHref={diagnosticsFullExportHref}
+                    />
+                    <SpecialRefundTargetsSection
+                        targets={ledgerRefundTargets.targets}
+                        generatedAt={ledgerRefundTargets.generatedAt}
+                        error={ledgerRefundTargets.error}
                     />
                     <SettlementsStatsStrip
                         totalCases={totalCases}
