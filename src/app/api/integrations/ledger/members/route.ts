@@ -22,6 +22,23 @@ export async function GET(request: Request) {
             ledgerPeople.filter((person) => !person.birth_date).flatMap((person) => person.entity_ids),
         ));
         const birthDateByEntityId = new Map<string, string>();
+        const allEntityIds = Array.from(new Set(ledgerPeople.flatMap((person) => person.entity_ids)));
+        const bankAccountByEntityId = new Map<string, {
+            bank_name: string;
+            account_number: string;
+            account_holder: string;
+            purpose: string;
+            updated_at: string;
+        }>();
+
+        if (allEntityIds.length > 0) {
+            const { data, error } = await createAdminClient()
+                .from('member_bank_accounts')
+                .select('entity_id, bank_name, account_number, account_holder, purpose, updated_at')
+                .in('entity_id', allEntityIds);
+            if (error) throw error;
+            for (const row of data || []) bankAccountByEntityId.set(row.entity_id, row);
+        }
 
         if (missingBirthEntityIds.length > 0) {
             const { data, error } = await createAdminClient()
@@ -37,7 +54,11 @@ export async function GET(request: Request) {
         }
 
         const members = ledgerPeople
-            .map((person) => ({
+            .map((person) => {
+                const refundAccount = person.entity_ids
+                    .map((entityId) => bankAccountByEntityId.get(entityId))
+                    .find(Boolean) || null;
+                return ({
                 peopleon_id: person.id,
                 member_id: person.member_id,
                 name: person.name,
@@ -59,7 +80,15 @@ export async function GET(request: Request) {
                     relation: relationship.relation,
                     phone: relationship.phone || null,
                 })),
-            }))
+                refund_account: refundAccount ? {
+                    bank_name: refundAccount.bank_name,
+                    account_number: refundAccount.account_number,
+                    account_holder: refundAccount.account_holder,
+                    purpose: refundAccount.purpose,
+                    updated_at: refundAccount.updated_at,
+                } : null,
+            });
+            })
             .sort((left, right) => left.name.localeCompare(right.name, 'ko'));
 
         return NextResponse.json(
