@@ -35,6 +35,7 @@ export const tierOrder = [
     '권리증환불',
     '권리증번호있음',
     '권리증번호없음',
+    '2020년5월추가모집환불대상',
 ];
 
 export function normalizeTierFilter(raw?: string) {

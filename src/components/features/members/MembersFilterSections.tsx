@@ -166,6 +166,7 @@ export function MembersFilterControls({
                             let display = tierName === '등기조합원' ? '등기' : tierName === '예비조합원' ? '예비' : tierName === '지주조합원' ? '지주' : tierName === '2차' ? '2차' : tierName;
                             if (tierName === '권리증보유자') display = '가입신청필증 보유';
                             if (tierName === '권리증환불') display = '환불';
+                            if (tierName === '2020년5월추가모집환불대상') display = '2020.05 추가모집 환불대상';
                             if (activeRole === 'member') display = `조합원(${display})`;
                             else if (activeRole === 'landowner') display = `원지주(${display})`;
 

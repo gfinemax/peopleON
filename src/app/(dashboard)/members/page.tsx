@@ -6,11 +6,13 @@ import { MembersKpiStrip } from '@/components/features/members/MembersKpiStrip';
 import { DashboardManager } from '@/components/features/members/DashboardManager';
 import { MemberActions } from '@/components/features/members/MemberActions';
 import { MembersDataSection } from '@/components/features/members/MembersPageSections';
+import { SpecialRefundTargetsSection } from '@/components/features/settlements/SpecialRefundTargetsSection';
 import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 import type { UnifiedPerson } from '@/services/memberAggregation';
 import { fetchPersonCertificateRollupsSnapshot } from '@/lib/server/personCertificateSummary';
 import { fetchRecentActivitySummariesSnapshotForPeople } from '@/lib/server/activityFeed';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
+import { fetchLedgerRefundTargets } from '@/lib/server/ledgerRefundTargets';
 import {
     getDisplayMemberStatus,
     isSettlementTarget,
@@ -34,6 +36,7 @@ export const dynamic = 'force-dynamic';
 const TOTAL_HOUSEHOLDS = 254;
 const MIN_LOG_SEARCH_QUERY_LENGTH = 2;
 const LOG_SEARCH_RESULT_LIMIT = 2000;
+const SPECIAL_REFUND_TARGET_TIER = '2020년5월추가모집환불대상';
 
 function toMemberExportRow(person: UnifiedPerson): MemberExportRow {
     return {
@@ -88,10 +91,11 @@ export default async function MembersPage({
             .limit(LOG_SEARCH_RESULT_LIMIT)
         : Promise.resolve({ data: [], error: null });
 
-    const [unifiedPeople, personCertificateRollups, matchedLogsRes] = await Promise.all([
+    const [unifiedPeople, personCertificateRollups, matchedLogsRes, ledgerRefundTargets] = await Promise.all([
         getUnifiedMembersSnapshot(),
         fetchPersonCertificateRollupsSnapshot(supabase),
         matchedLogsPromise,
+        fetchLedgerRefundTargets(),
     ]);
 
     const matchedEntityIds = new Set<string>();
@@ -105,6 +109,7 @@ export default async function MembersPage({
 
     const peopleInCurrentRole = unifiedPeople.filter((person) => isRoleMatch(person, roleFilter));
     const tierCounts = getTierCounts(peopleInCurrentRole);
+    tierCounts[SPECIAL_REFUND_TARGET_TIER] = roleFilter === 'member' ? ledgerRefundTargets.targets.length : 0;
     const roleCounts = getRoleCounts(unifiedPeople);
     const filteredPeople = filterMembers({
         peopleInCurrentRole,
@@ -117,8 +122,9 @@ export default async function MembersPage({
         matchedEntityIds,
     });
 
-    const sortedPeople = [...filteredPeople].sort((a, b) => comparePeople(a, b, sortField, sortOrder));
-    const totalCount = sortedPeople.length;
+    const isSpecialRefundTargetView = roleFilter === 'member' && tierFilter === SPECIAL_REFUND_TARGET_TIER;
+    const sortedPeople = isSpecialRefundTargetView ? [] : [...filteredPeople].sort((a, b) => comparePeople(a, b, sortField, sortOrder));
+    const totalCount = isSpecialRefundTargetView ? ledgerRefundTargets.targets.length : sortedPeople.length;
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const normalizedPage = Math.min(page, totalPages);
     const { from, to } = getPageRange(normalizedPage, pageSize);
@@ -228,7 +234,11 @@ export default async function MembersPage({
                 }}
             >
                 <DashboardEntryNotice from={params.from} view={params.view} resetHref="/members" />
-                <MembersDataSection
+                {isSpecialRefundTargetView ? <SpecialRefundTargetsSection
+                    targets={ledgerRefundTargets.targets}
+                    generatedAt={ledgerRefundTargets.generatedAt}
+                    error={ledgerRefundTargets.error}
+                /> : <MembersDataSection
                     displayedMembers={displayedMembers}
                     exportRows={filteredExportRows}
                     paramsKey={JSON.stringify(params)}
@@ -256,7 +266,7 @@ export default async function MembersPage({
                         retentionFilter,
                         targetPage,
                     })}
-                />
+                />}
             </DashboardManager>
         </div>
     );
