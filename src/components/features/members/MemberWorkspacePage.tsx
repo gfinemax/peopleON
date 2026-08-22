@@ -29,20 +29,20 @@ interface WorkspaceData {
 
 type WorkspaceColumnWidths = Partial<Record<MemberWorkspaceColumnId, number>>;
 
-const WORKSPACE_WIDTH_STORAGE_KEY = 'peopleon-member-workspace-column-widths-v1';
+const WORKSPACE_WIDTH_STORAGE_KEY = 'peopleon-member-workspace-column-widths-v2';
 const DEFAULT_WORKSPACE_COLUMN_WIDTHS: Record<MemberWorkspaceColumnId, number> = {
     profile: 24,
     relations: 22,
-    finance: 25,
-    timeline: 31,
-    documents: 20,
+    finance: 24,
+    timeline: 30,
+    documents: 22,
 };
 const MIN_WORKSPACE_COLUMN_WIDTHS: Record<MemberWorkspaceColumnId, number> = {
-    profile: 300,
-    relations: 280,
-    finance: 320,
-    timeline: 380,
-    documents: 280,
+    profile: 260,
+    relations: 240,
+    finance: 280,
+    timeline: 300,
+    documents: 240,
 };
 
 const normalizeWorkspaceWidths = (columns: MemberWorkspaceColumnId[], saved: WorkspaceColumnWidths = {}) => {
@@ -227,10 +227,12 @@ export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onO
         const leftId = columns[separatorIndex];
         const rightId = columns[separatorIndex + 1];
         const workspaceWidth = workspaceRef.current?.getBoundingClientRect().width || 1;
+        const totalMinimumWidth = columns.reduce((sum, id) => sum + MIN_WORKSPACE_COLUMN_WIDTHS[id], 0) + Math.max(0, columns.length - 1) * 8;
+        const minimumScale = Math.min(1, workspaceWidth / totalMinimumWidth);
         const leftStart = Number(widthsRef.current[leftId] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[leftId]);
         const rightStart = Number(widthsRef.current[rightId] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[rightId]);
-        const leftMin = MIN_WORKSPACE_COLUMN_WIDTHS[leftId] / workspaceWidth * 100;
-        const rightMin = MIN_WORKSPACE_COLUMN_WIDTHS[rightId] / workspaceWidth * 100;
+        const leftMin = MIN_WORKSPACE_COLUMN_WIDTHS[leftId] * minimumScale / workspaceWidth * 100;
+        const rightMin = MIN_WORKSPACE_COLUMN_WIDTHS[rightId] * minimumScale / workspaceWidth * 100;
         const boundedDelta = Math.max(leftMin - leftStart, Math.min(deltaPercent, rightStart - rightMin));
         updateColumnWidths({ ...widthsRef.current, [leftId]: leftStart + boundedDelta, [rightId]: rightStart - boundedDelta }, persist);
     };
@@ -267,13 +269,13 @@ export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onO
 
     const gridTemplateColumns = columns.flatMap((id, index) => [
         ...(index ? ['8px'] : []),
-        `minmax(${MIN_WORKSPACE_COLUMN_WIDTHS[id]}px, ${columnWidths[id] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[id]}fr)`,
+        `minmax(0, ${columnWidths[id] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[id]}fr)`,
     ]).join(' ');
     const workspaceMinWidth = columns.reduce((sum, id) => sum + MIN_WORKSPACE_COLUMN_WIDTHS[id], 0) + Math.max(0, columns.length - 1) * 8;
 
     return <div className="flex min-h-0 flex-1 flex-col bg-[#071e32]">
         <div className="flex h-10 shrink-0 items-center justify-between px-3 text-[11px] text-slate-500"><span className="hidden lg:inline">열 사이 구분선을 드래그하거나 방향키로 너비를 조절할 수 있어.</span><button type="button" onClick={resetColumnWidths} className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-white/10 px-2.5 font-bold text-slate-300 hover:border-sky-400/30 hover:bg-sky-500/10 hover:text-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"><MaterialIcon name="restart_alt" size="xs" />열 너비 초기화</button></div>
-        <div className="flex-1 overflow-x-auto overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div ref={workspaceRef} className="member-workspace-grid grid min-h-full items-stretch" style={{ gridTemplateColumns, minWidth: workspaceMinWidth }}>
+        <div className="flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div ref={workspaceRef} className="member-workspace-grid grid min-h-full w-full items-stretch" style={{ gridTemplateColumns }}>
             {columns.map((id, index) => <Fragment key={id}>{index > 0 ? <div className="member-workspace-resizer group relative z-20 flex cursor-col-resize touch-none items-stretch justify-center" role="separator" aria-label={`${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === columns[index - 1])?.label}와 ${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === id)?.label} 열 너비 조절`} aria-orientation="vertical" aria-valuemin={MIN_WORKSPACE_COLUMN_WIDTHS[columns[index - 1]]} aria-valuenow={Math.round((columnWidths[columns[index - 1]] || 0) / 100 * workspaceMinWidth)} tabIndex={0} onPointerDown={(event) => startColumnResize(event, index - 1)} onDoubleClick={resetColumnWidths} onKeyDown={(event) => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); const pixels = event.shiftKey ? 48 : 16; const width = workspaceRef.current?.getBoundingClientRect().width || 1; adjustColumnPair(index - 1, (event.key === 'ArrowRight' ? pixels : -pixels) / width * 100, true); }}><span className="my-3 w-px rounded-full bg-white/10 transition-all group-hover:w-0.5 group-hover:bg-sky-400 group-focus-visible:w-0.5 group-focus-visible:bg-sky-300" /></div> : null}<WorkspaceColumn id={id}><ColumnContent id={id} member={member} formData={formData} payments={payments} logs={logs} loading={loading} ledgerJournal={ledgerJournal} onOpenManagement={onOpenManagement} /></WorkspaceColumn></Fragment>)}
         </div></div>
     </div>;
@@ -284,12 +286,20 @@ function WorkspaceColumn({ id, children }: { id: MemberWorkspaceColumnId; childr
     return <section className="min-w-0 overflow-hidden rounded-lg border border-white/[0.09] bg-[#0b263d]"><header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b border-white/[0.09] bg-[#0b263d] px-4"><MaterialIcon name="drag_indicator" size="xs" className="text-slate-500"/><h2 className="whitespace-nowrap text-base font-black text-slate-100">{definition?.label}</h2><MaterialIcon name="minimize" size="xs" className="ml-auto text-slate-500"/></header>{children}</section>;
 }
 
+function RelationshipRow({ name, relation, phone }: { name?: string | null; relation?: string | null; phone?: string | null }) {
+    return <div className="flex min-h-10 min-w-0 items-center gap-2 border-b border-white/[0.06] py-2 text-[13px]">
+        <b className="min-w-0 flex-1 truncate whitespace-nowrap text-slate-100" title={name || undefined}>{value(name)}</b>
+        <span className="w-14 shrink-0 truncate whitespace-nowrap text-right font-semibold text-emerald-400" title={relation || undefined}>{value(relation)}</span>
+        <span className="ml-auto shrink-0 whitespace-nowrap pr-0.5 text-right font-medium tabular-nums text-slate-300" title={value(phone)}>{value(phone)}</span>
+    </div>;
+}
+
 function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJournal, onOpenManagement }: { id: MemberWorkspaceColumnId; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; payments: PaymentRecord[]; logs: LogRow[]; loading: boolean; ledgerJournal: { summary: LedgerJournalSummary; loading: boolean }; onOpenManagement?: (tab: TabType) => void }) {
     const rights = formData.assetRights || [];
     const memberCategory = getMemberCategory(member);
     const assignment = splitUnitAssignment(formData.unit_group || member.unit_group);
-    if (id === 'profile') { const people = [member.representative, member.representative2].filter(Boolean); return <><Block title="기본 정보" action="수정" onAction={() => onOpenManagement?.('info')}><Row label="이름" strong>{value(member.name)}</Row><Row label="회원번호(필증번호)">{value(member.member_number)}</Row><Row label="생년월일">{date(member.birth_date)}</Row><Row label="주민번호"><ResidentNumberValue residentNumber={member.resident_registration_number} /></Row><Row label="연락처">{value(member.phone)}</Row><Row label="보조 연락처">{value(member.secondary_phone)}</Row><Row label="이메일">{value(member.email)}</Row><Row label="주소">{value(member.address_legal)}</Row><Row label="가입 구분">{memberCategory}</Row></Block><Block title="선택·배정 정보"><Row label="배정 평형" strong><AssignedUnitValue unitType={assignment.unitType} /></Row><Row label="동·호수">{assignment.dongHo}</Row><Row label="소유 구분">{member.owner_group === 'registered' ? '등기조합원' : '기타'}</Row><Row label="관리자 메모" multiline>{value(formData.memo)}</Row></Block><Block title="가족·관계인" action="+ 추가" onAction={() => onOpenManagement?.('info')}>{people.length ? people.map((person) => <div key={person?.id || person?.name} className="grid min-h-10 grid-cols-[minmax(90px,1fr)_64px_130px] items-center gap-2 border-b border-white/[0.06] py-2 text-[13px]"><b className="truncate whitespace-nowrap text-slate-100" title={person?.name}>{person?.name}</b><span className="truncate whitespace-nowrap font-semibold text-emerald-400" title={person?.relation}>{person?.relation}</span><span className="whitespace-nowrap text-right font-medium tabular-nums text-slate-300" title={value(person?.phone)}>{value(person?.phone)}</span></div>) : <Empty text="등록된 관계인이 없어." />}{member.acts_as_agent_for?.map((item) => <Row key={item.id} label={`${item.relation} 대리`}><span>{item.name}</span><span className="ml-3 text-slate-400">{value(item.phone)}</span></Row>)}</Block>{member.tags?.length ? <Block title="AI 분석 인사이트"><div className="flex flex-wrap gap-2">{member.tags.map((tag) => <span key={tag} className="rounded-lg border border-cyan-400/15 bg-cyan-500/10 px-2 py-1 text-xs font-bold text-cyan-200">{tag}</span>)}</div></Block> : null}</>; }
-    if (id === 'relations') { const people = [member.representative, member.representative2].filter(Boolean); return <><Block title="가족·관계인" action="+ 추가">{people.length ? people.map((person) => <div key={person?.id || person?.name} className="grid min-h-10 grid-cols-[minmax(90px,1fr)_64px_130px] items-center gap-2 border-b border-white/[0.06] py-2 text-[13px]"><b className="truncate whitespace-nowrap text-slate-100" title={person?.name}>{person?.name}</b><span className="truncate whitespace-nowrap font-semibold text-emerald-400" title={person?.relation}>{person?.relation}</span><span className="whitespace-nowrap text-right font-medium tabular-nums text-slate-300" title={value(person?.phone)}>{value(person?.phone)}</span></div>) : <Empty text="등록된 관계인이 없어." />}</Block><Block title="대리 업무"><Row label="대리 인원">{member.acts_as_agent_for?.length || 0}명</Row>{member.acts_as_agent_for?.map((item) => <Row key={item.id} label={item.relation}>{item.name}</Row>)}</Block></>; }
+    if (id === 'profile') { const people = [member.representative, member.representative2].filter(Boolean); return <><Block title="기본 정보" action="수정" onAction={() => onOpenManagement?.('info')}><Row label="이름" strong>{value(member.name)}</Row><Row label="회원번호(필증번호)">{value(member.member_number)}</Row><Row label="생년월일">{date(member.birth_date)}</Row><Row label="주민번호"><ResidentNumberValue residentNumber={member.resident_registration_number} /></Row><Row label="연락처">{value(member.phone)}</Row><Row label="보조 연락처">{value(member.secondary_phone)}</Row><Row label="이메일">{value(member.email)}</Row><Row label="주소">{value(member.address_legal)}</Row><Row label="가입 구분">{memberCategory}</Row></Block><Block title="선택·배정 정보"><Row label="배정 평형" strong><AssignedUnitValue unitType={assignment.unitType} /></Row><Row label="동·호수">{assignment.dongHo}</Row><Row label="소유 구분">{member.owner_group === 'registered' ? '등기조합원' : '기타'}</Row><Row label="관리자 메모" multiline>{value(formData.memo)}</Row></Block><Block title="가족·관계인" action="+ 추가" onAction={() => onOpenManagement?.('info')}>{people.length ? people.map((person) => <RelationshipRow key={person?.id || person?.name} name={person?.name} relation={person?.relation} phone={person?.phone} />) : <Empty text="등록된 관계인이 없어." />}{member.acts_as_agent_for?.map((item) => <Row key={item.id} label={`${item.relation} 대리`}><span>{item.name}</span><span className="ml-3 text-slate-400">{value(item.phone)}</span></Row>)}</Block>{member.tags?.length ? <Block title="AI 분석 인사이트"><div className="flex flex-wrap gap-2">{member.tags.map((tag) => <span key={tag} className="rounded-lg border border-cyan-400/15 bg-cyan-500/10 px-2 py-1 text-xs font-bold text-cyan-200">{tag}</span>)}</div></Block> : null}</>; }
+    if (id === 'relations') { const people = [member.representative, member.representative2].filter(Boolean); return <><Block title="가족·관계인" action="+ 추가">{people.length ? people.map((person) => <RelationshipRow key={person?.id || person?.name} name={person?.name} relation={person?.relation} phone={person?.phone} />) : <Empty text="등록된 관계인이 없어." />}</Block><Block title="대리 업무"><Row label="대리 인원">{member.acts_as_agent_for?.length || 0}명</Row>{member.acts_as_agent_for?.map((item) => <Row key={item.id} label={item.relation}>{item.name}</Row>)}</Block></>; }
     if (id === 'finance') {
         const due = payments.reduce((sum, payment) => sum + Number(payment.amount_due || 0), 0);
         const ledgerPayment = ledgerJournal.summary.connected ? ledgerJournal.summary.payment_summary : null;
@@ -321,10 +331,10 @@ function TimelineColumn({ logs, loading, ledgerJournal, onOpenManagement }: { lo
     const journalHref = summary.journal_url ? `${ledgerBaseUrl}${summary.journal_url}` : null;
     return <>
         <Block title="최근 상담" action="+ 상담 등록" onAction={() => onOpenManagement?.('timeline')}>
-            {loading ? <Empty text="불러오는 중..." /> : logs.filter((log)=>log.type !== 'DOC').slice(0,6).map((log)=><div key={log.id} className="border-b border-white/[0.06] py-3"><div className="flex min-w-0 items-center justify-between gap-3 text-xs"><span className="whitespace-nowrap font-bold tabular-nums text-slate-300"><span className="mr-1.5 rounded border border-sky-400/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] text-sky-300">PeopleON</span>{date(log.created_at)} · {log.type || 'NOTE'}</span><span className="truncate whitespace-nowrap text-slate-500">{log.staff_name || '조합사무실'}</span></div><p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-slate-300">{log.summary || '-'}</p></div>)}
+            {loading ? <Empty text="불러오는 중..." /> : logs.filter((log)=>log.type !== 'DOC').slice(0,6).map((log)=><div key={log.id} className="min-w-0 border-b border-white/[0.06] py-3"><div className="flex min-w-0 items-center justify-between gap-3 text-xs"><span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold tabular-nums text-slate-300"><span className="mr-1.5 rounded border border-sky-400/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] text-sky-300">PeopleON</span>{date(log.created_at)} · {log.type || 'NOTE'}</span><span className="shrink-0 truncate whitespace-nowrap text-slate-500">{log.staff_name || '조합사무실'}</span></div><p className="mt-1.5 line-clamp-2 min-w-0 break-words text-[13px] leading-5 text-slate-300">{log.summary || '-'}</p></div>)}
         </Block>
         <Block title="회계프로그램 통합기록" action={journalHref ? '전체 기록 보기' : undefined} onAction={journalHref ? () => window.open(journalHref, '_blank', 'noopener,noreferrer') : undefined}>
-            {ledgerLoading ? <Empty text="회계프로그램 기록을 불러오는 중..." /> : summary.error ? <p className="py-5 text-center text-xs font-semibold text-rose-300">{summary.error}</p> : !summary.connected ? <Empty text="회계프로그램 조합원 연결이 필요해." /> : summary.recent_consultations.length ? summary.recent_consultations.map((entry)=><div key={entry.id} className="border-b border-white/[0.06] py-3"><div className="flex min-w-0 items-center justify-between gap-3 text-xs"><span className="whitespace-nowrap font-bold tabular-nums text-slate-300"><span className="mr-1.5 rounded border border-emerald-400/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300">회계원장</span>{date(entry.occurred_at)} · {entry.contact_type || '기록'}</span><span className="truncate whitespace-nowrap text-slate-500">{entry.created_by_display || '조합사무실'}</span></div><p className="mt-1.5 line-clamp-2 text-[13px] font-semibold leading-5 text-slate-200">{entry.title || entry.content || '-'}</p>{entry.title && entry.content ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">{entry.content}</p> : null}</div>) : <Empty text="등록된 회계프로그램 상담기록이 없어." />}
+            {ledgerLoading ? <Empty text="회계프로그램 기록을 불러오는 중..." /> : summary.error ? <p className="py-5 text-center text-xs font-semibold text-rose-300">{summary.error}</p> : !summary.connected ? <Empty text="회계프로그램 조합원 연결이 필요해." /> : summary.recent_consultations.length ? summary.recent_consultations.map((entry)=><div key={entry.id} className="min-w-0 border-b border-white/[0.06] py-3"><div className="flex min-w-0 items-center justify-between gap-3 text-xs"><span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold tabular-nums text-slate-300"><span className="mr-1.5 rounded border border-emerald-400/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300">회계원장</span>{date(entry.occurred_at)} · {entry.contact_type || '기록'}</span><span className="shrink-0 truncate whitespace-nowrap text-slate-500">{entry.created_by_display || '조합사무실'}</span></div><p className="mt-1.5 line-clamp-2 min-w-0 break-words text-[13px] font-semibold leading-5 text-slate-200">{entry.title || entry.content || '-'}</p>{entry.title && entry.content ? <p className="mt-1 line-clamp-2 min-w-0 break-words text-xs leading-5 text-slate-400">{entry.content}</p> : null}</div>) : <Empty text="등록된 회계프로그램 상담기록이 없어." />}
             {summary.connected ? <p className="pt-2 text-right text-[10px] text-slate-600">조회 기준 {date(summary.generated_at)}</p> : null}
         </Block>
         <Block title="통합기록 메모">
