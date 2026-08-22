@@ -15,7 +15,15 @@ const emptyAccount: MemberBankAccount = {
     purpose: 'refund',
 };
 
-export function MemberBankAccountBlock({ memberId }: { memberId: string }) {
+export function MemberBankAccountBlock({
+    memberId,
+    memberName,
+    defaultPurpose,
+}: {
+    memberId: string;
+    memberName: string;
+    defaultPurpose: MemberBankAccount['purpose'];
+}) {
     const [account, setAccount] = useState<MemberBankAccount | null>(null);
     const [form, setForm] = useState<MemberBankAccount>(emptyAccount);
     const [loading, setLoading] = useState(true);
@@ -37,16 +45,18 @@ export function MemberBankAccountBlock({ memberId }: { memberId: string }) {
                 }
                 const next = payload?.account || null;
                 setAccount(next);
-                setForm(next || emptyAccount);
+                setForm(next || { ...emptyAccount, account_holder: memberName, purpose: defaultPurpose });
             })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
-    }, [memberId]);
+    }, [defaultPurpose, memberId, memberName]);
 
     if (!allowed) return null;
 
     const startEdit = () => {
-        setForm(account || emptyAccount);
+        setForm(account
+            ? { ...account, account_holder: memberName }
+            : { ...emptyAccount, account_holder: memberName, purpose: defaultPurpose });
         setMessage('');
         setRevealed(false);
         setEditing(true);
@@ -58,7 +68,7 @@ export function MemberBankAccountBlock({ memberId }: { memberId: string }) {
         const response = await fetch(`/api/members/${memberId}/bank-account`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form),
+            body: JSON.stringify({ ...form, account_holder: memberName }),
         });
         const payload = await response.json().catch(() => null);
         if (!response.ok || !payload?.success) {
@@ -80,7 +90,7 @@ export function MemberBankAccountBlock({ memberId }: { memberId: string }) {
         {loading ? <p className="py-4 text-center text-xs font-medium text-slate-500">계좌정보를 불러오는 중...</p> : editing ? <div className="space-y-2.5">
             <div className="grid grid-cols-2 gap-2">
                 <label className="space-y-1 text-[11px] font-bold text-slate-400">은행명<input value={form.bank_name} onChange={(event) => setForm((previous) => ({ ...previous, bank_name: event.target.value }))} placeholder="예: 국민은행" className="h-9 w-full rounded border border-white/10 bg-[#071e32] px-2 text-sm text-slate-100 outline-none focus:border-sky-400" /></label>
-                <label className="space-y-1 text-[11px] font-bold text-slate-400">예금주<input value={form.account_holder} onChange={(event) => setForm((previous) => ({ ...previous, account_holder: event.target.value }))} placeholder="예: 오학동" className="h-9 w-full rounded border border-white/10 bg-[#071e32] px-2 text-sm text-slate-100 outline-none focus:border-sky-400" /></label>
+                <label className="space-y-1 text-[11px] font-bold text-slate-400">예금주<input value={memberName} readOnly aria-readonly="true" className="h-9 w-full cursor-not-allowed rounded border border-white/10 bg-white/[0.035] px-2 text-sm text-slate-300 outline-none" /></label>
             </div>
             <label className="block space-y-1 text-[11px] font-bold text-slate-400">계좌번호<input inputMode="numeric" value={form.account_number} onChange={(event) => setForm((previous) => ({ ...previous, account_number: event.target.value }))} placeholder="예: 123-456-789012" className="h-9 w-full rounded border border-white/10 bg-[#071e32] px-2 text-sm tabular-nums text-slate-100 outline-none focus:border-sky-400" /></label>
             <label className="block space-y-1 text-[11px] font-bold text-slate-400">용도<select value={form.purpose} onChange={(event) => setForm((previous) => ({ ...previous, purpose: event.target.value as MemberBankAccount['purpose'] }))} className="h-9 w-full rounded border border-white/10 bg-[#071e32] px-2 text-sm text-slate-100 outline-none focus:border-sky-400">{MEMBER_BANK_ACCOUNT_PURPOSES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>

@@ -43,10 +43,9 @@ export async function PUT(request: Request, context: RouteContext) {
     const body = await request.json().catch(() => null);
     const bankName = typeof body?.bank_name === 'string' ? body.bank_name.trim() : '';
     const accountNumber = typeof body?.account_number === 'string' ? normalizeBankAccountNumber(body.account_number) : '';
-    const accountHolder = typeof body?.account_holder === 'string' ? body.account_holder.trim() : '';
     const purpose = ['refund', 'payment', 'other'].includes(body?.purpose) ? body.purpose : 'refund';
 
-    if (!bankName || !accountNumber || !accountHolder || accountNumber.replace(/\D/g, '').length < 6) {
+    if (!bankName || !accountNumber || accountNumber.replace(/\D/g, '').length < 6) {
         return NextResponse.json(
             { success: false, error: '은행명, 올바른 계좌번호, 예금주를 모두 입력해 주세요.' },
             { status: 400 },
@@ -56,11 +55,15 @@ export async function PUT(request: Request, context: RouteContext) {
     const supabase = createAdminClient();
     const { data: entity, error: entityError } = await supabase
         .from('account_entities')
-        .select('id')
+        .select('id, display_name')
         .eq('id', memberId)
         .maybeSingle();
     if (entityError || !entity) {
         return NextResponse.json({ success: false, error: '회원을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    const accountHolder = entity.display_name?.trim();
+    if (!accountHolder) {
+        return NextResponse.json({ success: false, error: '회원 이름을 확인할 수 없습니다.' }, { status: 409 });
     }
 
     const { data: before } = await supabase
