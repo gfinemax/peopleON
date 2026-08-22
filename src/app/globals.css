@@ -44,6 +44,18 @@
     --radius-sm: calc(var(--radius) - 4px);
 }
 
+@media (max-width: 999px) {
+  .member-workspace-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0 !important;
+    gap: 0.5rem;
+  }
+
+  .member-workspace-resizer {
+    display: none;
+  }
+}
+
 /* ========================================
    LIGHT MODE (White Mode)
    ======================================== */

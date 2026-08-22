@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
 import type { MemberDetailDialogMember } from './memberDetailDialogTypes';
@@ -26,6 +26,30 @@ interface WorkspaceData {
     payments: PaymentRecord[];
     logs: LogRow[];
 }
+
+type WorkspaceColumnWidths = Partial<Record<MemberWorkspaceColumnId, number>>;
+
+const WORKSPACE_WIDTH_STORAGE_KEY = 'peopleon-member-workspace-column-widths-v1';
+const DEFAULT_WORKSPACE_COLUMN_WIDTHS: Record<MemberWorkspaceColumnId, number> = {
+    profile: 24,
+    relations: 22,
+    finance: 25,
+    timeline: 31,
+    documents: 20,
+};
+const MIN_WORKSPACE_COLUMN_WIDTHS: Record<MemberWorkspaceColumnId, number> = {
+    profile: 300,
+    relations: 280,
+    finance: 320,
+    timeline: 380,
+    documents: 280,
+};
+
+const normalizeWorkspaceWidths = (columns: MemberWorkspaceColumnId[], saved: WorkspaceColumnWidths = {}) => {
+    const raw = columns.map((id) => Math.max(1, Number(saved[id] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[id])));
+    const total = raw.reduce((sum, width) => sum + width, 0) || 1;
+    return Object.fromEntries(columns.map((id, index) => [id, raw[index] / total * 100])) as WorkspaceColumnWidths;
+};
 
 const EMPTY_LEDGER_SUMMARY: LedgerJournalSummary = {
     connected: false,
@@ -176,16 +200,88 @@ function Metric({ label, text, progress, danger, showFull = false }: { label: st
 export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onOpenManagement }: { memberIds: string[]; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; columns: MemberWorkspaceColumnId[]; onOpenManagement?: (tab: TabType) => void }) {
     const { payments, logs, loading } = useWorkspaceData(memberIds);
     const ledgerJournal = useLedgerJournalSummary(member.id);
+    const workspaceRef = useRef<HTMLDivElement>(null);
+    const widthsRef = useRef<WorkspaceColumnWidths>({});
+    const [columnWidths, setColumnWidths] = useState<WorkspaceColumnWidths>(() => normalizeWorkspaceWidths(columns));
+    const columnKey = columns.join('|');
+
+    useEffect(() => {
+        let saved: WorkspaceColumnWidths = {};
+        try { saved = JSON.parse(window.localStorage.getItem(WORKSPACE_WIDTH_STORAGE_KEY) || '{}'); } catch { saved = {}; }
+        const activeColumns = columnKey.split('|').filter(Boolean) as MemberWorkspaceColumnId[];
+        const normalized = normalizeWorkspaceWidths(activeColumns, saved);
+        const frame = window.requestAnimationFrame(() => {
+            widthsRef.current = normalized;
+            setColumnWidths(normalized);
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [columnKey]);
+
+    const updateColumnWidths = (next: WorkspaceColumnWidths, persist = false) => {
+        widthsRef.current = next;
+        setColumnWidths(next);
+        if (persist) window.localStorage.setItem(WORKSPACE_WIDTH_STORAGE_KEY, JSON.stringify(next));
+    };
+
+    const adjustColumnPair = (separatorIndex: number, deltaPercent: number, persist = false) => {
+        const leftId = columns[separatorIndex];
+        const rightId = columns[separatorIndex + 1];
+        const workspaceWidth = workspaceRef.current?.getBoundingClientRect().width || 1;
+        const leftStart = Number(widthsRef.current[leftId] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[leftId]);
+        const rightStart = Number(widthsRef.current[rightId] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[rightId]);
+        const leftMin = MIN_WORKSPACE_COLUMN_WIDTHS[leftId] / workspaceWidth * 100;
+        const rightMin = MIN_WORKSPACE_COLUMN_WIDTHS[rightId] / workspaceWidth * 100;
+        const boundedDelta = Math.max(leftMin - leftStart, Math.min(deltaPercent, rightStart - rightMin));
+        updateColumnWidths({ ...widthsRef.current, [leftId]: leftStart + boundedDelta, [rightId]: rightStart - boundedDelta }, persist);
+    };
+
+    const startColumnResize = (event: React.PointerEvent<HTMLDivElement>, separatorIndex: number) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        const startX = event.clientX;
+        const workspaceWidth = workspaceRef.current?.getBoundingClientRect().width || 1;
+        const startWidths = { ...widthsRef.current };
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        const move = (moveEvent: PointerEvent) => {
+            widthsRef.current = startWidths;
+            adjustColumnPair(separatorIndex, (moveEvent.clientX - startX) / workspaceWidth * 100);
+        };
+        const finish = () => {
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            window.localStorage.setItem(WORKSPACE_WIDTH_STORAGE_KEY, JSON.stringify(widthsRef.current));
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', finish);
+            window.removeEventListener('pointercancel', finish);
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', finish);
+        window.addEventListener('pointercancel', finish);
+    };
+
+    const resetColumnWidths = () => {
+        const reset = normalizeWorkspaceWidths(columns);
+        updateColumnWidths(reset, true);
+    };
+
+    const gridTemplateColumns = columns.flatMap((id, index) => [
+        ...(index ? ['8px'] : []),
+        `minmax(${MIN_WORKSPACE_COLUMN_WIDTHS[id]}px, ${columnWidths[id] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[id]}fr)`,
+    ]).join(' ');
+    const workspaceMinWidth = columns.reduce((sum, id) => sum + MIN_WORKSPACE_COLUMN_WIDTHS[id], 0) + Math.max(0, columns.length - 1) * 8;
+
     return <div className="flex min-h-0 flex-1 flex-col bg-[#071e32]">
-        <div className="flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div className="grid min-h-full grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] items-stretch gap-2">
-            {columns.map((id) => <WorkspaceColumn key={id} id={id}><ColumnContent id={id} member={member} formData={formData} payments={payments} logs={logs} loading={loading} ledgerJournal={ledgerJournal} onOpenManagement={onOpenManagement} /></WorkspaceColumn>)}
+        <div className="flex h-10 shrink-0 items-center justify-between px-3 text-[11px] text-slate-500"><span className="hidden lg:inline">열 사이 구분선을 드래그하거나 방향키로 너비를 조절할 수 있어.</span><button type="button" onClick={resetColumnWidths} className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-white/10 px-2.5 font-bold text-slate-300 hover:border-sky-400/30 hover:bg-sky-500/10 hover:text-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"><MaterialIcon name="restart_alt" size="xs" />열 너비 초기화</button></div>
+        <div className="flex-1 overflow-x-auto overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div ref={workspaceRef} className="member-workspace-grid grid min-h-full items-stretch" style={{ gridTemplateColumns, minWidth: workspaceMinWidth }}>
+            {columns.map((id, index) => <Fragment key={id}>{index > 0 ? <div className="member-workspace-resizer group relative z-20 flex cursor-col-resize touch-none items-stretch justify-center" role="separator" aria-label={`${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === columns[index - 1])?.label}와 ${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === id)?.label} 열 너비 조절`} aria-orientation="vertical" aria-valuemin={MIN_WORKSPACE_COLUMN_WIDTHS[columns[index - 1]]} aria-valuenow={Math.round((columnWidths[columns[index - 1]] || 0) / 100 * workspaceMinWidth)} tabIndex={0} onPointerDown={(event) => startColumnResize(event, index - 1)} onDoubleClick={resetColumnWidths} onKeyDown={(event) => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); const pixels = event.shiftKey ? 48 : 16; const width = workspaceRef.current?.getBoundingClientRect().width || 1; adjustColumnPair(index - 1, (event.key === 'ArrowRight' ? pixels : -pixels) / width * 100, true); }}><span className="my-3 w-px rounded-full bg-white/10 transition-all group-hover:w-0.5 group-hover:bg-sky-400 group-focus-visible:w-0.5 group-focus-visible:bg-sky-300" /></div> : null}<WorkspaceColumn id={id}><ColumnContent id={id} member={member} formData={formData} payments={payments} logs={logs} loading={loading} ledgerJournal={ledgerJournal} onOpenManagement={onOpenManagement} /></WorkspaceColumn></Fragment>)}
         </div></div>
     </div>;
 }
 
 function WorkspaceColumn({ id, children }: { id: MemberWorkspaceColumnId; children: React.ReactNode }) {
     const definition = MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === id);
-    return <section className="min-w-0 overflow-hidden rounded-lg border border-white/[0.09] bg-[#0b263d]"><header className="flex h-12 items-center gap-2 border-b border-white/[0.09] px-4"><MaterialIcon name="drag_indicator" size="xs" className="text-slate-500"/><h2 className="whitespace-nowrap text-base font-black text-slate-100">{definition?.label}</h2><MaterialIcon name="minimize" size="xs" className="ml-auto text-slate-500"/></header>{children}</section>;
+    return <section className="min-w-0 overflow-hidden rounded-lg border border-white/[0.09] bg-[#0b263d]"><header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b border-white/[0.09] bg-[#0b263d] px-4"><MaterialIcon name="drag_indicator" size="xs" className="text-slate-500"/><h2 className="whitespace-nowrap text-base font-black text-slate-100">{definition?.label}</h2><MaterialIcon name="minimize" size="xs" className="ml-auto text-slate-500"/></header>{children}</section>;
 }
 
 function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJournal, onOpenManagement }: { id: MemberWorkspaceColumnId; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; payments: PaymentRecord[]; logs: LogRow[]; loading: boolean; ledgerJournal: { summary: LedgerJournalSummary; loading: boolean }; onOpenManagement?: (tab: TabType) => void }) {
