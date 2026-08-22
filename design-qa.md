@@ -1,53 +1,51 @@
 # Design QA
 
-- Source visual truth: user-attached four-column member overview reference in the 2026-08-09 request
-- Implementation route: `http://127.0.0.1:3001/members/[id]`
-- Intended viewport: desktop, 1488 x 1027 CSS px
-- State: authenticated member detail, unified overview
-- Implementation pixels: unavailable
-- Density normalization: code-level only because browser capture was blocked
+- Source visual truth: user-attached PeopleON member workspace screenshot, original 1957 x 1598 px, showing the clipped relationship phone and partially hidden document column
+- Implementation screenshot: `implementation-member-columns-1957x1598.png`
+- Implementation route: `https://people-on.vercel.app/members/cfd47003-06f2-462e-a17c-f94ad9f47460`
+- Requested viewport override: 1957 x 1598 px
+- Browser content viewport: 1779 x 1453 CSS px
+- Implementation pixels: 1957 x 1598 px browser capture
+- Density normalization: browser capture and source attachment were reviewed at their original pixel dimensions; comparison focused on the four-column workspace rather than member-specific content
+- State: authenticated production member detail, dark theme, default column widths
 
 ## Full-view comparison evidence
 
-The implementation now uses the existing global sidebar plus a single `통합현황` header. The removed preset/column-selection navigation is not rendered. The member summary and workspace are fixed to four dense columns: `기본·관계인`, `권리·납부`, `상담·활동`, and `문서`.
-
-The in-app browser could not open the local implementation because the admin-enforced browser access policy could not be verified. A browser-rendered screenshot therefore could not be captured in this run.
+The production grid rendered all four columns inside the visible content viewport. Measured column bounds were 12-428, 436-851, 859-1378, and 1386-1767 CSS px; every right edge remained inside the 1779px viewport. The document column no longer depends on horizontal page overflow.
 
 ## Focused region comparison evidence
 
-Code inspection confirms the following source-aligned regions:
+- The relationship row uses a flexible name region, a compact right-aligned relationship region, and a non-shrinking right-aligned telephone number. `010-9280-2829` rendered in full against the inner right edge of the first column.
+- The consultation column body and metadata use flexible minimum widths, truncation, and word wrapping, so text reflows when the column boundary changes.
+- Keyboard resizing at the consultation/document separator changed widths from 339/248px to 323/264px. Reset restored 339/248px.
+- Existing edit, payment, consultation, document, and navigation controls remained present in the rendered DOM.
 
-- Member identity row with a private profile image, fallback initial, status, member number, phone, key status metrics, edit/delete/share/back actions.
-- Four equal-width comparison columns with 360px readable minimum width and horizontal overflow on narrower screens.
-- One-line labels, values, amounts, dates, and relationship phone numbers; memo and consultation summaries are the intentional multi-line exceptions.
-- Existing edit, payment, activity, and certificate management views remain available in the management modal opened from each column.
+## Required fidelity surfaces
+
+- Fonts and typography: existing Noto Sans KR hierarchy, weights, line heights, and tabular number styling are preserved. Telephone numbers remain single-line.
+- Spacing and layout rhythm: existing 8px separators, card padding, borders, and four-column rhythm are preserved; only track sizing and relationship-row alignment changed.
+- Colors and visual tokens: no color or theme token changes.
+- Image quality and asset fidelity: no image or icon assets changed.
+- Copy and content: no labels or stored member values changed.
 
 ## Findings
 
-- [P1] Browser visual comparison unavailable
-  - Location: full member overview and management modal
-  - Evidence: local navigation was denied before rendering.
-  - Impact: exact typography, vertical density, overflow, modal stacking, and responsive alignment cannot be visually certified.
-  - Fix: repeat the local browser capture after the admin browser policy becomes available.
+- No actionable P0, P1, or P2 mismatch remains for the requested relationship-phone and column-resizing scope.
+- Existing console warnings are unrelated to this change: browser-extension stream warnings and a pre-existing Radix dialog description warning.
 
 ## Primary interactions tested
 
-- Static wiring verified: fixed four-column rendering, edit/delete/print/back actions, per-column management tab routing, private profile-image upload/delete API, signed image retrieval, and attachment preservation.
-- Production TypeScript build and focused ESLint completed successfully.
-- Browser clicks for photo upload, management modal tabs, and member-list return could not execute because the browser policy check was unavailable.
-
-## Console errors checked
-
-- Not available because the local page could not be opened in the in-app browser.
+- Production member detail opened in the authenticated browser session.
+- All four workspace columns were measured for viewport containment.
+- Consultation/document separator was resized with the keyboard.
+- Column-width reset restored the default proportions.
 
 ## Comparison history
 
-- Sidebar control iteration: moved the fixed collapse/expand control from vertical center to `calc(5mm + env(safe-area-inset-bottom, 0px))`, preserving its expanded/collapsed horizontal positions and 120px vertical form.
-- Removed the prior `PeopleON 조합원 관리` preset menu and column picker from the page header.
-- Replaced the workspace with the fixed four-column unified overview while preserving the detailed editing workflows in a modal.
-- Added private member photo storage, square crop/resize, replace/delete controls, signed delivery, fallback initials, and audit logging.
-- Increased information density without reducing body values below readable sizes; relationship phone numbers and core field/value pairs are held to one line.
+- Earlier implementation: relationship phone used a fixed 130px grid track and the grid enforced a summed pixel minimum width, allowing the last column to move outside the visible area.
+- Fix: relationship rows now use flexible layout with a non-shrinking right-aligned phone; grid tracks use `minmax(0, fr)`; resize minimums scale to the available viewport; default proportions were migrated to version 2.
+- Post-fix evidence: all four measured column bounds are inside the viewport and the full phone number is visible.
 
 ## Final result
 
-final result: blocked
+final result: passed
