@@ -33,6 +33,7 @@ import {
 } from '@/lib/members/membersPageUtils';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 const TOTAL_HOUSEHOLDS = 254;
 const MIN_LOG_SEARCH_QUERY_LENGTH = 2;
 const LOG_SEARCH_RESULT_LIMIT = 2000;

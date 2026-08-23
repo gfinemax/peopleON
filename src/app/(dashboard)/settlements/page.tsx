@@ -18,6 +18,7 @@ import { SpecialRefundTargetsSection } from '@/components/features/settlements/S
 import { fetchLedgerRefundTargets } from '@/lib/server/ledgerRefundTargets';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type SettlementSearchParams = {
     status?: SettlementStatusFilter;
