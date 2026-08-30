@@ -5,6 +5,21 @@ import { createAuditLog } from '@/app/actions/audit';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
+const MEMBER_CATEGORY_CODES = [
+    '1차', '등기조합원', '2차', '지주조합원', '지주', '원지주',
+    '예비조합원', '예비', '임시원장', '일반조합원', '일반분양', '일반', '3차',
+    '권리증환불',
+];
+
+const MEMBER_CATEGORY_VALUES: Record<string, { roleCode: string; isRegistered: boolean }> = {
+    등기조합원: { roleCode: '등기조합원', isRegistered: true },
+    지주조합원: { roleCode: '지주조합원', isRegistered: false },
+    '2차': { roleCode: '2차', isRegistered: false },
+    일반분양: { roleCode: '일반분양', isRegistered: false },
+    예비조합원: { roleCode: '예비조합원', isRegistered: false },
+    권리증환불: { roleCode: '권리증환불', isRegistered: false },
+};
+
 export async function POST(request: Request) {
     const supabase = await createClient();
     try {
@@ -23,7 +38,49 @@ export async function POST(request: Request) {
     const roleEntityIds: string[] = (entity_ids && entity_ids.length > 0) ? entity_ids : [id];
 
     try {
-        if (field === 'tier') {
+        if (field === 'member_category') {
+            const nextCategory = MEMBER_CATEGORY_VALUES[String(value || '')];
+            if (!nextCategory) {
+                return NextResponse.json({ success: false, error: 'Invalid member category' }, { status: 400 });
+            }
+
+            const { error: deactivateError } = await supabase
+                .from('membership_roles')
+                .update({ role_status: 'inactive' })
+                .in('entity_id', roleEntityIds)
+                .in('role_code', MEMBER_CATEGORY_CODES);
+            if (deactivateError) throw deactivateError;
+
+            for (const entityId of roleEntityIds) {
+                const { data: existingRows, error: existingError } = await supabase
+                    .from('membership_roles')
+                    .select('id')
+                    .eq('entity_id', entityId)
+                    .eq('role_code', nextCategory.roleCode);
+                if (existingError) throw existingError;
+
+                if (existingRows && existingRows.length > 0) {
+                    const { error: activateError } = await supabase
+                        .from('membership_roles')
+                        .update({ role_status: 'active', is_registered: nextCategory.isRegistered })
+                        .in('id', existingRows.map((row) => row.id));
+                    if (activateError) throw activateError;
+                } else {
+                    const { error: insertError } = await supabase.from('membership_roles').insert({
+                        entity_id: entityId,
+                        role_code: nextCategory.roleCode,
+                        role_status: 'active',
+                        is_registered: nextCategory.isRegistered,
+                    });
+                    if (insertError) throw insertError;
+                }
+            }
+
+            await Promise.all(roleEntityIds.map((entityId) => createAuditLog('UPDATE_MEMBER_ROLE', entityId, {
+                new_role: nextCategory.roleCode,
+                source: 'member_workspace',
+            })));
+        } else if (field === 'tier') {
             // Update role_code in membership_roles
             const { error } = await supabase
                 .from('membership_roles')

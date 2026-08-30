@@ -10,6 +10,7 @@ import { MEMBER_WORKSPACE_COLUMNS } from './memberWorkspacePresets';
 import { PAYMENT_TYPE_LABELS, type PaymentRecord } from './paymentStatusTabUtils';
 import { MemberProfilePhoto } from './MemberProfilePhoto';
 import { MemberBankAccountBlock } from './MemberBankAccountBlock';
+import { InlineCellDropdown } from './InlineCellDropdown';
 import { formatAssignedUnitType } from '@/lib/members/memberUnitDisplay';
 import type { LedgerJournalSummary } from '@/lib/server/ledgerJournalSummary';
 
@@ -71,11 +72,29 @@ const getMemberCategory = (member: MemberDetailDialogMember) => {
 
     if (hasTier('환불')) return '환불조합원';
     if (member.owner_group === 'registered' || member.is_registered || hasTier('등기조합원')) return '등기조합원';
+    if (hasTier('지주')) return '지주조합원';
+    if (hasTier('2차')) return '2차';
+    if (hasTier('일반분양') || hasTier('3차')) return '일반분양';
     if (hasTier('예비')) return '예비조합원';
     if (hasTier('관계인')) return '관계인';
     if (member.acts_as_agent_for?.length || hasTier('대리인')) return '대리인';
     if (member.assetRights?.length || hasTier('권리증') || hasTier('가입신청필증') || hasTier('투자')) return '투자자';
     return '미분류';
+};
+
+const memberCategoryOptions = [
+    { label: '조합원(등기)', value: '등기조합원' },
+    { label: '조합원(지주)', value: '지주조합원' },
+    { label: '조합원(2차)', value: '2차' },
+    { label: '조합원(일반분양)', value: '일반분양' },
+    { label: '조합원(예비)', value: '예비조합원' },
+    { label: '조합원(환불)', value: '권리증환불' },
+];
+
+const getMemberCategoryValue = (member: MemberDetailDialogMember) => {
+    const category = getMemberCategory(member);
+    if (category === '환불조합원') return '권리증환불';
+    return category;
 };
 
 const splitUnitAssignment = (input?: string | null) => {
@@ -197,7 +216,7 @@ function Metric({ label, text, progress, danger, showFull = false }: { label: st
     return <div className={`min-w-0 text-center ${showFull ? 'px-1' : 'px-3'}`}><p className="whitespace-nowrap text-xs font-bold text-slate-400">{label}</p><p title={text} className={`mt-1 whitespace-nowrap font-black tabular-nums ${showFull ? 'text-sm tracking-tight' : 'truncate text-base'} ${danger ? 'text-orange-500' : 'text-slate-100'}`}>{text}</p>{progress !== undefined ? <div className="mx-auto mt-1 h-0.5 w-16 overflow-hidden rounded bg-white/10"><div className="h-full bg-emerald-400" style={{ width: `${progress}%` }} /></div> : null}</div>;
 }
 
-export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onOpenManagement }: { memberIds: string[]; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; columns: MemberWorkspaceColumnId[]; onOpenManagement?: (tab: TabType) => void }) {
+export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onOpenManagement, onMemberCategoryChange }: { memberIds: string[]; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; columns: MemberWorkspaceColumnId[]; onOpenManagement?: (tab: TabType) => void; onMemberCategoryChange?: (value: string) => Promise<void> }) {
     const { payments, logs, loading } = useWorkspaceData(memberIds);
     const ledgerJournal = useLedgerJournalSummary(member.id);
     const workspaceRef = useRef<HTMLDivElement>(null);
@@ -276,7 +295,7 @@ export function MemberWorkspaceBoard({ memberIds, member, formData, columns, onO
     return <div className="flex min-h-0 flex-1 flex-col bg-[#071e32]">
         <div className="flex h-10 shrink-0 items-center justify-between px-3 text-[11px] text-slate-500"><span className="hidden lg:inline">열 사이 구분선을 드래그하거나 방향키로 너비를 조절할 수 있어.</span><button type="button" onClick={resetColumnWidths} className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-white/10 px-2.5 font-bold text-slate-300 hover:border-sky-400/30 hover:bg-sky-500/10 hover:text-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"><MaterialIcon name="restart_alt" size="xs" />열 너비 초기화</button></div>
         <div className="flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/10"><div ref={workspaceRef} className="member-workspace-grid grid min-h-full w-full items-stretch" style={{ gridTemplateColumns }}>
-            {columns.map((id, index) => <Fragment key={id}>{index > 0 ? <div className="member-workspace-resizer group relative z-20 flex cursor-col-resize touch-none items-stretch justify-center" role="separator" aria-label={`${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === columns[index - 1])?.label}와 ${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === id)?.label} 열 너비 조절`} aria-orientation="vertical" aria-valuemin={MIN_WORKSPACE_COLUMN_WIDTHS[columns[index - 1]]} aria-valuenow={Math.round((columnWidths[columns[index - 1]] || 0) / 100 * workspaceMinWidth)} tabIndex={0} onPointerDown={(event) => startColumnResize(event, index - 1)} onDoubleClick={resetColumnWidths} onKeyDown={(event) => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); const pixels = event.shiftKey ? 48 : 16; const width = workspaceRef.current?.getBoundingClientRect().width || 1; adjustColumnPair(index - 1, (event.key === 'ArrowRight' ? pixels : -pixels) / width * 100, true); }}><span className="my-3 w-px rounded-full bg-white/10 transition-all group-hover:w-0.5 group-hover:bg-sky-400 group-focus-visible:w-0.5 group-focus-visible:bg-sky-300" /></div> : null}<WorkspaceColumn id={id}><ColumnContent id={id} member={member} formData={formData} payments={payments} logs={logs} loading={loading} ledgerJournal={ledgerJournal} onOpenManagement={onOpenManagement} /></WorkspaceColumn></Fragment>)}
+            {columns.map((id, index) => <Fragment key={id}>{index > 0 ? <div className="member-workspace-resizer group relative z-20 flex cursor-col-resize touch-none items-stretch justify-center" role="separator" aria-label={`${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === columns[index - 1])?.label}와 ${MEMBER_WORKSPACE_COLUMNS.find((item) => item.id === id)?.label} 열 너비 조절`} aria-orientation="vertical" aria-valuemin={MIN_WORKSPACE_COLUMN_WIDTHS[columns[index - 1]]} aria-valuenow={Math.round((columnWidths[columns[index - 1]] || 0) / 100 * workspaceMinWidth)} tabIndex={0} onPointerDown={(event) => startColumnResize(event, index - 1)} onDoubleClick={resetColumnWidths} onKeyDown={(event) => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); const pixels = event.shiftKey ? 48 : 16; const width = workspaceRef.current?.getBoundingClientRect().width || 1; adjustColumnPair(index - 1, (event.key === 'ArrowRight' ? pixels : -pixels) / width * 100, true); }}><span className="my-3 w-px rounded-full bg-white/10 transition-all group-hover:w-0.5 group-hover:bg-sky-400 group-focus-visible:w-0.5 group-focus-visible:bg-sky-300" /></div> : null}<WorkspaceColumn id={id}><ColumnContent id={id} member={member} formData={formData} payments={payments} logs={logs} loading={loading} ledgerJournal={ledgerJournal} onOpenManagement={onOpenManagement} onMemberCategoryChange={onMemberCategoryChange} /></WorkspaceColumn></Fragment>)}
         </div></div>
     </div>;
 }
@@ -294,7 +313,7 @@ function RelationshipRow({ name, relation, phone }: { name?: string | null; rela
     </div>;
 }
 
-function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJournal, onOpenManagement }: { id: MemberWorkspaceColumnId; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; payments: PaymentRecord[]; logs: LogRow[]; loading: boolean; ledgerJournal: { summary: LedgerJournalSummary; loading: boolean }; onOpenManagement?: (tab: TabType) => void }) {
+function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJournal, onOpenManagement, onMemberCategoryChange }: { id: MemberWorkspaceColumnId; member: MemberDetailDialogMember; formData: Partial<MemberDetailDialogMember>; payments: PaymentRecord[]; logs: LogRow[]; loading: boolean; ledgerJournal: { summary: LedgerJournalSummary; loading: boolean }; onOpenManagement?: (tab: TabType) => void; onMemberCategoryChange?: (value: string) => Promise<void> }) {
     const rights = formData.assetRights || [];
     const memberCategory = getMemberCategory(member);
     const assignment = splitUnitAssignment(formData.unit_group || member.unit_group);
@@ -318,7 +337,7 @@ function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJo
         const openLedgerPayment = ledgerPayment?.payment_url
             ? () => window.open(`${ledgerBaseUrl}${ledgerPayment.payment_url}`, '_blank', 'noopener,noreferrer')
             : () => onOpenManagement?.('payment');
-        return <><Block title="조합원 자격" action="가입신청필증 관리" onAction={() => onOpenManagement?.('admin')}><Row label="조합원 구분">{memberCategory}</Row><Row label="조합원 지위">{member.status || '-'}</Row><Row label="가입신청필증">{rights.length}건</Row>{rights.slice(0,4).map((right, index)=><Row key={right.id} label={`필증번호 ${index+1}`}>{right.right_number || '-'}</Row>)}</Block><Block title="납부 현황" action={due ? `납부율 ${Math.round(paid/due*100)}% · 관리` : '납부 관리'} onAction={openLedgerPayment}><Row label="총 분담금" alignRight>{money(due)}</Row><Row label="납부 총액" alignRight>{ledgerJournal.loading ? '회계원장 조회 중' : money(paid)}</Row><Row label="미납 총액" strong alignRight>{ledgerJournal.loading ? '-' : money(Math.max(0,due-paid))}</Row>{ledgerLines ? ledgerLines.map(([label, amount])=><div key={label} className="grid min-h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.055] py-2 text-[13px]"><span className="truncate whitespace-nowrap font-medium text-slate-400">{label}</span><span className={`whitespace-nowrap text-right font-semibold tabular-nums ${amount > 0 ? 'text-emerald-400' : 'text-orange-400'}`}>{money(amount)}</span></div>) : payments.slice(0,8).map((payment)=><div key={payment.id} className="grid min-h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.055] py-2 text-[13px]"><span className="truncate whitespace-nowrap font-medium text-slate-400">{PAYMENT_TYPE_LABELS[payment.payment_type] || payment.payment_type}</span><span className={`whitespace-nowrap text-right font-semibold tabular-nums ${payment.amount_paid >= payment.amount_due ? 'text-emerald-400' : 'text-orange-400'}`}>{money(payment.amount_paid)}</span></div>)}</Block><MemberBankAccountBlock memberId={member.id} memberName={member.name} defaultPurpose={memberCategory === '환불조합원' ? 'refund' : 'payment'} /></>;
+        return <><Block title="조합원 자격" action="가입신청필증 관리" onAction={() => onOpenManagement?.('admin')}><Row label="조합원 구분">{onMemberCategoryChange ? <InlineCellDropdown options={memberCategoryOptions} currentValue={getMemberCategoryValue(member)} onSelect={onMemberCategoryChange}><button type="button" className="inline-flex items-center gap-1 rounded-md border border-cyan-400/20 bg-cyan-500/10 px-2 py-1 font-bold text-cyan-200 hover:bg-cyan-500/15" aria-label="조합원 구분 변경"><span>{memberCategory}</span><MaterialIcon name="expand_more" size="xs" /></button></InlineCellDropdown> : memberCategory}</Row><Row label="조합원 지위">{member.status || '-'}</Row><Row label="가입신청필증">{rights.length}건</Row>{rights.slice(0,4).map((right, index)=><Row key={right.id} label={`필증번호 ${index+1}`}>{right.right_number || '-'}</Row>)}</Block><Block title="납부 현황" action={due ? `납부율 ${Math.round(paid/due*100)}% · 관리` : '납부 관리'} onAction={openLedgerPayment}><Row label="총 분담금" alignRight>{money(due)}</Row><Row label="납부 총액" alignRight>{ledgerJournal.loading ? '회계원장 조회 중' : money(paid)}</Row><Row label="미납 총액" strong alignRight>{ledgerJournal.loading ? '-' : money(Math.max(0,due-paid))}</Row>{ledgerLines ? ledgerLines.map(([label, amount])=><div key={label} className="grid min-h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.055] py-2 text-[13px]"><span className="truncate whitespace-nowrap font-medium text-slate-400">{label}</span><span className={`whitespace-nowrap text-right font-semibold tabular-nums ${amount > 0 ? 'text-emerald-400' : 'text-orange-400'}`}>{money(amount)}</span></div>) : payments.slice(0,8).map((payment)=><div key={payment.id} className="grid min-h-9 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.055] py-2 text-[13px]"><span className="truncate whitespace-nowrap font-medium text-slate-400">{PAYMENT_TYPE_LABELS[payment.payment_type] || payment.payment_type}</span><span className={`whitespace-nowrap text-right font-semibold tabular-nums ${payment.amount_paid >= payment.amount_due ? 'text-emerald-400' : 'text-orange-400'}`}>{money(payment.amount_paid)}</span></div>)}</Block><MemberBankAccountBlock memberId={member.id} memberName={member.name} defaultPurpose={memberCategory === '환불조합원' ? 'refund' : 'payment'} /></>;
     }
     if (id === 'timeline') return <TimelineColumn logs={logs} loading={loading} ledgerJournal={ledgerJournal} onOpenManagement={onOpenManagement} />;
     const docs = logs.filter((log)=>log.type === 'DOC' || log.attachment);

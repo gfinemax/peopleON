@@ -152,6 +152,7 @@ interface MemberDetailDialogBodyProps {
     onDeleteRight: (rightId: string) => void;
     onRightChange: (rightId: string, field: string, value: string) => void;
     onShowLineage: (rightId: string) => void;
+    onMemberCategoryChange?: (value: string) => Promise<void>;
 }
 
 export function MemberDetailDialogBody({
@@ -191,6 +192,7 @@ export function MemberDetailDialogBody({
     onDeleteRight,
     onRightChange,
     onShowLineage,
+    onMemberCategoryChange,
 }: MemberDetailDialogBodyProps) {
     if (presentation === 'page') {
         if (loading || !member || !memberIds) return <div className="flex min-h-[520px] items-center justify-center bg-[#071e32] text-xs font-bold text-slate-500">조합원 작업대를 불러오는 중...</div>;
@@ -204,6 +206,7 @@ export function MemberDetailDialogBody({
                     onTabChange(tab);
                     onStartEditing();
                 }}
+                onMemberCategoryChange={onMemberCategoryChange}
             />
         );
     }

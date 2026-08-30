@@ -316,6 +316,29 @@ export function MemberDetailDialog({
         setSaving(false);
     };
 
+    const handleMemberCategoryChange = async (value: string) => {
+        if (!member) return;
+        setSaveFeedback(null);
+        const response = await fetch('/api/members/inline-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: member.id,
+                entity_ids: memberIds && memberIds.length > 0 ? memberIds : [member.id],
+                field: 'member_category',
+                value,
+            }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+            throw new Error(payload?.error || '조합원 구분 변경에 실패했어.');
+        }
+
+        const refreshedMember = await refreshMember(memberIds && memberIds.length > 0 ? memberIds : [member.id]);
+        onSaved?.(refreshedMember || member);
+        setSaveFeedback({ tone: 'success', message: '조합원 구분을 변경했어.' });
+    };
+
     const handleUnmerge = async () => {
         const sourceCount = (member?.assetRights || []).filter((right) => {
             const meta = parseCertificateMeta(right.right_number_note);
@@ -414,6 +437,7 @@ export function MemberDetailDialog({
                 onDeleteRight={handleDeleteRight}
                 onRightChange={handleRightChange}
                 onShowLineage={setShowLineageId}
+                onMemberCategoryChange={handleMemberCategoryChange}
             />
         </>
     );
@@ -473,6 +497,7 @@ export function MemberDetailDialog({
                     onDeleteRight={handleDeleteRight}
                     onRightChange={handleRightChange}
                     onShowLineage={setShowLineageId}
+                    onMemberCategoryChange={handleMemberCategoryChange}
                 />
             </DialogContent>
         </Dialog>
