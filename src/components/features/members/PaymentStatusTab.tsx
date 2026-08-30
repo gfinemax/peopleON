@@ -23,6 +23,8 @@ import {
     type PaymentRecord,
     type UnitType,
 } from './paymentStatusTabUtils';
+import { useLedgerJournalSummary } from './useLedgerJournalSummary';
+import type { LedgerJournalSummary } from '@/lib/server/ledgerJournalSummary';
 
 interface PaymentStatusTabProps {
     memberIds: string[];
@@ -41,6 +43,7 @@ type PaymentTabData = {
 
 export function PaymentStatusTab({
     memberIds,
+    memberName,
     memberTiers = [],
     isRegistered = false,
 }: PaymentStatusTabProps) {
@@ -54,6 +57,7 @@ export function PaymentStatusTab({
     const [editForm, setEditForm] = useState<Partial<PaymentRecord>>({});
     const [saving, setSaving] = useState(false);
     const [addingPremium, setAddingPremium] = useState(false);
+    const ledgerJournal = useLedgerJournalSummary(memberIds[0] || '');
 
     const loadPaymentTabData = useCallback(async (): Promise<PaymentTabData> => {
         const supabase = createClient();
@@ -221,6 +225,17 @@ export function PaymentStatusTab({
 
     return (
         <div className="flex flex-col gap-5">
+            <LedgerPaymentOverview
+                memberName={memberName}
+                loading={ledgerJournal.loading}
+                summary={ledgerJournal.summary}
+                onReload={() => void ledgerJournal.reload()}
+            />
+            <div className="flex items-center gap-3 pt-1">
+                <div className="h-px flex-1 bg-white/[0.07]" />
+                <p className="text-[11px] font-bold text-slate-500">PeopleON 납부 계획 · 수기 관리</p>
+                <div className="h-px flex-1 bg-white/[0.07]" />
+            </div>
             <UnitTypeSelectorSection
                 unitTypes={unitTypes}
                 selectedUnitTypeId={selectedUnitTypeId}
@@ -267,4 +282,112 @@ export function PaymentStatusTab({
             <PaymentRequestButton totalContributionUnpaid={summary.totalContributionUnpaid} />
         </div>
     );
+}
+
+const LEDGER_ALLOCATION_LABELS = [
+    ['cert', '출자금(필증)'],
+    ['op_fee', '운영비'],
+    ['business_promotion_fee', '사업추진비'],
+    ['join_fee', '계약금'],
+    ['land1', '1차 분담금'],
+    ['land2', '2차 분담금'],
+] as const;
+
+function LedgerPaymentOverview({
+    memberName,
+    loading,
+    summary,
+    onReload,
+}: {
+    memberName: string;
+    loading: boolean;
+    summary: LedgerJournalSummary;
+    onReload: () => void;
+}) {
+    const payment = summary.payment_summary;
+    const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'http://dbapt-ledger.duckdns.org').replace(/\/$/, '');
+    const paymentHref = payment?.payment_url ? `${ledgerBaseUrl}${payment.payment_url}` : null;
+
+    return (
+        <section className="overflow-hidden rounded-xl border border-emerald-400/20 bg-emerald-500/[0.055] shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-400/10 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
+                        <MaterialIcon name="account_balance" size="sm" />
+                    </span>
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-black text-slate-100">회계원장 API 납부현황</h3>
+                            {summary.connected ? (
+                                <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">연결됨</span>
+                            ) : null}
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                            {summary.ledger_member?.name || memberName} · 회계프로그램 원장 기준
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button type="button" onClick={onReload} disabled={loading} className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/10 px-2.5 text-[11px] font-bold text-slate-300 hover:bg-white/5 disabled:opacity-50">
+                        <MaterialIcon name="refresh" size="xs" className={loading ? 'animate-spin' : ''} />새로고침
+                    </button>
+                    {paymentHref ? (
+                        <button type="button" onClick={() => window.open(paymentHref, '_blank', 'noopener,noreferrer')} className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-2.5 text-[11px] font-bold text-emerald-200 hover:bg-emerald-500/15">
+                            회계원장 열기<MaterialIcon name="open_in_new" size="xs" />
+                        </button>
+                    ) : null}
+                </div>
+            </div>
+
+            {loading ? (
+                <p className="px-4 py-8 text-center text-xs font-semibold text-slate-400">회계원장 납부내역을 불러오는 중...</p>
+            ) : summary.error ? (
+                <div className="px-4 py-6 text-center">
+                    <p className="text-xs font-bold text-rose-300">{summary.error}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">연결 오류가 표시되면 관리자에게 API 설정을 확인해 달라고 요청해줘.</p>
+                </div>
+            ) : !summary.connected ? (
+                <p className="px-4 py-8 text-center text-xs font-semibold text-slate-400">회계원장에 연결된 조합원 정보가 없어.</p>
+            ) : !payment ? (
+                <p className="px-4 py-8 text-center text-xs font-semibold text-slate-400">회계원장에 등록된 납부내역이 없어.</p>
+            ) : (
+                <div className="p-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <LedgerMetric label="실납부 합계" value={payment.total_paid} primary />
+                        <LedgerMetric label="총 입금" value={payment.gross_paid} />
+                        <LedgerMetric label="환불·출금" value={Number(payment.refund_sum || 0) + Number(payment.withdrawal_sum || 0)} />
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 overflow-hidden rounded-lg border border-white/[0.07] sm:grid-cols-2 lg:grid-cols-3">
+                        {LEDGER_ALLOCATION_LABELS.map(([key, label]) => (
+                            <div key={key} className="flex min-h-10 items-center justify-between gap-3 border-b border-white/[0.055] px-3 py-2 text-xs sm:border-r lg:[&:nth-child(3n)]:border-r-0">
+                                <span className="font-medium text-slate-400">{label}</span>
+                                <span className="whitespace-nowrap font-bold tabular-nums text-slate-200">{money(Number(payment.allocations[key] || 0))}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-2 text-right text-[10px] text-slate-600">조회 기준 {formatLedgerDate(summary.generated_at)}</p>
+                </div>
+            )}
+        </section>
+    );
+}
+
+function LedgerMetric({ label, value, primary = false }: { label: string; value: number; primary?: boolean }) {
+    return (
+        <div className="rounded-lg border border-white/[0.07] bg-[#162536] px-4 py-3">
+            <p className="text-[10px] font-bold text-slate-500">{label}</p>
+            <p className={`mt-1 text-lg font-black tabular-nums ${primary ? 'text-emerald-300' : 'text-slate-100'}`}>{money(Number(value || 0))}</p>
+        </div>
+    );
+}
+
+function money(value: number) {
+    return `${Math.round(value).toLocaleString('ko-KR')}원`;
+}
+
+function formatLedgerDate(value: string | null) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value.slice(0, 16);
+    return date.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
 }

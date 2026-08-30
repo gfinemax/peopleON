@@ -12,6 +12,7 @@ import { MemberProfilePhoto } from './MemberProfilePhoto';
 import { MemberBankAccountBlock } from './MemberBankAccountBlock';
 import { InlineCellDropdown } from './InlineCellDropdown';
 import { MemberWorkspaceProfileEditor } from './MemberWorkspaceProfileEditor';
+import { useLedgerJournalSummary } from './useLedgerJournalSummary';
 import { formatAssignedUnitType } from '@/lib/members/memberUnitDisplay';
 import type { LedgerJournalSummary } from '@/lib/server/ledgerJournalSummary';
 
@@ -58,17 +59,6 @@ const normalizeWorkspaceWidths = (columns: MemberWorkspaceColumnId[], saved: Wor
     const raw = columns.map((id) => Math.max(1, Number(saved[id] ?? DEFAULT_WORKSPACE_COLUMN_WIDTHS[id])));
     const total = raw.reduce((sum, width) => sum + width, 0) || 1;
     return Object.fromEntries(columns.map((id, index) => [id, raw[index] / total * 100])) as WorkspaceColumnWidths;
-};
-
-const EMPTY_LEDGER_SUMMARY: LedgerJournalSummary = {
-    connected: false,
-    generated_at: null,
-    ledger_member: null,
-    journal_url: null,
-    recent_consultations: [],
-    pinned_note: { note: '', updated_at: null, updated_by: null },
-    payment_summary: null,
-    error: null,
 };
 
 const money = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}원`;
@@ -159,31 +149,6 @@ function useWorkspaceData(memberIds: string[]): WorkspaceData & { loading: boole
     }, [memberIds]);
 
     return { ...data, loading };
-}
-
-function useLedgerJournalSummary(memberId: string) {
-    const [summary, setSummary] = useState<LedgerJournalSummary>(EMPTY_LEDGER_SUMMARY);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        let cancelled = false;
-        const load = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch(`/api/members/${encodeURIComponent(memberId)}/ledger-journal-summary`, { cache: 'no-store' });
-                const payload = await response.json().catch(() => null);
-                if (!cancelled) setSummary(payload || { ...EMPTY_LEDGER_SUMMARY, error: '회계프로그램 기록을 불러오지 못했어.' });
-            } catch {
-                if (!cancelled) setSummary({ ...EMPTY_LEDGER_SUMMARY, error: '회계프로그램 기록을 불러오지 못했어.' });
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-        void load();
-        return () => { cancelled = true; };
-    }, [memberId]);
-
-    return { summary, loading };
 }
 
 function Row({ label, children, strong = false, multiline = false, alignRight = false }: { label: string; children: React.ReactNode; strong?: boolean; multiline?: boolean; alignRight?: boolean }) {
