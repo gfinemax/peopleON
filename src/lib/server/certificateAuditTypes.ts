@@ -23,6 +23,7 @@ export interface EnrichedLegacyRecord {
 export interface MembershipRoleLiteRow {
     entity_id: string;
     role_code: string | null;
+    role_status: string | null;
     is_registered: boolean | null;
 }
 

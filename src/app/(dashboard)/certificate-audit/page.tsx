@@ -73,7 +73,7 @@ export default async function FinancePage({
             .eq('is_active', true),
         supabase
             .from('membership_roles')
-            .select('entity_id, role_code, is_registered'),
+            .select('entity_id, role_code, role_status, is_registered'),
         supabase
             .from('account_entities')
             .select('id, display_name, member_number, phone')
