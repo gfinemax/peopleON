@@ -59,7 +59,7 @@ export async function fetchMemberDetail(ids: string[]) {
     const entity = entities[0];
 
     const [roleRes, relRes, revRelRes, rightsRes, privateInfoRes] = await Promise.all([
-        supabase.from('membership_roles').select('role_code, is_registered').in('entity_id', ids),
+        supabase.from('membership_roles').select('role_code, role_status, is_registered').in('entity_id', ids),
         supabase
             .from('entity_relationships')
             .select('from_entity_id, to_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name, phone)')
@@ -96,7 +96,7 @@ export async function fetchMemberDetail(ids: string[]) {
                   : '',
     }));
 
-    const rolesData = roleRes.data || [];
+    const rolesData = (roleRes.data || []).filter((role) => role.role_status === 'active');
     const tiers = Array.from(
         new Set(
             rolesData
