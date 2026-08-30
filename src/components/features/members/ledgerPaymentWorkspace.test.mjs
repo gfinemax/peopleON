@@ -40,3 +40,9 @@ test('회계원장 호출은 인증 헤더가 리다이렉트에서 유실되지
     assert.match(serverIntegration, /https:\/\/dbapt-ledger\.duckdns\.org/);
     assert.doesNotMatch(serverIntegration, /http:\/\/dbapt-ledger\.duckdns\.org/);
 });
+
+test('총분담금 계획이 없으면 0퍼센트 대신 실제 납부액과 산정 전 상태를 표시한다', () => {
+    assert.match(workspace, /const paymentMetricLabel = hasContributionPlan \? '납부율' : '납부액'/);
+    assert.match(workspace, /const unpaidMetricText = hasContributionPlan \? money\(Math\.max\(0, due - paid\)\) : '산정 전'/);
+    assert.match(workspace, /due > 0 \? money\(due\) : '미설정'/);
+});
