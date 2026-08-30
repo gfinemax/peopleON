@@ -1,13 +1,11 @@
 'use client';
 
 import type { Dispatch, SetStateAction } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { MaterialIcon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { ActivityTimelineTab } from './ActivityTimelineTab';
 import { PaymentStatusTab } from './PaymentStatusTab';
 import { MemberDetailDialogAdminTab } from './MemberDetailDialogAdmin';
-import { MemberDetailDialogInfoTab } from './MemberDetailDialogInfoSections';
 import type {
     MemberDetailDialogMember,
     MemberDetailDialogSaveFeedback,
@@ -29,28 +27,6 @@ export const MEMBER_DETAIL_DIALOG_TABS: Array<{
     { id: 'payment', label: '납부·정산', icon: 'payments' },
     { id: 'admin', label: '가입신청필증', icon: 'description' },
 ];
-
-interface MemberDetailDialogEmptyStateProps {
-    open: boolean;
-    onOpenChange: (nextOpen: boolean) => void;
-}
-
-export function MemberDetailDialogEmptyState({
-    open,
-    onOpenChange,
-}: MemberDetailDialogEmptyStateProps) {
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogTitle className="sr-only">정보 없음</DialogTitle>
-                <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
-                    <MaterialIcon name="error_outline" size="xl" className="mb-2 opacity-50" />
-                    <p>정보를 불러올 수 없습니다.</p>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-}
 
 interface MemberDetailDialogTabBarProps {
     activeTab: TabType;
@@ -117,13 +93,10 @@ function MemberDetailDialogTabBar({
 
 interface MemberDetailDialogBodyProps {
     loading: boolean;
-    activeTab: TabType;
     memberIds: string[] | null;
     member: MemberDetailDialogMember | null;
     formData: Partial<MemberDetailDialogMember>;
     isEditing: boolean;
-    isSsnRevealed: boolean;
-    setIsSsnRevealed: (next: boolean) => void;
     setFormData: Dispatch<SetStateAction<Partial<MemberDetailDialogMember>>>;
     saveFeedback: MemberDetailDialogSaveFeedback | null;
     isAdmin: boolean;
@@ -141,7 +114,6 @@ interface MemberDetailDialogBodyProps {
     rightInput: string;
     setRightInput: Dispatch<SetStateAction<string>>;
     isAddingRight: boolean;
-    presentation: 'dialog' | 'page';
     visibleWorkspaceColumns: MemberWorkspaceColumnId[];
     onTabChange: (tab: TabType) => void;
     onStartEditing: () => void;
@@ -153,17 +125,21 @@ interface MemberDetailDialogBodyProps {
     onRightChange: (rightId: string, field: string, value: string) => void;
     onShowLineage: (rightId: string) => void;
     onMemberCategoryChange?: (value: string) => Promise<void>;
+    workspaceEditingSection?: 'profile' | 'relations' | null;
+    workspaceFocusTab?: TabType | null;
+    onWorkspaceEditingSectionChange?: (section: 'profile' | 'relations' | null) => void;
+    onWorkspaceFocusTabChange?: (tab: TabType | null) => void;
+    onWorkspaceFieldChange?: (field: keyof MemberDetailDialogMember, value: unknown) => void;
+    onWorkspaceSave?: () => Promise<boolean>;
+    onWorkspaceCancel?: () => void;
 }
 
 export function MemberDetailDialogBody({
     loading,
-    activeTab,
     memberIds,
     member,
     formData,
     isEditing,
-    isSsnRevealed,
-    setIsSsnRevealed,
     setFormData,
     saveFeedback,
     isAdmin,
@@ -181,7 +157,6 @@ export function MemberDetailDialogBody({
     rightInput,
     setRightInput,
     isAddingRight,
-    presentation,
     visibleWorkspaceColumns,
     onTabChange,
     onStartEditing,
@@ -193,48 +168,100 @@ export function MemberDetailDialogBody({
     onRightChange,
     onShowLineage,
     onMemberCategoryChange,
+    workspaceEditingSection,
+    workspaceFocusTab,
+    onWorkspaceEditingSectionChange,
+    onWorkspaceFocusTabChange,
+    onWorkspaceFieldChange,
+    onWorkspaceSave,
+    onWorkspaceCancel,
 }: MemberDetailDialogBodyProps) {
-    if (presentation === 'page') {
-        if (loading || !member || !memberIds) return <div className="flex min-h-[520px] items-center justify-center bg-[#071e32] text-xs font-bold text-slate-500">조합원 작업대를 불러오는 중...</div>;
-        return (
-            <MemberWorkspaceBoard
-                memberIds={memberIds}
-                member={member}
-                formData={formData}
-                columns={visibleWorkspaceColumns}
-                onOpenManagement={(tab) => {
-                    onTabChange(tab);
-                    onStartEditing();
-                }}
-                onMemberCategoryChange={onMemberCategoryChange}
-            />
-        );
-    }
+    if (loading || !member || !memberIds) return <div className="flex min-h-[520px] items-center justify-center bg-[#071e32] text-xs font-bold text-slate-500">조합원 작업대를 불러오는 중...</div>;
 
-    return (
-        <div className="relative flex flex-1 flex-col min-h-0 bg-[#0F151B] px-0 pb-0">
-            <MemberDetailDialogTabBar activeTab={activeTab} onTabChange={onTabChange} />
-            <div className="relative z-0 flex flex-1 flex-col overflow-hidden bg-[#1A2633]">
-                <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
-                    {loading ? (
-                        <div className="flex h-full flex-col items-center justify-center gap-3 opacity-50">
-                            <MaterialIcon name="refresh" className="animate-spin" />
-                            <span className="text-xs font-bold">로딩 중...</span>
-                        </div>
-                    ) : (
-                        <>
-                            {activeTab === 'info' && member ? (
-                                <MemberDetailDialogInfoTab
-                                    member={member}
-                                    formData={formData}
-                                    isEditing={isEditing}
-                                    isSsnRevealed={isSsnRevealed}
-                                    setIsSsnRevealed={setIsSsnRevealed}
-                                    setFormData={setFormData}
-                                    saveFeedback={saveFeedback}
-                                />
+    const handleWorkspaceTabChange = (tab: TabType) => {
+        onTabChange(tab);
+        if (tab === 'info') {
+            onWorkspaceCancel?.();
+            onCancelEditing();
+            onWorkspaceFocusTabChange?.(null);
+            return;
+        }
+
+        onWorkspaceFocusTabChange?.(tab);
+        if (tab === 'admin') onStartEditing();
+        else onCancelEditing();
+    };
+
+    if (workspaceFocusTab && workspaceFocusTab !== 'info') {
+        const focusTab = MEMBER_DETAIL_DIALOG_TABS.find((tab) => tab.id === workspaceFocusTab);
+        return (
+                <div className="flex min-h-[620px] flex-1 flex-col bg-[#071e32]">
+                    <div className="border-y border-white/[0.075] bg-[#0a2840] px-3 py-3 sm:px-5">
+                        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onWorkspaceCancel?.();
+                                        onCancelEditing();
+                                        onWorkspaceFocusTabChange?.(null);
+                                    }}
+                                    className="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-[#071e32] px-3 text-xs font-bold text-slate-300 transition-colors hover:border-cyan-400/30 hover:text-white"
+                                >
+                                    <MaterialIcon name="arrow_back" size="xs" />
+                                    <span className="hidden sm:inline">통합현황으로</span>
+                                    <span className="sm:hidden">뒤로</span>
+                                </button>
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-black text-white">{focusTab?.label}</p>
+                                    <p className="truncate text-[11px] text-slate-500">{member.name} 조합원 상세 관리</p>
+                                </div>
+                            </div>
+                            {workspaceFocusTab === 'admin' && isEditing ? (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onWorkspaceCancel?.();
+                                            onCancelEditing();
+                                        }}
+                                        disabled={saving}
+                                        className="h-9 rounded-lg border border-white/10 px-3 text-xs font-bold text-slate-400 hover:text-white disabled:opacity-50"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={onSave}
+                                        disabled={saving}
+                                        className="inline-flex h-9 items-center gap-1 rounded-lg bg-blue-600 px-4 text-xs font-black text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+                                    >
+                                        {saving ? <MaterialIcon name="progress_activity" size="xs" className="animate-spin" /> : <MaterialIcon name="save" size="xs" />}
+                                        저장
+                                    </button>
+                                </div>
+                            ) : workspaceFocusTab === 'admin' ? (
+                                <button
+                                    type="button"
+                                    onClick={onStartEditing}
+                                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-4 text-xs font-black text-cyan-200 transition-colors hover:bg-cyan-500/15"
+                                >
+                                    <MaterialIcon name="edit" size="xs" />
+                                    가입신청필증 수정
+                                </button>
                             ) : null}
-                            {activeTab === 'admin' && member ? (
+                        </div>
+                    </div>
+
+                    <div className="border-b border-white/[0.075] bg-[#081f33]">
+                        <div className="mx-auto max-w-[1400px]">
+                            <MemberDetailDialogTabBar activeTab={workspaceFocusTab} onTabChange={handleWorkspaceTabChange} />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-white/10 sm:p-5 lg:p-6">
+                        <div className="mx-auto max-w-[1400px]">
+                            {workspaceFocusTab === 'admin' ? (
                                 <MemberDetailDialogAdminTab
                                     member={member}
                                     formData={formData}
@@ -266,12 +293,12 @@ export function MemberDetailDialogBody({
                                     onShowLineage={onShowLineage}
                                 />
                             ) : null}
-                            {activeTab === 'timeline' && memberIds ? (
+                            {workspaceFocusTab === 'timeline' ? (
                                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <ActivityTimelineTab memberIds={memberIds} />
                                 </div>
                             ) : null}
-                            {activeTab === 'payment' && memberIds && member ? (
+                            {workspaceFocusTab === 'payment' ? (
                                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <PaymentStatusTab
                                         memberIds={memberIds}
@@ -282,10 +309,32 @@ export function MemberDetailDialogBody({
                                     />
                                 </div>
                             ) : null}
-                        </>
-                    )}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+        );
+    }
+
+    return (
+        <MemberWorkspaceBoard
+                memberIds={memberIds}
+                member={member}
+                formData={formData}
+                columns={visibleWorkspaceColumns}
+                onOpenManagement={(tab) => {
+                    onTabChange(tab);
+                    onWorkspaceFocusTabChange?.(tab);
+                    if (tab === 'admin') onStartEditing();
+                    else onCancelEditing();
+                }}
+                onMemberCategoryChange={onMemberCategoryChange}
+                editingSection={workspaceEditingSection}
+                onEditingSectionChange={onWorkspaceEditingSectionChange}
+                onFieldChange={onWorkspaceFieldChange}
+                onSave={onWorkspaceSave}
+                onCancel={onWorkspaceCancel}
+                saving={saving}
+                saveFeedback={saveFeedback}
+        />
     );
 }

@@ -7,11 +7,12 @@ import type { TabType } from '@/components/features/members/memberDetailDialogTy
 
 interface MemberDetailPageClientProps {
     memberId: string;
+    memberIds: string[];
     initialTab: TabType;
     returnTo: string;
 }
 
-export function MemberDetailPageClient({ memberId, initialTab, returnTo }: MemberDetailPageClientProps) {
+export function MemberDetailPageClient({ memberId, memberIds, initialTab, returnTo }: MemberDetailPageClientProps) {
     const router = useRouter();
 
     const handleOpenChange = useCallback((open: boolean) => {
@@ -30,13 +31,12 @@ export function MemberDetailPageClient({ memberId, initialTab, returnTo }: Membe
             <div className="w-full">
                 <MemberDetailDialog
                     memberId={memberId}
-                    memberIds={[memberId]}
+                    memberIds={memberIds}
                     open
                     onOpenChange={handleOpenChange}
                     initialTab={initialTab}
                     onActiveTabChange={handleTabChange}
                     onSaved={() => router.refresh()}
-                    presentation="page"
                 />
             </div>
         </main>

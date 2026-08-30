@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { MaterialIcon } from '@/components/ui/icon';
-import { MemberDetailDialog } from '@/components/features/members/MemberDetailDialog';
 import type { PersonPaymentSummary } from '@/lib/server/paymentDashboard';
 import { PersonPaymentRow } from './PaymentsPagePrimitives';
 
@@ -28,12 +27,18 @@ export function PaymentsTableClient({
     prevHref,
     nextHref,
 }: PaymentsTableClientProps) {
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [selectedRow, setSelectedRow] = useState<PersonPaymentSummary | null>(null);
+    const router = useRouter();
 
     const openMemberDetail = (row: PersonPaymentSummary) => {
-        setSelectedRow(row);
-        setDialogOpen(true);
+        const memberId = row.entityIds[0];
+        if (!memberId) return;
+        const returnTo = `${window.location.pathname}${window.location.search}`;
+        const params = new URLSearchParams({
+            tab: 'payment',
+            ids: row.entityIds.join(','),
+            returnTo,
+        });
+        router.push(`/members/${encodeURIComponent(memberId)}?${params.toString()}`);
     };
 
     return (
@@ -84,13 +89,6 @@ export function PaymentsTableClient({
                 </div>
             </section>
 
-            <MemberDetailDialog
-                memberId={selectedRow?.entityIds?.[0] || null}
-                memberIds={selectedRow?.entityIds || null}
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                initialTab="info"
-            />
         </>
     );
 }

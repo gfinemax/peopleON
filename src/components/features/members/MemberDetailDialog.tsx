@@ -2,13 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MaterialIcon } from '@/components/ui/icon';
-import {
-    MemberDetailDialogBody,
-    MemberDetailDialogEmptyState,
-    MemberDetailDialogHeader,
-} from './MemberDetailDialogSections';
+import { MemberDetailDialogBody } from './MemberDetailDialogShell';
 import { MemberDetailDialogLineageDialog } from './MemberDetailDialogAdmin';
 import { MemberWorkspaceSummary } from './MemberWorkspacePage';
 import { Header } from '@/components/layout/Header';
@@ -41,7 +36,6 @@ interface MemberDetailDialogProps {
     onOpenChange: (open: boolean) => void;
     onSaved?: (member: Member | null) => void;
     initialTab?: TabType;
-    presentation?: 'dialog' | 'page';
     onActiveTabChange?: (tab: TabType) => void;
 }
 
@@ -54,7 +48,6 @@ export function MemberDetailDialog({
     onOpenChange,
     onSaved,
     initialTab,
-    presentation = 'dialog',
     onActiveTabChange,
 }: MemberDetailDialogProps) {
     const [member, setMember] = useState<Member | null>(null);
@@ -63,24 +56,21 @@ export function MemberDetailDialog({
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [workspaceEditingSection, setWorkspaceEditingSection] = useState<'profile' | 'relations' | null>(null);
+    const [workspaceFocusTab, setWorkspaceFocusTab] = useState<TabType | null>(null);
     const [formData, setFormData] = useState<Partial<Member>>({});
     const [isAdmin, setIsAdmin] = useState(false);
     const [currentUserEmail, setCurrentUserEmail] = useState<string | undefined>();
     const [currentUserName, setCurrentUserName] = useState<string | undefined>();
     const [saveFeedback, setSaveFeedback] = useState<MemberDetailDialogSaveFeedback | null>(null);
-    const [activeTab, setActiveTab] = useState<TabType>('info');
     const visibleWorkspaceColumns: MemberWorkspaceColumnId[] = ['profile', 'finance', 'timeline', 'documents'];
     const [rightInput, setRightInput] = useState('');
     const [isAddingRight, setIsAddingRight] = useState(false);
     const [conflictRightNumbers] = useState<string[]>([]);
     const [deletedRightsIds, setDeletedRightsIds] = useState<string[]>([]);
-    const [isSsnRevealed, setIsSsnRevealed] = useState(false);
     const [selectedRightIds, setSelectedRightIds] = useState<string[]>([]);
     const [isMerging, setIsMerging] = useState(false);
     const [showLineageId, setShowLineageId] = useState<string | null>(null);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     const canEditCertificateSummary = (memberIds?.length || 0) <= 1;
     const rightsFlowSummary = getRightsFlowSummary(formData.assetRights);
@@ -105,6 +95,7 @@ export function MemberDetailDialog({
         setMember(null);
         setFormData({});
         setIsEditing(false);
+        setWorkspaceEditingSection(null);
         setSaveFeedback(null);
         setDeletedRightsIds([]);
         const data = await fetchMemberDetail(ids);
@@ -119,7 +110,9 @@ export function MemberDetailDialog({
 
     useEffect(() => {
         if (open) {
-            setActiveTab(initialTab || 'info');
+            const nextTab = initialTab || 'info';
+            setWorkspaceFocusTab(nextTab !== 'info' ? nextTab : null);
+            setIsEditing(nextTab === 'admin');
         }
     }, [open, initialTab]);
 
@@ -147,54 +140,21 @@ export function MemberDetailDialog({
     }, [formData.assetRights, manageableRights]);
 
     useEffect(() => {
-        const handlePointerMove = (event: PointerEvent) => {
-            if (!isDragging) return;
-            setPosition({
-                x: event.clientX - dragStart.x,
-                y: event.clientY - dragStart.y,
-            });
-        };
-
-        const handlePointerUp = () => setIsDragging(false);
-
-        if (isDragging) {
-            window.addEventListener('pointermove', handlePointerMove);
-            window.addEventListener('pointerup', handlePointerUp);
-        }
-
-        return () => {
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
-        };
-    }, [dragStart, isDragging]);
-
-    useEffect(() => {
         if (open && memberIds && memberIds.length > 0) {
             void refreshMember(memberIds);
         }
     }, [open, memberIds]);
 
-    const handlePointerDown = (event: React.PointerEvent) => {
-        if ((event.target as HTMLElement).closest('button, input, textarea, a')) return;
-        setIsDragging(true);
-        setDragStart({
-            x: event.clientX - position.x,
-            y: event.clientY - position.y,
-        });
-    };
-
     const handleDialogOpenChange = (nextOpen: boolean) => {
         onOpenChange(nextOpen);
         if (nextOpen) {
-            setPosition({ x: 0, y: 0 });
-            setActiveTab('info');
+            setWorkspaceFocusTab(null);
             setSaveFeedback(null);
         }
     };
 
     const handleClose = () => handleDialogOpenChange(false);
     const handleTabChange = (tab: TabType) => {
-        setActiveTab(tab);
         onActiveTabChange?.(tab);
     };
     const handleMergeSelectedRights = async () => {
@@ -291,7 +251,7 @@ export function MemberDetailDialog({
     };
 
     const handleSave = async () => {
-        if (!memberId) return;
+        if (!memberId) return false;
         setSaving(true);
         setSaveFeedback(null);
 
@@ -306,14 +266,26 @@ export function MemberDetailDialog({
         if (!result.success) {
             setSaveFeedback(result.feedback);
             setSaving(false);
-            return;
+            return false;
         }
 
         setIsEditing(false);
+        setWorkspaceFocusTab(null);
         const refreshedMember = await refreshMember(memberIds && memberIds.length > 0 ? memberIds : memberId ? [memberId] : []);
         if (onSaved) onSaved(refreshedMember || member);
         setSaveFeedback(result.feedback);
         setSaving(false);
+        return true;
+    };
+
+    const handleWorkspaceCancel = () => {
+        if (member) setFormData(member);
+        setWorkspaceEditingSection(null);
+        setSaveFeedback(null);
+    };
+
+    const handleWorkspaceFieldChange = (field: keyof Member, value: unknown) => {
+        setFormData((previous) => ({ ...previous, [field]: value }));
     };
 
     const handleMemberCategoryChange = async (value: string) => {
@@ -368,47 +340,20 @@ export function MemberDetailDialog({
     const hasTargetMember = Boolean(memberIds?.length);
     const isInitialLoading = open && hasTargetMember && !member && !loadAttempted;
 
-    if (!member && !loading && (!hasTargetMember || loadAttempted) && presentation === 'dialog') {
-        return <MemberDetailDialogEmptyState open={open} onOpenChange={handleDialogOpenChange} />;
-    }
-
     if (!member && !loading && (!hasTargetMember || loadAttempted)) {
         return <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#0F151B] text-slate-400"><span className="text-sm font-bold">조합원 정보를 불러올 수 없습니다.</span><button onClick={handleClose} className="rounded-lg border border-white/10 px-4 py-2 text-xs font-bold text-white">목록으로 돌아가기</button></div>;
     }
 
     const workspace = (
         <>
-            {presentation === 'page' ? <Header title="통합현황" userEmail={currentUserEmail} userName={currentUserName || (isAdmin ? '관리자' : undefined)} rightContent={<button type="button" title="도움말" aria-label="도움말" className="flex h-8 w-8 items-center justify-center rounded-md border border-border/60 bg-secondary/50 text-muted-foreground hover:bg-accent hover:text-accent-foreground"><MaterialIcon name="help_outline" size="sm" /></button>} /> : null}
-            {presentation === 'page' && member ? (
-                <MemberWorkspaceSummary member={{ ...member, ...formData }} onEdit={() => setIsEditing(true)} onDelete={() => void handleDeleteMember()} onPrint={() => window.print()} onBack={handleClose} onPhotoChanged={() => void refreshMember(memberIds || [member.id])} />
-            ) : (
-                <div onPointerDown={handlePointerDown}>
-                    <MemberDetailDialogHeader
-                        member={member}
-                        formData={formData}
-                        isEditing={isEditing}
-                        saving={saving}
-                        deleting={deleting}
-                        onStartEditing={() => setIsEditing(true)}
-                        onCancelEditing={() => setIsEditing(false)}
-                        onSave={handleSave}
-                        onDelete={handleDeleteMember}
-                        onClose={handleClose}
-                        setFormData={setFormData}
-                        presentation={presentation}
-                        onPrint={() => window.print()}
-                    />
-                </div>
-            )}
+            <Header title="통합현황" userEmail={currentUserEmail} userName={currentUserName || (isAdmin ? '관리자' : undefined)} rightContent={<button type="button" title="도움말" aria-label="도움말" className="flex h-8 w-8 items-center justify-center rounded-md border border-border/60 bg-secondary/50 text-muted-foreground hover:bg-accent hover:text-accent-foreground"><MaterialIcon name="help_outline" size="sm" /></button>} />
+            {member ? <MemberWorkspaceSummary member={{ ...member, ...formData }} onEdit={() => setWorkspaceEditingSection('profile')} onDelete={() => void handleDeleteMember()} onPrint={() => window.print()} onBack={handleClose} onPhotoChanged={() => void refreshMember(memberIds || [member.id])} /> : null}
             <MemberDetailDialogBody
                 loading={loading || isInitialLoading}
-                activeTab={activeTab}
                 memberIds={memberIds}
                 member={member}
                 formData={formData}
                 isEditing={isEditing}
-                isSsnRevealed={isSsnRevealed}
-                setIsSsnRevealed={setIsSsnRevealed}
                 setFormData={setFormData}
                 saveFeedback={saveFeedback}
                 isAdmin={isAdmin}
@@ -426,7 +371,6 @@ export function MemberDetailDialog({
                 rightInput={rightInput}
                 setRightInput={setRightInput}
                 isAddingRight={isAddingRight}
-                presentation={presentation}
                 visibleWorkspaceColumns={visibleWorkspaceColumns}
                 onTabChange={handleTabChange}
                 onStartEditing={() => setIsEditing(true)}
@@ -438,96 +382,21 @@ export function MemberDetailDialog({
                 onRightChange={handleRightChange}
                 onShowLineage={setShowLineageId}
                 onMemberCategoryChange={handleMemberCategoryChange}
+                workspaceEditingSection={workspaceEditingSection}
+                workspaceFocusTab={workspaceFocusTab}
+                onWorkspaceEditingSectionChange={setWorkspaceEditingSection}
+                onWorkspaceFocusTabChange={setWorkspaceFocusTab}
+                onWorkspaceFieldChange={handleWorkspaceFieldChange}
+                onWorkspaceSave={handleSave}
+                onWorkspaceCancel={handleWorkspaceCancel}
             />
         </>
     );
 
-    const managementDialog = presentation === 'page' ? (
-        <Dialog open={isEditing} onOpenChange={(next) => setIsEditing(next)}>
-            <DialogContent className="h-[88vh] max-w-[1180px] overflow-hidden border-white/10 bg-[#0F151B] p-0 shadow-2xl">
-                <MemberDetailDialogHeader
-                    member={member}
-                    formData={formData}
-                    isEditing
-                    saving={saving}
-                    deleting={deleting}
-                    onStartEditing={() => setIsEditing(true)}
-                    onCancelEditing={() => setIsEditing(false)}
-                    onSave={handleSave}
-                    onDelete={handleDeleteMember}
-                    onClose={() => setIsEditing(false)}
-                    setFormData={setFormData}
-                    presentation="dialog"
-                    onPrint={() => window.print()}
-                />
-                <MemberDetailDialogBody
-                    loading={loading || isInitialLoading}
-                    activeTab={activeTab}
-                    memberIds={memberIds}
-                    member={member}
-                    formData={formData}
-                    isEditing
-                    isSsnRevealed={isSsnRevealed}
-                    setIsSsnRevealed={setIsSsnRevealed}
-                    setFormData={setFormData}
-                    saveFeedback={saveFeedback}
-                    isAdmin={isAdmin}
-                    saving={saving}
-                    deleting={deleting}
-                    canEditCertificateSummary={canEditCertificateSummary}
-                    rightsFlowSummary={rightsFlowSummary}
-                    managedCertificateNumbers={managedCertificateNumbers}
-                    sortedAssetRights={sortedAssetRights}
-                    manageableRights={manageableRights}
-                    conflictRightNumbers={conflictRightNumbers}
-                    selectedRightIds={selectedRightIds}
-                    setSelectedRightIds={setSelectedRightIds}
-                    isMerging={isMerging}
-                    rightInput={rightInput}
-                    setRightInput={setRightInput}
-                    isAddingRight={isAddingRight}
-                    presentation="dialog"
-                    visibleWorkspaceColumns={visibleWorkspaceColumns}
-                    onTabChange={handleTabChange}
-                    onStartEditing={() => setIsEditing(true)}
-                    onCancelEditing={() => setIsEditing(false)}
-                    onSave={handleSave}
-                    onAddRight={handleAddRight}
-                    onMergeSelectedRights={handleMergeSelectedRights}
-                    onDeleteRight={handleDeleteRight}
-                    onRightChange={handleRightChange}
-                    onShowLineage={setShowLineageId}
-                    onMemberCategoryChange={handleMemberCategoryChange}
-                />
-            </DialogContent>
-        </Dialog>
-    ) : null;
-
-    if (presentation === 'page') {
-        return (
-            <>
-                <section className="flex min-h-[calc(100vh-5rem)] flex-col overflow-hidden bg-[#071e32] shadow-2xl">{workspace}</section>
-                {managementDialog}
-                <MemberDetailDialogLineageDialog member={member} showLineageId={showLineageId} isMerging={isMerging} onClose={() => setShowLineageId(null)} onUnmerge={handleUnmerge} />
-            </>
-        );
-    }
-
     return (
-        <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-            <DialogContent
-                className="h-full max-h-none max-w-none w-full rounded-none border-0 bg-[#0F151B] p-0 shadow-2xl backdrop-blur-xl sm:top-[12vh] sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:translate-y-0 sm:rounded-2xl sm:border sm:border-white/[0.1]"
-                style={{ marginLeft: position.x, marginTop: position.y }}
-            >
-                {workspace}
-            </DialogContent>
-            <MemberDetailDialogLineageDialog
-                member={member}
-                showLineageId={showLineageId}
-                isMerging={isMerging}
-                onClose={() => setShowLineageId(null)}
-                onUnmerge={handleUnmerge}
-            />
-        </Dialog>
+        <>
+            <section className="flex min-h-[calc(100vh-5rem)] flex-col overflow-hidden bg-[#071e32] shadow-2xl">{workspace}</section>
+            <MemberDetailDialogLineageDialog member={member} showLineageId={showLineageId} isMerging={isMerging} onClose={() => setShowLineageId(null)} onUnmerge={handleUnmerge} />
+        </>
     );
 }

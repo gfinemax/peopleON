@@ -54,6 +54,10 @@
   .member-workspace-resizer {
     display: none;
   }
+
+  .member-workspace-column-mobile-hidden {
+    display: none;
+  }
 }
 
 /* ========================================
