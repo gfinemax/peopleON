@@ -314,7 +314,7 @@ function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJo
             ['2차 분담금', allocation.land2],
             ['잔금', Math.max(0, paid - allocation.cert - allocation.op_fee - allocation.join_fee - allocation.land1 - allocation.land2)],
         ] as const : null;
-        const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'http://dbapt-ledger.duckdns.org').replace(/\/$/, '');
+        const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'https://dbapt-ledger.duckdns.org').replace(/\/$/, '');
         const openLedgerPayment = ledgerPayment?.payment_url
             ? () => window.open(`${ledgerBaseUrl}${ledgerPayment.payment_url}`, '_blank', 'noopener,noreferrer')
             : () => onOpenManagement?.('payment');
@@ -327,7 +327,7 @@ function ColumnContent({ id, member, formData, payments, logs, loading, ledgerJo
 
 function TimelineColumn({ logs, loading, ledgerJournal, onOpenManagement }: { logs: LogRow[]; loading: boolean; ledgerJournal: { summary: LedgerJournalSummary; loading: boolean }; onOpenManagement?: (tab: TabType) => void }) {
     const { summary, loading: ledgerLoading } = ledgerJournal;
-    const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'http://dbapt-ledger.duckdns.org').replace(/\/$/, '');
+    const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'https://dbapt-ledger.duckdns.org').replace(/\/$/, '');
     const journalHref = summary.journal_url ? `${ledgerBaseUrl}${summary.journal_url}` : null;
     return <>
         <Block title="최근 상담" action="+ 상담 등록" onAction={() => onOpenManagement?.('timeline')}>

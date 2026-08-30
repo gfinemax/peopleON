@@ -53,7 +53,7 @@ const emptySummary = (overrides: Partial<LedgerJournalSummary> = {}): LedgerJour
 });
 
 export async function fetchLedgerMemberJournalSummary(peopleonId: string): Promise<LedgerJournalSummary> {
-    const baseUrl = (process.env.LEDGER_API_URL || 'http://dbapt-ledger.duckdns.org').replace(/\/$/, '');
+    const baseUrl = (process.env.LEDGER_API_URL || 'https://dbapt-ledger.duckdns.org').replace(/\/$/, '');
     const apiKey = process.env.LEDGER_API_KEY || process.env.PEOPLEON_MEMBERS_API_KEY;
     if (!apiKey) return emptySummary({ error: '회계프로그램 API 키가 설정되지 않았어.' });
 

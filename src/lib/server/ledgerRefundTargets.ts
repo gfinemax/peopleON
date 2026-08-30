@@ -29,7 +29,7 @@ export async function fetchLedgerRefundTargets(): Promise<{
     generatedAt: string | null;
     error: string | null;
 }> {
-    const baseUrl = (process.env.LEDGER_API_URL || 'http://dbapt-ledger.duckdns.org').replace(/\/$/, '');
+    const baseUrl = (process.env.LEDGER_API_URL || 'https://dbapt-ledger.duckdns.org').replace(/\/$/, '');
     const apiKey = process.env.LEDGER_API_KEY || process.env.PEOPLEON_MEMBERS_API_KEY;
     if (!apiKey) {
         return { targets: FALLBACK_REFUND_TARGETS, generatedAt: new Date().toISOString(), error: null };

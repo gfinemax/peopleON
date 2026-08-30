@@ -28,7 +28,7 @@ export function SpecialRefundTargetsSection({
                     {error}
                 </p>
                 <p className="text-xs text-slate-400">
-                    회계 서버(<code className="bg-slate-800/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">http://dbapt-ledger.duckdns.org</code>) 인증 키가 일치하지 않아 원장 데이터를 불러올 수 없습니다. <br />
+                    회계 서버(<code className="bg-slate-800/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">https://dbapt-ledger.duckdns.org</code>) 인증 키가 일치하지 않아 원장 데이터를 불러올 수 없습니다. <br />
                     <code className="bg-slate-800/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">.env.local</code> 및 배포 환경 변수의 <code className="bg-slate-800/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">PEOPLEON_MEMBERS_API_KEY</code>를 회계 서버의 키와 동일하게 설정해야 합니다.
                 </p>
             </div>

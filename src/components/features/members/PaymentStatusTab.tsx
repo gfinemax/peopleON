@@ -305,7 +305,7 @@ function LedgerPaymentOverview({
     onReload: () => void;
 }) {
     const payment = summary.payment_summary;
-    const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'http://dbapt-ledger.duckdns.org').replace(/\/$/, '');
+    const ledgerBaseUrl = (process.env.NEXT_PUBLIC_LEDGER_URL || 'https://dbapt-ledger.duckdns.org').replace(/\/$/, '');
     const paymentHref = payment?.payment_url ? `${ledgerBaseUrl}${payment.payment_url}` : null;
 
     return (
