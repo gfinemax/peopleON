@@ -169,10 +169,13 @@ export default function SignUpPage() {
                                     id="password"
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="8자 이상 입력하세요"
+                                    inputMode="numeric"
+                                    pattern="[0-9]{6}"
+                                    maxLength={6}
+                                    placeholder="숫자 6자리를 입력하세요"
                                     className="pl-10 pr-10 h-11 bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                                     required
-                                    minLength={8}
+                                    minLength={6}
                                 />
                                 <button
                                     type="button"
@@ -196,7 +199,11 @@ export default function SignUpPage() {
                                     id="confirmPassword"
                                     name="confirmPassword"
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="비밀번호를 다시 입력하세요"
+                                    inputMode="numeric"
+                                    pattern="[0-9]{6}"
+                                    minLength={6}
+                                    maxLength={6}
+                                    placeholder="숫자 6자리를 다시 입력하세요"
                                     className="pl-10 h-11 bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                                     required
                                 />

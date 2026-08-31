@@ -215,14 +215,16 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                                                 type={visiblePasswords[user.id] ? 'text' : 'password'}
                                                 value={passwords[user.id] || ''}
                                                 onChange={(event) => {
-                                                    const value = event.target.value;
+                                                    const value = event.target.value.replace(/\D/g, '').slice(0, 6);
                                                     setPasswords((current) => ({ ...current, [user.id]: value }));
                                                     setMessage(null);
                                                 }}
-                                                minLength={8}
-                                                maxLength={72}
+                                                inputMode="numeric"
+                                                pattern="[0-9]{6}"
+                                                minLength={6}
+                                                maxLength={6}
                                                 autoComplete="new-password"
-                                                placeholder="8자 이상"
+                                                placeholder="숫자 6자리"
                                                 className="h-9 pr-9"
                                                 aria-label={`${user.email} 새 비밀번호`}
                                             />
@@ -241,7 +243,7 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            disabled={(passwords[user.id] || '').length < 8 || pendingPasswordUserId === user.id}
+                                            disabled={!/^\d{6}$/.test(passwords[user.id] || '') || pendingPasswordUserId === user.id}
                                             onClick={() => handlePasswordSave(user)}
                                         >
                                             {pendingPasswordUserId === user.id ? '변경 중' : '변경'}

@@ -78,8 +78,8 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
         return { error: '비밀번호가 일치하지 않습니다.' };
     }
 
-    if (password.length < 8) {
-        return { error: '비밀번호는 8자 이상으로 설정해주세요.' };
+    if (!/^\d{6}$/.test(password)) {
+        return { error: '비밀번호는 숫자 6자리로 설정해주세요.' };
     }
 
     const { data, error } = await supabase.auth.signUp({

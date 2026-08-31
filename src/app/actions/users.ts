@@ -153,12 +153,8 @@ export async function updateUserPassword(
         return { error: '사용자 정보가 없습니다.' };
     }
 
-    if (password.length < 8) {
-        return { error: '새 비밀번호는 8자 이상으로 설정해주세요.' };
-    }
-
-    if (password.length > 72) {
-        return { error: '새 비밀번호는 72자 이하로 설정해주세요.' };
+    if (!/^\d{6}$/.test(password)) {
+        return { error: '새 비밀번호는 숫자 6자리로 설정해주세요.' };
     }
 
     const supabaseAdmin = createAdminClient();
