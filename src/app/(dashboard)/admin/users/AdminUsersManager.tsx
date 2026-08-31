@@ -153,13 +153,12 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
             )}
 
             <div className="overflow-x-auto rounded-lg border bg-card">
-                <div className="grid min-w-[1220px] grid-cols-[minmax(220px,1.5fr)_140px_200px_330px_160px_110px] gap-0 border-b bg-muted/40 px-4 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                <div className="grid min-w-[1080px] grid-cols-[minmax(220px,1.5fr)_130px_270px_300px_140px] gap-0 border-b bg-muted/40 px-4 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     <div>계정</div>
                     <div>현재 권한</div>
-                    <div>권한 변경</div>
+                    <div>권한 변경 및 저장</div>
                     <div>새 비밀번호</div>
                     <div>최근 로그인</div>
-                    <div className="text-right">저장</div>
                 </div>
 
                 {users.length === 0 ? (
@@ -175,7 +174,7 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                             return (
                                 <div
                                     key={user.id}
-                                    className="grid min-w-[1220px] grid-cols-[minmax(220px,1.5fr)_140px_200px_330px_160px_110px] items-center gap-0 px-4 py-4 text-sm"
+                                    className="grid min-w-[1080px] grid-cols-[minmax(220px,1.5fr)_130px_270px_300px_140px] items-center gap-0 px-4 py-4 text-sm"
                                 >
                                     <div className="min-w-0">
                                         <div className="truncate font-semibold text-foreground">{user.email}</div>
@@ -191,12 +190,12 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                                         </Badge>
                                     </div>
 
-                                    <div>
+                                    <div className="flex items-center gap-2 pr-4">
                                         <Select
                                             value={selectedRole}
                                             onValueChange={(value) => handleRoleChange(user.id, value as AssignableUserRole)}
                                         >
-                                            <SelectTrigger className="w-[180px]">
+                                            <SelectTrigger className="min-w-0 flex-1">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -207,6 +206,17 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <Button
+                                            size="sm"
+                                            variant={hasChange ? 'default' : 'outline'}
+                                            disabled={!hasChange || isSaving}
+                                            onClick={() => handleSave(user)}
+                                        >
+                                            {isSaving ? (
+                                                <MaterialIcon name="progress_activity" size="sm" className="animate-spin" />
+                                            ) : null}
+                                            저장
+                                        </Button>
                                     </div>
 
                                     <div className="flex items-center gap-2 pr-4">
@@ -251,24 +261,6 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                                     </div>
 
                                     <div className="text-xs text-muted-foreground">{formatDateTime(user.lastSignInAt)}</div>
-
-                                    <div className="flex justify-end">
-                                        <Button
-                                            size="sm"
-                                            variant={hasChange ? 'default' : 'outline'}
-                                            disabled={!hasChange || isSaving}
-                                            onClick={() => handleSave(user)}
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <MaterialIcon name="progress_activity" size="sm" className="animate-spin" />
-                                                    저장
-                                                </>
-                                            ) : (
-                                                '저장'
-                                            )}
-                                        </Button>
-                                    </div>
                                 </div>
                             );
                         })}
