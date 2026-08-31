@@ -32,6 +32,12 @@ export type UpdateUserRoleState = {
     role?: AssignableUserRole;
 };
 
+export type UpdateUserPasswordState = {
+    success?: boolean;
+    error?: string;
+    userId?: string;
+};
+
 function isAssignableRole(value: unknown): value is AssignableUserRole {
     return typeof value === 'string' && assignableRoles.includes(value as AssignableUserRole);
 }
@@ -135,4 +141,43 @@ export async function updateUserRole(userId: string, role: AssignableUserRole): 
 
     revalidatePath('/admin/users');
     return { success: true, userId, role };
+}
+
+export async function updateUserPassword(
+    userId: string,
+    password: string,
+): Promise<UpdateUserPasswordState> {
+    const { user: actor } = await requireRole(ROLE_GROUPS.admin);
+
+    if (!userId) {
+        return { error: '사용자 정보가 없습니다.' };
+    }
+
+    if (password.length < 8) {
+        return { error: '새 비밀번호는 8자 이상으로 설정해주세요.' };
+    }
+
+    if (password.length > 72) {
+        return { error: '새 비밀번호는 72자 이하로 설정해주세요.' };
+    }
+
+    const supabaseAdmin = createAdminClient();
+    const { data: targetData, error: targetError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+    if (targetError || !targetData.user) {
+        return { error: targetError?.message || '사용자를 찾을 수 없습니다.' };
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+    if (error) {
+        return { error: error.message };
+    }
+
+    await createAuditLog('RESET_USER_PASSWORD', userId, {
+        target_user_id: userId,
+        target_email: targetData.user.email,
+        actor_user_id: actor.id,
+    });
+
+    return { success: true, userId };
 }

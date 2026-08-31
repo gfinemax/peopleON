@@ -173,7 +173,7 @@ export default function LoginPage() {
                         </Link>
                         <span className="text-border">|</span>
                         <Link href="/signup" className="hover:text-primary transition-colors">
-                            계정 신청 문의
+                            계정 가입
                         </Link>
                     </div>
                 </div>

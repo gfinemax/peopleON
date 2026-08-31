@@ -17,7 +17,7 @@ export default async function AdminUsersPage() {
             <div className="border-b border-border bg-card px-6 py-5">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">계정 권한 관리</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    가입 계정별 역할을 지정합니다. 권한 변경은 감사 로그에 기록됩니다.
+                    가입 계정별 역할과 새 비밀번호를 설정합니다. 변경 내역은 감사 로그에 기록됩니다.
                 </p>
             </div>
             <main className="flex-1 overflow-y-auto p-6">

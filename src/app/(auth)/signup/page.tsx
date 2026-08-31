@@ -7,11 +7,12 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { User, Lock, Mail, AlertCircle, Info, Loader2, CheckCircle2 } from 'lucide-react';
+import { User, Lock, Mail, AlertCircle, Info, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export default function SignUpPage() {
     const [state, formAction, isPending] = useActionState<AuthState, FormData>(signUp, {});
     const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         const formData = new FormData(event.currentTarget);
@@ -167,12 +168,20 @@ export default function SignUpPage() {
                                 <Input
                                     id="password"
                                     name="password"
-                                    type="password"
-                                    placeholder="6자 이상 입력하세요"
-                                    className="pl-10 h-11 bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="8자 이상 입력하세요"
+                                    className="pl-10 pr-10 h-11 bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((visible) => !visible)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                    aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+                                >
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
                             </div>
                         </div>
 
@@ -186,7 +195,7 @@ export default function SignUpPage() {
                                 <Input
                                     id="confirmPassword"
                                     name="confirmPassword"
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     placeholder="비밀번호를 다시 입력하세요"
                                     className="pl-10 h-11 bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                                     required

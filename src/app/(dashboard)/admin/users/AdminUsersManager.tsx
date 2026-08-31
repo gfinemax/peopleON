@@ -4,10 +4,12 @@ import { useMemo, useState, useTransition } from 'react';
 import {
     type AdminUserListItem,
     type AssignableUserRole,
+    updateUserPassword,
     updateUserRole,
 } from '@/app/actions/users';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -54,6 +56,9 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
         ),
     );
     const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+    const [pendingPasswordUserId, setPendingPasswordUserId] = useState<string | null>(null);
+    const [passwords, setPasswords] = useState<Record<string, string>>({});
+    const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [isPending, startTransition] = useTransition();
 
@@ -100,6 +105,26 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
         });
     };
 
+    const handlePasswordSave = (user: AdminUserListItem) => {
+        const password = passwords[user.id] || '';
+        setPendingPasswordUserId(user.id);
+        setMessage(null);
+
+        startTransition(async () => {
+            const result = await updateUserPassword(user.id, password);
+            if (result.error) {
+                setMessage({ type: 'error', text: result.error });
+                setPendingPasswordUserId(null);
+                return;
+            }
+
+            setPasswords((current) => ({ ...current, [user.id]: '' }));
+            setVisiblePasswords((current) => ({ ...current, [user.id]: false }));
+            setMessage({ type: 'success', text: `${user.email} 비밀번호를 변경했습니다.` });
+            setPendingPasswordUserId(null);
+        });
+    };
+
     return (
         <div className="space-y-5">
             <div className="grid gap-3 md:grid-cols-4">
@@ -127,11 +152,12 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                 </div>
             )}
 
-            <div className="overflow-hidden rounded-lg border bg-card">
-                <div className="grid grid-cols-[minmax(220px,1.5fr)_160px_220px_170px_130px] gap-0 border-b bg-muted/40 px-4 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <div className="overflow-x-auto rounded-lg border bg-card">
+                <div className="grid min-w-[1220px] grid-cols-[minmax(220px,1.5fr)_140px_200px_330px_160px_110px] gap-0 border-b bg-muted/40 px-4 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     <div>계정</div>
                     <div>현재 권한</div>
                     <div>권한 변경</div>
+                    <div>새 비밀번호</div>
                     <div>최근 로그인</div>
                     <div className="text-right">저장</div>
                 </div>
@@ -149,7 +175,7 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                             return (
                                 <div
                                     key={user.id}
-                                    className="grid grid-cols-[minmax(220px,1.5fr)_160px_220px_170px_130px] items-center gap-0 px-4 py-4 text-sm"
+                                    className="grid min-w-[1220px] grid-cols-[minmax(220px,1.5fr)_140px_200px_330px_160px_110px] items-center gap-0 px-4 py-4 text-sm"
                                 >
                                     <div className="min-w-0">
                                         <div className="truncate font-semibold text-foreground">{user.email}</div>
@@ -181,6 +207,45 @@ export function AdminUsersManager({ initialUsers }: { initialUsers: AdminUserLis
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 pr-4">
+                                        <div className="relative min-w-0 flex-1">
+                                            <Input
+                                                type={visiblePasswords[user.id] ? 'text' : 'password'}
+                                                value={passwords[user.id] || ''}
+                                                onChange={(event) => {
+                                                    const value = event.target.value;
+                                                    setPasswords((current) => ({ ...current, [user.id]: value }));
+                                                    setMessage(null);
+                                                }}
+                                                minLength={8}
+                                                maxLength={72}
+                                                autoComplete="new-password"
+                                                placeholder="8자 이상"
+                                                className="h-9 pr-9"
+                                                aria-label={`${user.email} 새 비밀번호`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setVisiblePasswords((current) => ({
+                                                    ...current,
+                                                    [user.id]: !current[user.id],
+                                                }))}
+                                                className="absolute inset-y-0 right-0 px-2 text-muted-foreground hover:text-foreground"
+                                                aria-label={visiblePasswords[user.id] ? '비밀번호 숨기기' : '비밀번호 보기'}
+                                            >
+                                                <MaterialIcon name={visiblePasswords[user.id] ? 'visibility_off' : 'visibility'} size="sm" />
+                                            </button>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={(passwords[user.id] || '').length < 8 || pendingPasswordUserId === user.id}
+                                            onClick={() => handlePasswordSave(user)}
+                                        >
+                                            {pendingPasswordUserId === user.id ? '변경 중' : '변경'}
+                                        </Button>
                                     </div>
 
                                     <div className="text-xs text-muted-foreground">{formatDateTime(user.lastSignInAt)}</div>

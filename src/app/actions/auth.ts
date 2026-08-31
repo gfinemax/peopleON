@@ -65,12 +65,21 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
 
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const name = formData.get('name') as string;
+    const name = String(formData.get('name') || '').trim();
+    const confirmPassword = String(formData.get('confirmPassword') || '');
 
     console.log('Attempting sign up for:', email);
 
-    if (!email || !password) {
-        return { error: '이메일과 비밀번호를 입력해주세요.' };
+    if (!name || !email || !password || !confirmPassword) {
+        return { error: '모든 항목을 입력해주세요.' };
+    }
+
+    if (password !== confirmPassword) {
+        return { error: '비밀번호가 일치하지 않습니다.' };
+    }
+
+    if (password.length < 8) {
+        return { error: '비밀번호는 8자 이상으로 설정해주세요.' };
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -78,7 +87,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
         password,
         options: {
             data: {
-                name: name || email.split('@')[0],
+                name,
             },
         },
     });
@@ -87,6 +96,9 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
         console.error('Sign Up Error:', error.message, error.status);
         if (error.message.includes('fetch failed')) {
             return { error: '서버 연결 실패: 환경변수/네트워크 설정을 확인해주세요.' };
+        }
+        if (error.message.toLowerCase().includes('signups not allowed')) {
+            return { error: '현재 가입이 비활성화되어 있습니다. 관리자에게 문의해주세요.' };
         }
         return { error: `회원가입 실패: ${error.message}` };
     }
