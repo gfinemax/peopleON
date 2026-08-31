@@ -68,6 +68,7 @@ const getMemberCategory = (member: MemberDetailDialogMember) => {
     const tiers = [...(member.tiers || []), member.tier || '', member.role_code || '', member.status || ''];
     const hasTier = (keyword: string) => tiers.some((tier) => tier.includes(keyword));
 
+    if (hasTier('탈퇴예정')) return '조합원(탈퇴예정)';
     if (hasTier('환불')) return '환불조합원';
     if (member.owner_group === 'registered' || member.is_registered || hasTier('등기조합원')) return '등기조합원';
     if (hasTier('지주')) return '지주조합원';
@@ -86,12 +87,14 @@ const memberCategoryOptions = [
     { label: '조합원(2차)', value: '2차' },
     { label: '조합원(일반분양)', value: '일반분양' },
     { label: '조합원(예비)', value: '예비조합원' },
+    { label: '조합원(탈퇴예정)', value: '탈퇴예정' },
     { label: '조합원(환불)', value: '권리증환불' },
 ];
 
 const getMemberCategoryValue = (member: MemberDetailDialogMember) => {
     const category = getMemberCategory(member);
     if (category === '환불조합원') return '권리증환불';
+    if (category === '조합원(탈퇴예정)') return '탈퇴예정';
     return category;
 };
 

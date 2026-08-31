@@ -228,7 +228,7 @@ export function buildRawUnifiedPeople(
                 const ownerRoles = rolesByEntity.get(agentFor.owner_id) || [];
                 const ownerRights = rightsByEntity.get(agentFor.owner_id) || [];
                 const isMemberOwner = ownerRoles.some((role) =>
-                    ['등기조합원', '지주조합원', '원지주', '2차', '일반분양', '3차', '예비조합원'].includes(
+                    ['등기조합원', '지주조합원', '원지주', '2차', '일반분양', '3차', '예비조합원', '탈퇴예정'].includes(
                         normalizeTierLabel(role.role_code, role.is_registered) || '',
                     ),
                 );
