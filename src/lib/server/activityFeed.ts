@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -112,37 +113,30 @@ const cachedActivityFeedEntries = unstable_cache(
     },
 );
 
-const cachedRecentActivityLogs = unstable_cache(
-    async (sortedEntityIds: string[]): Promise<InteractionLogRow[]> => {
-        if (!sortedEntityIds.length) return [];
-
-        const supabase = createAdminClient();
-        const allLogs: InteractionLogRow[] = [];
-        for (const entityIdChunk of chunk(sortedEntityIds, 80)) {
-            const { data: logs, error } = await supabase
-                .from('interaction_logs')
-                .select('id, entity_id, type, direction, summary, staff_name, created_at')
-                .in('entity_id', entityIdChunk)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Failed to load recent interactions:', error.message);
-                continue;
-            }
-
-            if (logs?.length) {
-                allLogs.push(...(logs as InteractionLogRow[]));
-            }
+async function fetchLatestEligibleLogs(supabase: SupabaseClient, entityIds: string[]) {
+    const logs: InteractionLogRow[] = [];
+    for (const ids of chunk(entityIds, 10)) {
+        const results = await Promise.all(ids.map((id) => supabase
+            .from('interaction_logs')
+            .select('id, entity_id, type, direction, summary, staff_name, created_at')
+            .eq('entity_id', id)
+            .gte('created_at', LEGACY_THRESHOLD_DATE.toISOString())
+            .or('staff_name.is.null,staff_name.neq.' + LEGACY_IMPORT_STAFF)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
+            .limit(1)));
+        for (const result of results) {
+            if (result.error) throw result.error;
+            logs.push(...(result.data || []) as InteractionLogRow[]);
         }
+    }
+    return logs;
+}
 
-        allLogs.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
-        return allLogs;
-    },
-    ['activity-recent-logs'],
-    {
-        tags: [CACHE_TAGS.activityFeed],
-        revalidate: 120,
-    },
+const cachedRecentActivityLogs = unstable_cache(
+    async (sortedEntityIds: string[]) => fetchLatestEligibleLogs(createAdminClient(), sortedEntityIds),
+    ['activity-latest-eligible-logs-v2'],
+    { tags: [CACHE_TAGS.activityFeed], revalidate: 120 },
 );
 
 const cachedLatestActivityLogsByEntity = unstable_cache(
@@ -153,10 +147,10 @@ const cachedLatestActivityLogsByEntity = unstable_cache(
         const allLogs: LatestInteractionLogViewRow[] = [];
 
         for (const entityIdChunk of chunk(sortedEntityIds, 200)) {
-            const { data, error } = await supabase
+            const { data, error } = await readAllPages(supabase
                 .from('vw_latest_interaction_log_by_entity')
                 .select('id, entity_id, type, direction, summary, staff_name, created_at')
-                .in('entity_id', entityIdChunk);
+                .in('entity_id', entityIdChunk).order('entity_id', { ascending: true }));
 
             if (error) {
                 return null;
@@ -187,7 +181,7 @@ export async function fetchActivityFeedEntries(
         .from('interaction_logs')
         .select('id, entity_id, type, direction, summary, staff_name, created_at')
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(limit).order('id', { ascending: true });
 
     if (error || !logs?.length) {
         if (error) console.error('Failed to load interaction feed:', error.message);
@@ -198,10 +192,10 @@ export async function fetchActivityFeedEntries(
 
     let targetsById = new Map<string, AccountEntityLogTarget>();
     if (entityIds.length > 0) {
-        const { data: targets } = await supabase
+        const { data: targets } = await readAllPages(supabase
             .from('account_entities')
             .select('id, display_name, phone')
-            .in('id', entityIds);
+            .in('id', entityIds).order('id', { ascending: true }));
 
         targetsById = new Map((targets || []).map((target) => [target.id, target]));
     }
@@ -254,28 +248,7 @@ export async function fetchRecentActivitySummariesForPeople<T extends PersonLike
     const allLogs = latestLogs ?? (
         supabase === createAdminClient()
             ? await cachedRecentActivityLogs(sortedEntityIds)
-            : await (async () => {
-                  const logs: InteractionLogRow[] = [];
-                  for (const entityIdChunk of chunk(sortedEntityIds, 80)) {
-                      const { data, error } = await supabase
-                          .from('interaction_logs')
-                          .select('id, entity_id, type, direction, summary, staff_name, created_at')
-                          .in('entity_id', entityIdChunk)
-                          .order('created_at', { ascending: false });
-
-                      if (error) {
-                          console.error('Failed to load recent interactions:', error.message);
-                          continue;
-                      }
-
-                      if (data?.length) {
-                          logs.push(...(data as InteractionLogRow[]));
-                      }
-                  }
-
-                  logs.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
-                  return logs;
-              })()
+            : await fetchLatestEligibleLogs(supabase, sortedEntityIds)
     );
 
     if (!allLogs.length) {

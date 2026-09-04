@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -40,11 +41,11 @@ export async function GET(request: Request) {
 
     try {
         // 1. Fetch matched legacy records from asset_rights
-        const { data: records, error } = await supabase
+        const { data: records, error } = await readAllPages(supabase
             .from('asset_rights')
             .select('id, entity_id, meta')
             .not('entity_id', 'is', null)
-            .order('id', { ascending: true });
+            .order('id', { ascending: true }));
 
         if (error) throw error;
         if (!records) return NextResponse.json({ message: 'No records found', count: 0 });
@@ -134,10 +135,10 @@ export async function GET(request: Request) {
 
             if (syncAccounting && logs.length > 0) {
                 const memberIds = Array.from(new Set(logs.map((item) => item.memberId)));
-                const { data: syncedMembers, error: syncedMembersError } = await supabase
+                const { data: syncedMembers, error: syncedMembersError } = await readAllPages(supabase
                     .from('account_entities')
                     .select('id, display_name, phone')
-                    .in('id', memberIds);
+                    .in('id', memberIds).order('id', { ascending: true }));
 
                 if (syncedMembersError) {
                     accountingSyncFail = memberIds.length;

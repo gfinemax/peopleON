@@ -1,5 +1,6 @@
 'use client';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
@@ -31,7 +32,7 @@ export function UnitTypesSection() {
 
     const loadUnitTypes = useCallback(async () => {
         const supabase = createClient();
-        const { data } = await supabase.from('unit_types').select('*').eq('is_active', true).order('area_sqm');
+        const { data } = await readAllPages(supabase.from('unit_types').select('id, name, area_sqm, total_contribution, first_sale_price, second_sale_price, general_sale_price, certificate_amount, contract_amount, installment_1_amount, installment_2_amount, balance_amount, is_active').eq('is_active', true).order('area_sqm').order('id', { ascending: true }));
         return (data || []) as UnitType[];
     }, []);
 

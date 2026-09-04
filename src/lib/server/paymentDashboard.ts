@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { type UnifiedPerson } from '@/services/memberAggregation';
 import { isSettlementTarget, splitSourceCertificateDisplay } from '@/lib/members/unifiedPersonUtils';
@@ -184,12 +185,12 @@ const buildSearchTarget = (summary: PersonPaymentSummary) =>
 async function fetchPaymentEntitySummaries(supabase: SupabaseClient, entityIds: string[]) {
     if (entityIds.length === 0) return [] as MemberPaymentEntitySummaryRow[];
 
-    const { data, error } = await supabase
+    const { data, error } = await readAllPages(supabase
         .from('vw_member_payment_entity_summary')
         .select(
             'entity_id, payment_count, contribution_due_base, contribution_paid_base, certificate_paid, premium_recognized_paid, union_fee_actual_paid, union_fee_count, structured_count, latest_paid_date, unit_type_names, account_names',
         )
-        .in('entity_id', entityIds);
+        .in('entity_id', entityIds).order('entity_id', { ascending: true }));
 
     if (error) return null;
     return (data as MemberPaymentEntitySummaryRow[] | null) || [];
@@ -437,22 +438,22 @@ export async function fetchPaymentDashboardData(
     } else {
         const [memberPaymentsRes, unitTypesRes, accountsRes] = await Promise.all([
             allEntityIds.length > 0
-                ? supabase
+                ? readAllPages(supabase
                     .from('member_payments')
                     .select('id, entity_id, unit_type_id, payment_type, amount_due, amount_paid, deposit_account_id, paid_date, receipt_note, is_contribution, status, sort_order')
                     .in('entity_id', allEntityIds)
-                    .order('sort_order', { ascending: true })
+                    .order('sort_order', { ascending: true }).order('id', { ascending: true }))
                 : Promise.resolve({ data: [], error: null }),
-            supabase
+            readAllPages(supabase
                 .from('unit_types')
                 .select('id, name, area_sqm')
                 .eq('is_active', true)
-                .order('area_sqm', { ascending: true }),
-            supabase
+                .order('area_sqm', { ascending: true }).order('id', { ascending: true })),
+            readAllPages(supabase
                 .from('deposit_accounts')
                 .select('id, account_name, account_type')
                 .eq('is_active', true)
-                .order('account_type', { ascending: true }),
+                .order('account_type', { ascending: true }).order('id', { ascending: true })),
         ]);
 
         const paymentRows = (memberPaymentsRes.data as MemberPaymentRow[] | null) || [];

@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type PartyProfileRow = {
@@ -42,10 +43,10 @@ export async function fetchCertificateAuditQualityMetrics(
         };
     }
 
-    const { data: partyProfilesRaw } = await supabase
+    const { data: partyProfilesRaw } = await readAllPages(supabase
         .from('party_profiles')
         .select('id, member_id')
-        .in('member_id', memberIdsFromLegacy);
+        .in('member_id', memberIdsFromLegacy).order('id', { ascending: true }));
 
     const partyProfiles = ((partyProfilesRaw as PartyProfileRow[] | null) || []);
     const partyByMember = new Map(
@@ -75,11 +76,11 @@ export async function fetchCertificateAuditQualityMetrics(
         };
     }
 
-    const { data: settlementCasesRaw } = await supabase
+    const { data: settlementCasesRaw } = await readAllPages(supabase
         .from('settlement_cases')
         .select('id, party_id, case_status, created_at')
         .in('party_id', memberPartyIds)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id', { ascending: true }));
 
     const settlementCases = ((settlementCasesRaw as SettlementCaseRow[] | null) || []);
     const latestCaseByParty = new Map<string, SettlementCaseRow>();
@@ -94,15 +95,15 @@ export async function fetchCertificateAuditQualityMetrics(
     const latestCaseIds = Array.from(latestCaseByParty.values()).map((item) => item.id);
     if (latestCaseIds.length > 0) {
         const [linesRes, paymentsRes] = await Promise.all([
-            supabase
+            readAllPages(supabase
                 .from('settlement_lines')
                 .select('case_id, amount')
                 .in('case_id', latestCaseIds)
-                .eq('line_type', 'final_refund'),
-            supabase
+                .eq('line_type', 'final_refund').order('id', { ascending: true })),
+            readAllPages(supabase
                 .from('refund_payments')
                 .select('case_id, paid_amount, payment_status')
-                .in('case_id', latestCaseIds),
+                .in('case_id', latestCaseIds).order('id', { ascending: true })),
         ]);
 
         const expectedByCase = new Map<string, number>();

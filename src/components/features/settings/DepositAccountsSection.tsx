@@ -1,5 +1,6 @@
 'use client';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
@@ -32,7 +33,7 @@ export function DepositAccountsSection() {
 
     const loadAccounts = useCallback(async () => {
         const supabase = createClient();
-        const { data } = await supabase.from('deposit_accounts').select('*').eq('is_active', true).order('account_type');
+        const { data } = await readAllPages(supabase.from('deposit_accounts').select('id, account_name, bank_name, account_number, account_type, is_official, is_active').eq('is_active', true).order('account_type').order('id', { ascending: true }));
         return (data || []) as DepositAccount[];
     }, []);
 

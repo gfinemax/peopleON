@@ -47,7 +47,7 @@ export function MobileNav() {
                 {tabs.map((tab) => {
                     const isActive = pathname === tab.href;
                     return (
-                        <Link
+                        <Link prefetch={false}
                             key={tab.name}
                             href={tab.href}
                             className={cn(

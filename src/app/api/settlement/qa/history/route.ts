@@ -120,7 +120,7 @@ export async function GET(request: Request) {
         .eq('entity_type', 'qa_report')
         .eq('action', 'run')
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(limit).order('id', { ascending: true });
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

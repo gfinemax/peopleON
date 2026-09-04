@@ -28,14 +28,14 @@ export async function POST() {
     const results: { step: string; ok: boolean; error?: string }[] = [];
 
     // 1. Create unit_types - test if it exists first
-    const { error: utCheck } = await supabase.from('unit_types').select('id').limit(1);
+    const { error: utCheck } = await supabase.from('unit_types').select('id').limit(1).order('id', { ascending: true });
     if (utCheck && utCheck.message.includes('does not exist')) {
         results.push({ step: 'unit_types', ok: false, error: 'Table does not exist. Please run scripts/financial_tables.sql in Supabase Dashboard SQL Editor.' });
     } else {
         results.push({ step: 'unit_types check', ok: true });
 
         // Check if seed data exists
-        const { data: utData } = await supabase.from('unit_types').select('id').limit(1);
+        const { data: utData } = await supabase.from('unit_types').select('id').limit(1).order('id', { ascending: true });
         if (!utData || utData.length === 0) {
             // Insert seed data
             const { error: seedErr } = await supabase.from('unit_types').insert([
@@ -50,13 +50,13 @@ export async function POST() {
     }
 
     // 2. Check deposit_accounts
-    const { error: daCheck } = await supabase.from('deposit_accounts').select('id').limit(1);
+    const { error: daCheck } = await supabase.from('deposit_accounts').select('id').limit(1).order('id', { ascending: true });
     if (daCheck && daCheck.message.includes('does not exist')) {
         results.push({ step: 'deposit_accounts', ok: false, error: 'Table does not exist. Please run scripts/financial_tables.sql in Supabase Dashboard SQL Editor.' });
     } else {
         results.push({ step: 'deposit_accounts check', ok: true });
 
-        const { data: daData } = await supabase.from('deposit_accounts').select('id').limit(1);
+        const { data: daData } = await supabase.from('deposit_accounts').select('id').limit(1).order('id', { ascending: true });
         if (!daData || daData.length === 0) {
             const { error: seedErr } = await supabase.from('deposit_accounts').insert([
                 { account_name: '조합 주거래계좌', bank_name: '국민은행', account_type: 'union', is_official: true },
@@ -73,7 +73,7 @@ export async function POST() {
     }
 
     // 3. Check member_payments
-    const { error: mpCheck } = await supabase.from('member_payments').select('id').limit(1);
+    const { error: mpCheck } = await supabase.from('member_payments').select('id').limit(1).order('id', { ascending: true });
     if (mpCheck && mpCheck.message.includes('does not exist')) {
         results.push({ step: 'member_payments', ok: false, error: 'Table does not exist. Please run scripts/financial_tables.sql in Supabase Dashboard SQL Editor.' });
     } else {

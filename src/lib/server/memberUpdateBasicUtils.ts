@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
     MemberUpdatePayload,
@@ -67,10 +68,10 @@ export async function syncPreferredUnitType({
 }) {
     if (typeof preferredUnitType !== 'string') return null;
 
-    const { data: entities, error: selectError } = await supabase
+    const { data: entities, error: selectError } = await readAllPages(supabase
         .from('account_entities')
         .select('id, meta')
-        .in('id', targetIds);
+        .in('id', targetIds).order('id', { ascending: true }));
     if (selectError) return selectError;
 
     const normalizedValue = preferredUnitType.trim() || null;

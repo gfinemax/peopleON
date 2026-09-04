@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -124,12 +125,12 @@ export async function GET(request: Request) {
         legacyCertificatesRes,
         compatCertificatesRes,
     ] = await Promise.all([
-        supabase.from('party_profiles').select('id'),
-        supabase.from('account_entities').select('id, source_party_id'),
-        supabase.from('membership_roles').select('role_code, role_status').eq('role_status', 'active'),
-        supabase.from('v_member_roles_compat').select('entity_id, role_code, role_status').eq('role_status', 'active'),
-        supabase.from('asset_rights').select('entity_id, certificate_number, status'),
-        supabase.from('v_right_certificates_compat').select('entity_id, certificate_number, status'),
+        readAllPages(supabase.from('party_profiles').select('id').order('id', { ascending: true })),
+        readAllPages(supabase.from('account_entities').select('id, source_party_id').order('id', { ascending: true })),
+        readAllPages(supabase.from('membership_roles').select('role_code, role_status').eq('role_status', 'active').order('id', { ascending: true })),
+        readAllPages(supabase.from('v_member_roles_compat').select('entity_id, role_code, role_status').eq('role_status', 'active').order('entity_id', { ascending: true })),
+        readAllPages(supabase.from('asset_rights').select('entity_id, certificate_number, status').order('id', { ascending: true })),
+        readAllPages(supabase.from('v_right_certificates_compat').select('entity_id, certificate_number, status').order('entity_id', { ascending: true })),
     ]);
 
     if (partyProfilesRes.error) return NextResponse.json({ error: partyProfilesRes.error.message }, { status: 500 });

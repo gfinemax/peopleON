@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
     collectSourceCertificateOccurrences,
@@ -204,9 +205,9 @@ async function fetchPaymentOverviewSummary(supabase: SupabaseClient) {
             .from('vw_dashboard_payment_total_summary')
             .select('total_due, total_paid')
             .single(),
-        supabase
+        readAllPages(supabase
             .from('vw_dashboard_payment_step_summary')
-            .select('bucket, due, paid'),
+            .select('bucket, due, paid').order('bucket', { ascending: true })),
     ]);
 
     if (totalRes.error || stepRes.error) return null;
@@ -223,15 +224,15 @@ async function fetchFinancialStatsSummary(supabase: SupabaseClient) {
             .from('vw_member_payment_financial_total_summary')
             .select('payment_count, contribution_due, contribution_paid, certificate_paid, premium_recognized_paid')
             .single(),
-        supabase
+        readAllPages(supabase
             .from('vw_member_payment_type_summary')
-            .select('payment_type, due, paid'),
-        supabase
+            .select('payment_type, due, paid').order('payment_type', { ascending: true })),
+        readAllPages(supabase
             .from('vw_member_payment_unit_type_summary')
-            .select('unit_type_name, due, paid, count'),
-        supabase
+            .select('unit_type_name, due, paid, count').order('unit_type_name', { ascending: true })),
+        readAllPages(supabase
             .from('vw_member_payment_account_summary')
-            .select('account_name, account_type, total'),
+            .select('account_name, account_type, total').order('account_name', { ascending: true })),
     ]);
 
     if (totalRes.error || typeRes.error || unitRes.error || accountRes.error) return null;
@@ -245,7 +246,7 @@ async function fetchFinancialStatsSummary(supabase: SupabaseClient) {
 }
 
 async function fetchPaymentOverviewFallback(supabase: SupabaseClient) {
-    const { data } = await supabase.from('payments').select('amount_due, amount_paid, step');
+    const { data } = await readAllPages(supabase.from('payments').select('amount_due, amount_paid, step').order('id', { ascending: true }));
     const allPayments = (data as DashboardPaymentRow[] | null) || [];
     const totalAmount = allPayments.reduce((sum, payment) => sum + (payment.amount_due || 0), 0);
     const collectedAmount = allPayments.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0);
@@ -260,11 +261,11 @@ async function fetchPaymentOverviewFallback(supabase: SupabaseClient) {
 
 async function fetchFinancialStatsFallback(supabase: SupabaseClient) {
     const [memberPaymentsRes, unitTypesRes, accountsRes] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('member_payments')
-            .select('payment_type, amount_due, amount_paid, is_contribution, unit_type_id, deposit_account_id'),
-        supabase.from('unit_types').select('id, name').eq('is_active', true),
-        supabase.from('deposit_accounts').select('id, account_name, account_type').eq('is_active', true),
+            .select('payment_type, amount_due, amount_paid, is_contribution, unit_type_id, deposit_account_id').order('id', { ascending: true })),
+        readAllPages(supabase.from('unit_types').select('id, name').eq('is_active', true).order('id', { ascending: true })),
+        readAllPages(supabase.from('deposit_accounts').select('id, account_name, account_type').eq('is_active', true).order('id', { ascending: true })),
     ]);
 
     return buildDashboardFinancialStats(
@@ -306,11 +307,11 @@ export async function fetchDashboardOverviewData(supabase: SupabaseClient): Prom
         newMembersRes,
         favoritesRes,
     ] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('membership_roles')
             .select('entity_id')
             .eq('is_registered', true)
-            .gte('created_at', thirtyDaysAgo.toISOString()),
+            .gte('created_at', thirtyDaysAgo.toISOString()).order('id', { ascending: true })),
         fetchPaymentOverviewSummary(supabase),
         fetchFinancialStatsSummary(supabase),
         supabase
@@ -318,18 +319,18 @@ export async function fetchDashboardOverviewData(supabase: SupabaseClient): Prom
             .select('id, paid_date, step_name, step, amount_paid, account_entities(display_name)')
             .not('paid_date', 'is', null)
             .order('paid_date', { ascending: false })
-            .limit(3),
+            .limit(3).order('id', { ascending: true }),
         supabase
             .from('account_entities')
             .select('id, display_name, created_at, unit_group')
             .order('created_at', { ascending: false })
-            .limit(3),
+            .limit(3).order('id', { ascending: true }),
         supabase
             .from('account_entities')
             .select('id, display_name, member_number, tier, status, is_favorite')
             .eq('is_favorite', true)
             .order('display_name', { ascending: true })
-            .limit(10),
+            .limit(10).order('id', { ascending: true }),
     ]);
 
     const sourceCertificateOccurrences = collectSourceCertificateOccurrences(unifiedPeople);

@@ -1,13 +1,15 @@
 import 'server-only';
 
 import { unstable_cache } from 'next/cache';
+import { decodeSnapshot, encodeSnapshot } from './snapshotCodec';
+import { singleFlight } from './singleFlight';
 
 import { CACHE_TAGS } from '@/lib/server/cacheTags';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getUnifiedMembers, getUnifiedMembersLite, type UnifiedPerson } from '@/services/memberAggregation';
 
 const loadUnifiedMembersSnapshot = unstable_cache(
-    async (): Promise<UnifiedPerson[]> => {
+    async (): Promise<string> => {
         const supabase = createAdminClient();
         console.time('build-unified-members-snapshot');
         try {
@@ -21,12 +23,12 @@ const loadUnifiedMembersSnapshot = unstable_cache(
                 throw new Error(`Failed to build unified members snapshot: ${message}`);
             }
 
-            return unifiedPeople;
+            return encodeSnapshot(unifiedPeople);
         } finally {
             console.timeEnd('build-unified-members-snapshot');
         }
     },
-    ['unified-members-snapshot-v5'],
+    ['unified-members-snapshot-v6-compressed'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
@@ -34,7 +36,7 @@ const loadUnifiedMembersSnapshot = unstable_cache(
 );
 
 const loadUnifiedMembersLiteSnapshot = unstable_cache(
-    async (): Promise<UnifiedPerson[]> => {
+    async (): Promise<string> => {
         const supabase = createAdminClient();
         console.time('build-unified-members-lite-snapshot');
         try {
@@ -48,33 +50,36 @@ const loadUnifiedMembersLiteSnapshot = unstable_cache(
                 throw new Error(`Failed to build unified members lite snapshot: ${message}`);
             }
 
-            return unifiedPeople;
+            return encodeSnapshot(unifiedPeople);
         } finally {
             console.timeEnd('build-unified-members-lite-snapshot');
         }
     },
-    ['unified-members-lite-snapshot-v5'],
+    ['unified-members-lite-snapshot-v6-compressed'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
     },
 );
 
+const readUnifiedSnapshot = singleFlight(loadUnifiedMembersSnapshot);
+const readLiteSnapshot = singleFlight(loadUnifiedMembersLiteSnapshot);
+
 export async function getUnifiedMembersSnapshot() {
     try {
-        return await loadUnifiedMembersSnapshot();
+        return decodeSnapshot<UnifiedPerson[]>(await readUnifiedSnapshot());
     } catch (error) {
         console.error('Unified members snapshot error:', error);
-        return [];
+        throw error;
     }
 }
 
 // Use only for identity/contact workflows. Certificate, settlement, and relationship-derived fields are intentionally light.
 export async function getUnifiedMembersLiteSnapshot() {
     try {
-        return await loadUnifiedMembersLiteSnapshot();
+        return decodeSnapshot<UnifiedPerson[]>(await readLiteSnapshot());
     } catch (error) {
         console.error('Unified members lite snapshot error:', error);
-        return [];
+        throw error;
     }
 }

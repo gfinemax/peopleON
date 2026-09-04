@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type RoleType = 'member' | 'certificate_holder' | 'related_party' | 'refund_applicant';
@@ -59,20 +60,20 @@ export async function fetchPartyRolesCompat(
     try {
         let entityRows: EntityRow[] = [];
         if (partyIds.length > 0) {
-            const { data: entityRowsByParty, error: entityRowsByPartyError } = await supabase
+            const { data: entityRowsByParty, error: entityRowsByPartyError } = await readAllPages(supabase
                 .from('account_entities')
                 .select('id, source_party_id')
-                .in('source_party_id', partyIds);
+                .in('source_party_id', partyIds).order('id', { ascending: true }));
 
             if (!entityRowsByPartyError) {
                 entityRows = (entityRowsByParty as EntityRow[] | null) || [];
                 if (entityRows.length === 0) return [];
             }
         } else {
-            const { data: allEntityRows, error: allEntityRowsError } = await supabase
+            const { data: allEntityRows, error: allEntityRowsError } = await readAllPages(supabase
                 .from('account_entities')
                 .select('id, source_party_id')
-                .not('source_party_id', 'is', null);
+                .not('source_party_id', 'is', null).order('id', { ascending: true }));
 
             if (!allEntityRowsError) {
                 entityRows = (allEntityRows as EntityRow[] | null) || [];
@@ -89,13 +90,13 @@ export async function fetchPartyRolesCompat(
 
             let compatQuery = supabase
                 .from('v_member_roles_compat')
-                .select('entity_id, role_code, role_status');
+                .select('entity_id, role_code, role_status').order('entity_id', { ascending: true });
 
             if (entityIds.length > 0) {
                 compatQuery = compatQuery.in('entity_id', entityIds);
             }
 
-            const { data: compatRowsRaw, error: compatError } = await compatQuery;
+            const { data: compatRowsRaw, error: compatError } = await readAllPages(compatQuery);
             if (!compatError) {
                 const compatRows = (compatRowsRaw as CompatRoleRow[] | null) || [];
                 return compatRows
@@ -126,16 +127,16 @@ export async function fetchPartyRolesCompat(
         // Map entity_id → source_party_id for result mapping
         let entityRows: EntityRow[] = [];
         if (partyIds.length > 0) {
-            const { data: entityRowsByParty } = await supabase
+            const { data: entityRowsByParty } = await readAllPages(supabase
                 .from('account_entities')
                 .select('id, source_party_id')
-                .in('source_party_id', partyIds);
+                .in('source_party_id', partyIds).order('id', { ascending: true }));
             entityRows = (entityRowsByParty as EntityRow[] | null) || [];
         } else {
-            const { data: allEntityRows } = await supabase
+            const { data: allEntityRows } = await readAllPages(supabase
                 .from('account_entities')
                 .select('id, source_party_id')
-                .not('source_party_id', 'is', null);
+                .not('source_party_id', 'is', null).order('id', { ascending: true }));
             entityRows = (allEntityRows as EntityRow[] | null) || [];
         }
 
@@ -150,13 +151,13 @@ export async function fetchPartyRolesCompat(
 
         let rolesQuery = supabase
             .from('membership_roles')
-            .select('entity_id, role_code, role_status');
+            .select('entity_id, role_code, role_status').order('id', { ascending: true });
 
         if (entityIds.length > 0) {
             rolesQuery = rolesQuery.in('entity_id', entityIds);
         }
 
-        const { data: rolesRaw, error: rolesError } = await rolesQuery;
+        const { data: rolesRaw, error: rolesError } = await readAllPages(rolesQuery);
         if (rolesError) {
             console.error('[partyRolesCompat] failed to load membership_roles:', rolesError);
             return [];

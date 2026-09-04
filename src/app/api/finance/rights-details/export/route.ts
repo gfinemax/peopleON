@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/server';
 import {
     LEGACY_MEMBER_SEGMENT_LABEL_MAP,
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
 
     const supabase = await createClient();
     const [rightsRes, rolesRes] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('asset_rights')
             .select(`
                 id,
@@ -122,10 +123,10 @@ export async function GET(request: Request) {
                     display_name,
                     phone
                 )
-            `),
-        supabase
+            `).order('id', { ascending: true })),
+        readAllPages(supabase
             .from('membership_roles')
-            .select('entity_id, role_code, is_registered')
+            .select('entity_id, role_code, is_registered').order('id', { ascending: true }))
     ]);
 
     const allRights = rightsRes.data || [];

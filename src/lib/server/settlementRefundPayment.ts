@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SettlementActionState } from '@/lib/server/settlementActionTypes';
 import {
@@ -64,8 +65,8 @@ export async function registerRefundPaymentWithPermission({
     }
 
     const [finalLineRes, paidSumRes] = await Promise.all([
-        supabase.from('settlement_lines').select('amount').eq('case_id', caseId).eq('line_type', 'final_refund'),
-        supabase.from('refund_payments').select('paid_amount').eq('case_id', caseId).eq('payment_status', 'paid'),
+        readAllPages(supabase.from('settlement_lines').select('amount').eq('case_id', caseId).eq('line_type', 'final_refund').order('id', { ascending: true })),
+        readAllPages(supabase.from('refund_payments').select('paid_amount').eq('case_id', caseId).eq('payment_status', 'paid').order('id', { ascending: true })),
     ]);
 
     const finalAmount = ((finalLineRes.data as Array<{ amount: number | string }> | null) || []).reduce(

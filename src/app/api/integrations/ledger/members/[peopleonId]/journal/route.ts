@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { NextResponse } from 'next/server';
 
 import { hasValidApiKey } from '@/lib/server/apiKeyAuth';
@@ -25,14 +26,14 @@ export async function GET(request: Request, context: RouteContext) {
         const supabase = createAdminClient();
         const [entitiesResult, logsResult] = await Promise.all([
             entityIds.length
-                ? supabase.from('account_entities').select('id, memo').in('id', entityIds)
+                ? readAllPages(supabase.from('account_entities').select('id, memo').in('id', entityIds).order('id', { ascending: true }))
                 : Promise.resolve({ data: [], error: null }),
             entityIds.length
-                ? supabase
+                ? readAllPages(supabase
                       .from('interaction_logs')
                       .select('id, entity_id, type, direction, summary, staff_name, created_at')
                       .in('entity_id', entityIds)
-                      .order('created_at', { ascending: false })
+                      .order('created_at', { ascending: false }).order('id', { ascending: true }))
                 : Promise.resolve({ data: [], error: null }),
         ]);
 

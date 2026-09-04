@@ -1,5 +1,6 @@
 'use server';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
@@ -126,7 +127,7 @@ export async function deleteMemberEntities(entityIds: string[]): Promise<DeleteM
     const safeCountByEntity = async (table: string, column = 'entity_id') => {
         const { count, error } = await supabase
             .from(table)
-            .select('*', { count: 'exact', head: true })
+            .select(column, { count: 'exact', head: true })
             .in(column, targetIds);
 
         if (error) {
@@ -151,7 +152,7 @@ export async function deleteMemberEntities(entityIds: string[]): Promise<DeleteM
             memberPaymentsCount,
             legacyPaymentsCount,
         ] = await Promise.all([
-            supabase.from('account_entities').select('id, display_name').in('id', targetIds),
+            readAllPages(supabase.from('account_entities').select('id, display_name').in('id', targetIds).order('id', { ascending: true })),
             safeCountByEntity('asset_rights'),
             safeCountByEntity('settlement_cases'),
             safeCountByEntity('member_payments'),

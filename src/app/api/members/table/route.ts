@@ -24,7 +24,7 @@ async function findMatchedLogEntityIds(query: string) {
         .from('interaction_logs')
         .select('entity_id')
         .ilike('summary', `%${query}%`)
-        .limit(LOG_SEARCH_RESULT_LIMIT);
+        .limit(LOG_SEARCH_RESULT_LIMIT).order('id', { ascending: true });
 
     if (error) {
         console.error('Members table log search error:', error);

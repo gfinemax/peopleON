@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         .eq('entity_type', 'accounting_compat_check')
         .eq('action', 'run')
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(limit).order('id', { ascending: true });
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

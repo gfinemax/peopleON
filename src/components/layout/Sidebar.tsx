@@ -90,7 +90,7 @@ export function Sidebar() {
                                     (item.href !== '/' && pathname.startsWith(item.href));
 
                                 return (
-                                    <Link
+                                    <Link prefetch={false}
                                         key={item.href}
                                         href={item.href}
                                         title={isCollapsed ? item.name : undefined}
@@ -124,7 +124,7 @@ export function Sidebar() {
 
                     {/* Footer */}
                     <div className="flex flex-col gap-3 pt-6 mt-auto">
-                        <Link
+                        <Link prefetch={false}
                             href="/settings"
                             title={isCollapsed ? "설정" : undefined}
                             className={cn(

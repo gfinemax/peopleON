@@ -1,7 +1,7 @@
 'use client';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/client';
-import { checkAndLogAssetRightConflicts } from '@/app/actions/interaction';
 import {
     getCertificateDisplayText,
     getConfirmedCertificateNumbers,
@@ -47,10 +47,10 @@ export async function fetchMemberDetail(ids: string[]) {
     if (ids.length === 0) return null;
 
     const supabase = createClient();
-    const { data: entities, error: entitiesError } = await supabase
+    const { data: entities, error: entitiesError } = await readAllPages(supabase
         .from('account_entities')
-        .select('*')
-        .in('id', ids);
+        .select('id, display_name, phone, phone_secondary, email, address_legal, tier, status, unit_group, memo, tags, birth_date, member_number, meta')
+        .in('id', ids).order('id', { ascending: true }));
 
     if (entitiesError || !entities || entities.length === 0) {
         return null;
@@ -59,24 +59,24 @@ export async function fetchMemberDetail(ids: string[]) {
     const entity = entities[0];
 
     const [roleRes, relRes, revRelRes, rightsRes, privateInfoRes] = await Promise.all([
-        supabase.from('membership_roles').select('role_code, role_status, is_registered').in('entity_id', ids),
-        supabase
+        readAllPages(supabase.from('membership_roles').select('role_code, role_status, is_registered').in('entity_id', ids).order('id', { ascending: true })),
+        readAllPages(supabase
             .from('entity_relationships')
             .select('from_entity_id, to_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name, phone)')
             .in('to_entity_id', ids)
-            .eq('relation_type', 'agent'),
-        supabase
+            .eq('relation_type', 'agent').order('id', { ascending: true })),
+        readAllPages(supabase
             .from('entity_relationships')
             .select('from_entity_id, to_entity_id, relation_type, relation_note, owner_entity:account_entities!to_entity_id(display_name, phone)')
             .in('from_entity_id', ids)
-            .eq('relation_type', 'agent'),
-        supabase
+            .eq('relation_type', 'agent').order('id', { ascending: true })),
+        readAllPages(supabase
             .from('certificate_registry')
             .select('*')
             .in('entity_id', ids)
             .eq('is_active', true)
-            .order('created_at', { ascending: true }),
-        supabase.from('entity_private_info').select('entity_id, resident_registration_number').in('entity_id', ids),
+            .order('created_at', { ascending: true }).order('id', { ascending: true })),
+        readAllPages(supabase.from('entity_private_info').select('entity_id, resident_registration_number').in('entity_id', ids).order('entity_id', { ascending: true })),
     ]);
 
     const uniqueRelations = relRes.data
@@ -164,6 +164,7 @@ export async function fetchMemberDetail(ids: string[]) {
 
     const combinedData: Member = {
         ...entity,
+        is_registered: rolesData.some((role) => role.is_registered),
         preferred_unit_type:
             typeof entity.meta === 'object' && entity.meta !== null && typeof entity.meta.preferred_unit_type === 'string'
                 ? entity.meta.preferred_unit_type
@@ -223,9 +224,5 @@ export async function fetchMemberDetail(ids: string[]) {
         certificate_summary_is_grouped: ids.length > 1,
     };
 
-    if (certNumbers.length > 0) {
-        await checkAndLogAssetRightConflicts(ids, certNumbers);
-    }
-
-    return combinedData;
+return combinedData;
 }

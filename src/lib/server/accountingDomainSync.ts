@@ -119,7 +119,7 @@ async function resolveEntityIdByMember(
         .from('account_entities')
         .select('id, meta')
         .contains('meta', { source_member_id: member.id })
-        .limit(1);
+        .limit(1).order('id', { ascending: true });
 
     if (existingError) {
         throw existingError;

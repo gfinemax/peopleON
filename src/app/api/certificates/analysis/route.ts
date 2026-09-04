@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -16,7 +17,7 @@ export async function GET() {
         // 1) Grand stats (single row)
         const { data: statsRaw, error: statsError } = await supabase
             .from('vw_certificate_grand_stats')
-            .select('*')
+            .select('registered_owner_count, registered_unique_cert_count, registered_total_cert_sum, others_owner_count, others_unique_cert_count, others_total_cert_sum, total_unique_cert_count, shared_cert_count')
             .maybeSingle();
 
         if (statsError) {
@@ -36,32 +37,32 @@ export async function GET() {
         };
 
         // 2) Registered detail (per person)
-        const { data: registeredDetail, error: regError } = await supabase
+        const { data: registeredDetail, error: regError } = await readAllPages(supabase
             .from('vw_certificate_registered_detail')
-            .select('*')
+            .select('entity_id, display_name, certificate_count, certificate_numbers')
             .order('certificate_count', { ascending: false })
-            .order('display_name', { ascending: true });
+            .order('display_name', { ascending: true }).order('entity_id', { ascending: true }));
 
         if (regError) {
             console.error('[cert-analysis] registered detail error:', regError);
         }
 
         // 3) Others detail (per person)
-        const { data: othersDetail, error: othError } = await supabase
+        const { data: othersDetail, error: othError } = await readAllPages(supabase
             .from('vw_certificate_others_detail')
-            .select('*')
+            .select('entity_id, display_name, certificate_count, certificate_numbers')
             .order('certificate_count', { ascending: false })
-            .order('display_name', { ascending: true });
+            .order('display_name', { ascending: true }).order('entity_id', { ascending: true }));
 
         if (othError) {
             console.error('[cert-analysis] others detail error:', othError);
         }
 
         // 4) Shared holders
-        const { data: sharedHolders, error: sharedError } = await supabase
+        const { data: sharedHolders, error: sharedError } = await readAllPages(supabase
             .from('vw_certificate_shared_holders')
-            .select('*')
-            .order('holder_count', { ascending: false });
+            .select('certificate_number_normalized, holder_count, holder_names, holder_groups')
+            .order('holder_count', { ascending: false }).order('certificate_number_normalized', { ascending: true }));
 
         if (sharedError) {
             console.error('[cert-analysis] shared holders error:', sharedError);

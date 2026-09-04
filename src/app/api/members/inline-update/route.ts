@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
@@ -53,11 +54,11 @@ export async function POST(request: Request) {
             if (deactivateError) throw deactivateError;
 
             for (const entityId of roleEntityIds) {
-                const { data: existingRows, error: existingError } = await supabase
+                const { data: existingRows, error: existingError } = await readAllPages(supabase
                     .from('membership_roles')
                     .select('id')
                     .eq('entity_id', entityId)
-                    .eq('role_code', nextCategory.roleCode);
+                    .eq('role_code', nextCategory.roleCode).order('id', { ascending: true }));
                 if (existingError) throw existingError;
 
                 if (existingRows && existingRows.length > 0) {

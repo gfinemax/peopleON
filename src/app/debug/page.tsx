@@ -16,7 +16,7 @@ export default async function DebugPage() {
     try {
         const supabase = await createClient();
         // Force a REAL network request (HEAD request to count members)
-        const { count, error } = await supabase.from('account_entities').select('*', { count: 'exact', head: true });
+        const { count, error } = await supabase.from('account_entities').select('id', { count: 'exact', head: true });
 
         if (error) {
             connectionResult = 'Failed (Supabase Error)';

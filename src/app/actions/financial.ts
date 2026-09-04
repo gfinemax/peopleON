@@ -1,5 +1,6 @@
 'use server';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/server';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 import { requireRole, ROLE_GROUPS } from '@/lib/server/authz';
@@ -24,11 +25,11 @@ export interface UnitType {
 
 export async function getUnitTypes(): Promise<UnitType[]> {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    const { data, error } = await readAllPages(supabase
         .from('unit_types')
-        .select('*')
+        .select('id, name, area_sqm, total_contribution, first_sale_price, second_sale_price, general_sale_price, certificate_amount, contract_amount, installment_1_amount, installment_2_amount, balance_amount, is_active')
         .eq('is_active', true)
-        .order('area_sqm', { ascending: true });
+        .order('area_sqm', { ascending: true }).order('id', { ascending: true }));
 
     if (error) {
         console.error('getUnitTypes error:', error);
@@ -88,11 +89,11 @@ export interface DepositAccount {
 
 export async function getDepositAccounts(): Promise<DepositAccount[]> {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    const { data, error } = await readAllPages(supabase
         .from('deposit_accounts')
-        .select('*')
+        .select('id, account_name, bank_name, account_number, account_type, is_official, is_active')
         .eq('is_active', true)
-        .order('account_type', { ascending: true });
+        .order('account_type', { ascending: true }).order('id', { ascending: true }));
 
     if (error) {
         console.error('getDepositAccounts error:', error);
@@ -151,11 +152,11 @@ export interface MemberPayment {
 
 export async function getMemberPayments(entityIds: string[]): Promise<MemberPayment[]> {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    const { data, error } = await readAllPages(supabase
         .from('member_payments')
-        .select('*')
+        .select('id, entity_id, unit_type_id, payment_type, amount_due, amount_paid, deposit_account_id, paid_date, receipt_note, is_contribution, status, sort_order')
         .in('entity_id', entityIds)
-        .order('sort_order', { ascending: true });
+        .order('sort_order', { ascending: true }).order('id', { ascending: true }));
 
     if (error) {
         console.error('getMemberPayments error:', error);
@@ -210,7 +211,7 @@ export async function assignUnitTypeToMember(entityId: string, unitTypeId: strin
     // 1. Get unit type details
     const { data: unitType, error: utErr } = await supabase
         .from('unit_types')
-        .select('*')
+        .select('id, name, area_sqm, total_contribution, first_sale_price, second_sale_price, general_sale_price, certificate_amount, contract_amount, installment_1_amount, installment_2_amount, balance_amount, is_active')
         .eq('id', unitTypeId)
         .single();
 
@@ -299,12 +300,12 @@ export interface PaymentStatistics {
 export async function getPaymentStatistics(): Promise<PaymentStatistics> {
     const supabase = await createClient();
 
-    const { data: payments } = await supabase
+    const { data: payments } = await readAllPages(supabase
         .from('member_payments')
-        .select('payment_type, amount_due, amount_paid, is_contribution, unit_type_id, deposit_account_id');
+        .select('payment_type, amount_due, amount_paid, is_contribution, unit_type_id, deposit_account_id').order('id', { ascending: true }));
 
-    const { data: unitTypes } = await supabase.from('unit_types').select('id, name').eq('is_active', true);
-    const { data: accounts } = await supabase.from('deposit_accounts').select('id, account_name').eq('is_active', true);
+    const { data: unitTypes } = await readAllPages(supabase.from('unit_types').select('id, name').eq('is_active', true).order('id', { ascending: true }));
+    const { data: accounts } = await readAllPages(supabase.from('deposit_accounts').select('id, account_name').eq('is_active', true).order('id', { ascending: true }));
 
     const unitMap = new Map((unitTypes || []).map(u => [u.id, u.name]));
     const accountMap = new Map((accounts || []).map(a => [a.id, a.account_name]));

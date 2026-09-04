@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAuditLog } from '@/app/actions/audit';
@@ -35,10 +36,10 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
     const duplicateSourceNames = [...sourceNameCounts.entries()].filter(([, count]) => count > 1).map(([name]) => name);
     if (duplicateSourceNames.length) errors.push(`엑셀에 동명이인 또는 중복 이름이 있어: ${duplicateSourceNames.join(', ')}`);
 
-    const { data: roleData, error: roleError } = await supabase
+    const { data: roleData, error: roleError } = await readAllPages(supabase
         .from('membership_roles')
         .select('id,entity_id')
-        .eq('is_registered', true);
+        .eq('is_registered', true).order('id', { ascending: true }));
     if (roleError) throw roleError;
 
     const roles = (roleData || []) as RoleRow[];
@@ -47,8 +48,8 @@ async function buildPreview(supabase: Awaited<ReturnType<typeof createClient>>, 
         errors.push(`현재 등기조합원 범위가 ${entityIds.length}명이야. 예상한 ${ROSTER_TOTAL_COUNT}명과 달라서 반영을 중단해.`);
     }
 
-    const { data: entityData, error: entityError } = await supabase
-        .from('account_entities').select('id,display_name,status,unit_group').in('id', entityIds);
+    const { data: entityData, error: entityError } = await readAllPages(supabase
+        .from('account_entities').select('id,display_name,status,unit_group').in('id', entityIds).order('id', { ascending: true }));
     if (entityError) throw entityError;
 
     const entities = (entityData || []) as EntityRow[];

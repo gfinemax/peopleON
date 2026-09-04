@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/server';
 import {
     buildSettlementPartyOwnershipMap,
@@ -84,10 +85,10 @@ export async function GET(request: Request) {
     const scope = (url.searchParams.get('scope') || 'issues').toLowerCase();
     const issuesOnly = scope !== 'all';
 
-    const { data: casesRaw, error: casesError } = await supabase
+    const { data: casesRaw, error: casesError } = await readAllPages(supabase
         .from('settlement_cases')
         .select('id, party_id, case_status, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id', { ascending: true }));
 
     if (casesError) {
         return Response.json({ error: casesError.message }, { status: 500 });
@@ -99,10 +100,10 @@ export async function GET(request: Request) {
 
     const [partiesRes, partyRoles, certRows, linesRes, paymentsRes] = await Promise.all([
         partyIds.length > 0
-            ? supabase
+            ? readAllPages(supabase
                 .from('party_profiles')
                 .select('id, display_name, member_id')
-                .in('id', partyIds)
+                .in('id', partyIds).order('id', { ascending: true }))
             : Promise.resolve({ data: [], error: null }),
         partyIds.length > 0
             ? fetchPartyRolesCompat(supabase, { partyIds })
@@ -111,17 +112,17 @@ export async function GET(request: Request) {
             ? fetchCertificateCompatRows(supabase, { holderPartyIds: partyIds })
             : Promise.resolve([]),
         caseIds.length > 0
-            ? supabase
+            ? readAllPages(supabase
                 .from('settlement_lines')
                 .select('case_id, amount')
                 .in('case_id', caseIds)
-                .eq('line_type', 'final_refund')
+                .eq('line_type', 'final_refund').order('id', { ascending: true }))
             : Promise.resolve({ data: [], error: null }),
         caseIds.length > 0
-            ? supabase
+            ? readAllPages(supabase
                 .from('refund_payments')
                 .select('case_id, paid_amount, payment_status')
-                .in('case_id', caseIds)
+                .in('case_id', caseIds).order('id', { ascending: true }))
             : Promise.resolve({ data: [], error: null }),
     ]);
 
@@ -138,10 +139,10 @@ export async function GET(request: Request) {
         ),
     );
     const { data: membersData } = memberIds.length > 0
-        ? await supabase
+        ? await readAllPages(supabase
             .from('account_entities')
             .select('id, display_name')
-            .in('id', memberIds)
+            .in('id', memberIds).order('id', { ascending: true }))
         : { data: [] as Array<{ id: string; display_name: string }> };
 
     const ownershipMap = buildSettlementPartyOwnershipMap({

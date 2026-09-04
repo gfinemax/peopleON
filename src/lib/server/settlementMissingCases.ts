@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchCertificateCompatRows } from '@/lib/server/certificateCompat';
 import { fetchPartyRolesCompat } from '@/lib/server/partyRolesCompat';
@@ -21,10 +22,10 @@ export async function createMissingSettlementCasesWithPermission({
             : 30;
 
     const [partyRes, partyRoles, certificateRows, casesRes] = await Promise.all([
-        supabase.from('party_profiles').select('id, member_id'),
+        readAllPages(supabase.from('party_profiles').select('id, member_id').order('id', { ascending: true })),
         fetchPartyRolesCompat(supabase),
         fetchCertificateCompatRows(supabase),
-        supabase.from('settlement_cases').select('party_id'),
+        readAllPages(supabase.from('settlement_cases').select('party_id').order('id', { ascending: true })),
     ]);
 
     const targetPartyIds = selectTargetPartyIdsForMissingCases({

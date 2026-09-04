@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
     buildExpectedAmountByCase,
@@ -28,7 +29,7 @@ export async function syncSettlementCaseStatusesWithPermission({
         .select('id, case_status, created_at')
         .neq('case_status', 'rejected')
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(limit).order('id', { ascending: true });
 
     if (casesError) {
         console.error('[settlements] syncSettlementCaseStatuses load cases error:', casesError);
@@ -47,8 +48,8 @@ export async function syncSettlementCaseStatusesWithPermission({
 
     const caseIds = cases.map((item) => item.id);
     const [linesRes, paymentsRes] = await Promise.all([
-        supabase.from('settlement_lines').select('case_id, amount').in('case_id', caseIds).eq('line_type', 'final_refund'),
-        supabase.from('refund_payments').select('case_id, paid_amount, payment_status').in('case_id', caseIds),
+        readAllPages(supabase.from('settlement_lines').select('case_id, amount').in('case_id', caseIds).eq('line_type', 'final_refund').order('id', { ascending: true })),
+        readAllPages(supabase.from('refund_payments').select('case_id, paid_amount, payment_status').in('case_id', caseIds).order('id', { ascending: true })),
     ]);
 
     if (linesRes.error) {

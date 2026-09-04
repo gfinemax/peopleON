@@ -1,5 +1,6 @@
 'use server';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
@@ -47,13 +48,13 @@ export async function getDuplicateGroups(): Promise<DuplicateGroup[]> {
     await requireRole(ROLE_GROUPS.admin, supabase);
     
     // 1. 모든 인물 데이터 로드 (필요한 컬럼만)
-    const { data: entities, error } = await supabase
+    const { data: entities, error } = await readAllPages(supabase
         .from('account_entities')
         .select(`
             id, display_name, phone, memo, tags,
             membership_roles(source_member_id, role_code, role_status),
             certificate_registry(id, certificate_number_normalized)
-        `);
+        `).order('id', { ascending: true }));
 
     if (error || !entities) {
         console.error('Failed to load entities:', error);
@@ -109,8 +110,8 @@ export async function mergeDuplicateEntities(
             if (slaveEntity) slaveNames.push(slaveEntity.display_name);
 
             // 1. membership_roles
-            const { data: mRoles } = await supabaseAdmin.from('membership_roles').select('*').eq('entity_id', masterId);
-            const { data: sRoles } = await supabaseAdmin.from('membership_roles').select('*').eq('entity_id', slaveId);
+            const { data: mRoles } = await readAllPages(supabaseAdmin.from('membership_roles').select('id, entity_id, role_code, role_status').eq('entity_id', masterId).order('id', { ascending: true }));
+            const { data: sRoles } = await readAllPages(supabaseAdmin.from('membership_roles').select('id, entity_id, role_code, role_status').eq('entity_id', slaveId).order('id', { ascending: true }));
             const masterRoleKeys = new Set(
                 ((mRoles || []) as DuplicateMembershipRole[]).map((role) => `${role.role_code}_${role.role_status}`),
             );

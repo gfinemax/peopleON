@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { getMemberRelationLabel } from '@/lib/members/memberRelation';
 
@@ -122,51 +123,51 @@ export const groupByEntityId = <T extends { entity_id: string }>(items: T[]) => 
 };
 
 async function fetchLatestSettlementCases(supabase: SupabaseClient) {
-    const latestCasesRes = await supabase
+    const latestCasesRes = await readAllPages(supabase
         .from('vw_latest_settlement_case_by_entity')
         .select('id, entity_id, case_status, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id', { ascending: true }));
 
     if (!latestCasesRes.error) {
         return latestCasesRes;
     }
 
-    return supabase
+    return readAllPages(supabase
         .from('settlement_cases')
         .select('id, entity_id, case_status, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id', { ascending: true }));
 }
 
 export async function fetchAggregationBaseData(supabase: SupabaseClient) {
     const fetchCertificateRegistry = async () => {
-        const currentSchema = await supabase
+        const currentSchema = await readAllPages(supabase
             .from('certificate_registry')
             .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count, issued_at')
-            .eq('is_active', true);
+            .eq('is_active', true).order('id', { ascending: true }));
 
         if (!currentSchema.error || currentSchema.error.code !== '42703') {
             return currentSchema;
         }
 
-        return supabase
+        return readAllPages(supabase
             .from('certificate_registry')
             .select('id, entity_id, certificate_number_normalized, certificate_number_raw, certificate_status, source_type, note, is_active, is_confirmed_for_count, cert_date')
-            .eq('is_active', true);
+            .eq('is_active', true).order('id', { ascending: true }));
     };
 
     const [entitiesRes, rolesRes, rightsRes, casesRes, relsRes] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('account_entities')
-            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date'),
-        supabase
+            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date').order('id', { ascending: true })),
+        readAllPages(supabase
             .from('membership_roles')
-            .select('id, entity_id, role_code, role_status, is_registered'),
+            .select('id, entity_id, role_code, role_status, is_registered').order('id', { ascending: true })),
         fetchCertificateRegistry(),
         fetchLatestSettlementCases(supabase),
-        supabase
+        readAllPages(supabase
             .from('entity_relationships')
             .select('to_entity_id, from_entity_id, relation_type, relation_note, agent_entity:account_entities!from_entity_id(display_name), owner_entity:account_entities!to_entity_id(display_name, phone)')
-            .in('relation_type', ['agent', 'nominee_owner']),
+            .in('relation_type', ['agent', 'nominee_owner']).order('id', { ascending: true })),
     ]);
 
     const fetchError =
@@ -200,12 +201,12 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
 
 export async function fetchAggregationIdentityData(supabase: SupabaseClient) {
     const [entitiesRes, rolesRes] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('account_entities')
-            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date'),
-        supabase
+            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date').order('id', { ascending: true })),
+        readAllPages(supabase
             .from('membership_roles')
-            .select('id, entity_id, role_code, role_status, is_registered'),
+            .select('id, entity_id, role_code, role_status, is_registered').order('id', { ascending: true })),
     ]);
 
     const fetchError = entitiesRes.error || rolesRes.error || null;
@@ -245,10 +246,10 @@ export async function fetchSettlementAmounts(
         };
     }
 
-    const { data: summaryData, error: summaryError } = await supabase
+    const { data: summaryData, error: summaryError } = await readAllPages(supabase
         .from('vw_settlement_case_amount_summary')
         .select('case_id, expected, paid')
-        .in('case_id', latestCaseIds);
+        .in('case_id', latestCaseIds).order('case_id', { ascending: true }));
 
     if (!summaryError) {
         const finalRefundByCase = new Map<string, number>();
@@ -263,14 +264,14 @@ export async function fetchSettlementAmounts(
     }
 
     const [linesRes, paymentsRes] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('settlement_lines')
             .select('case_id, line_type, amount')
-            .in('case_id', latestCaseIds),
-        supabase
+            .in('case_id', latestCaseIds).order('id', { ascending: true })),
+        readAllPages(supabase
             .from('refund_payments')
             .select('case_id, paid_amount, payment_status')
-            .in('case_id', latestCaseIds),
+            .in('case_id', latestCaseIds).order('id', { ascending: true })),
     ]);
 
     const settlementLines = (linesRes.data as SettlementLineRecord[] | null) || [];

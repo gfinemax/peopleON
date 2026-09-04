@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -119,10 +120,10 @@ export async function buildResidentRegistryPreview(
     const registeredMembers = unifiedPeople.filter((person) => person.is_registered);
     const allEntityIds = Array.from(new Set(registeredMembers.flatMap((person) => person.entity_ids)));
 
-    const { data: privateRows, error: privateError } = await supabase
+    const { data: privateRows, error: privateError } = await readAllPages(supabase
         .from('entity_private_info')
         .select('entity_id, resident_registration_number')
-        .in('entity_id', allEntityIds);
+        .in('entity_id', allEntityIds).order('entity_id', { ascending: true }));
 
     if (privateError) {
         throw new Error(privateError.message);
@@ -206,7 +207,7 @@ export async function ensureResidentRegistryTablesExist(supabaseAdmin: ReturnTyp
     const { error } = await supabaseAdmin
         .from('secure_resident_registry')
         .select('id')
-        .limit(1);
+        .limit(1).order('id', { ascending: true });
 
     if (error) {
         throw new Error(`secure_resident_registry 테이블이 없습니다. supabase_resident_registry_setup.sql 을 먼저 실행하세요. (${error.message})`);
@@ -234,10 +235,10 @@ export async function executeResidentRegistryImport({
     const importedAt = new Date().toISOString();
 
     const matchedEntityIds = Array.from(new Set(matchedPreviewRows.flatMap((row) => row.targetEntityIds)));
-    const { data: privateRows, error: privateError } = await supabaseAdmin
+    const { data: privateRows, error: privateError } = await readAllPages(supabaseAdmin
         .from('entity_private_info')
         .select('entity_id, resident_registration_number')
-        .in('entity_id', matchedEntityIds);
+        .in('entity_id', matchedEntityIds).order('entity_id', { ascending: true }));
 
     if (privateError) {
         throw new Error(privateError.message);

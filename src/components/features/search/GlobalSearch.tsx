@@ -41,24 +41,26 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
 
     // Debounce search
     React.useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
         const timeoutId = setTimeout(async () => {
             if (query.trim()) {
                 setLoading(true);
                 try {
                     const data = await searchMembers(query);
-                    setResults(data);
+                    if (!cancelled) setResults(data);
                 } catch (error) {
                     console.error('Search failed', error);
                 } finally {
-                    setLoading(false);
+                    if (!cancelled) setLoading(false);
                 }
             } else {
                 setResults([]);
             }
         }, 300);
 
-        return () => clearTimeout(timeoutId);
-    }, [query]);
+        return () => { cancelled = true; clearTimeout(timeoutId); };
+    }, [query, open]);
 
     React.useEffect(() => {
         if (!isDragging) return;

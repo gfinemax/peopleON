@@ -29,11 +29,11 @@ export default async function AuditLogsPage() {
     const { data: logs, error: logsError } = await supabase
         .from('system_audit_logs')
         .select(`
-            *,
+            id, created_at, ip_address, target_entity_id, actor_email, action_type, details,
             account_entities(display_name)
         `)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(100).order('id', { ascending: true });
 
     if (logsError) {
         console.error('Audit logs fetch error:', logsError);

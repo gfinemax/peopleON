@@ -1,5 +1,7 @@
 'use client';
 
+import { useStableIds } from '@/lib/hooks/useStableIds';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +9,8 @@ import { MaterialIcon } from '@/components/ui/icon';
 import { fetchMemberDetail } from './memberDetailDialogOperations';
 import type { MemberDetailDialogMember } from './memberDetailDialogTypes';
 
-export function MemberQuickPreview({ memberId, memberIds, open, onOpenChange, returnTo }: { memberId: string | null; memberIds: string[] | null; open: boolean; onOpenChange: (open: boolean) => void; returnTo: string }) {
+export function MemberQuickPreview({ memberId, memberIds: inputMemberIds, open, onOpenChange, returnTo }: { memberId: string | null; memberIds: string[] | null; open: boolean; onOpenChange: (open: boolean) => void; returnTo: string }) {
+    const memberIds = useStableIds(inputMemberIds);
     const [member, setMember] = useState<MemberDetailDialogMember | null>(null);
 
     useEffect(() => {

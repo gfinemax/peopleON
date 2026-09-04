@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { type UnifiedPerson } from '@/services/memberAggregation';
 import { type SmsHistoryItem, type SmsRecipient } from '@/components/features/sms/bulkSmsWorkspaceTypes';
@@ -171,10 +172,10 @@ async function fetchPaymentTotalsByEntity(supabase: SupabaseClient, entityIds: s
 
     try {
         for (const chunk of entityIdChunks) {
-            const { data: summaryRows, error: summaryError } = await supabase
+            const { data: summaryRows, error: summaryError } = await readAllPages(supabase
                 .from('vw_member_payment_entity_summary')
                 .select('entity_id, total_due, total_paid')
-                .in('entity_id', chunk);
+                .in('entity_id', chunk).order('entity_id', { ascending: true }));
 
             if (summaryError) {
                 shouldFallbackToPayments = true;
@@ -201,10 +202,10 @@ async function fetchPaymentTotalsByEntity(supabase: SupabaseClient, entityIds: s
 
     try {
         for (const chunk of entityIdChunks) {
-            const { data: paymentRows, error: paymentsError } = await supabase
+            const { data: paymentRows, error: paymentsError } = await readAllPages(supabase
                 .from('member_payments')
                 .select('entity_id, amount_due, amount_paid')
-                .in('entity_id', chunk);
+                .in('entity_id', chunk).order('id', { ascending: true }));
 
             if (paymentsError) {
                 console.warn('Failed to load member payments for sms workspace:', paymentsError.message);
@@ -238,7 +239,7 @@ export async function fetchSmsDashboardData(
             .select('id, entity_id, summary, staff_name, created_at')
             .eq('type', 'SMS')
             .order('created_at', { ascending: false })
-            .limit(60),
+            .limit(60).order('id', { ascending: true }),
     ]);
 
     if (logsRes.error) {

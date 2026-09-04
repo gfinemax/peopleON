@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type PersonCertificateOwnerGroup = 'registered' | 'others';
@@ -78,15 +79,15 @@ export async function fetchPersonCertificateSummarySnapshot(supabase: SupabaseCl
 }> {
     try {
         const [summariesRes, rollupsRes] = await Promise.all([
-            supabase
+            readAllPages(supabase
                 .from('vw_person_certificate_summary_current')
-                .select('*')
+                .select('entity_id, display_name, owner_group, provisional_certificate_count, manual_certificate_count, effective_certificate_count, review_status, conflict_certificate_count, summary_note, provisional_certificate_numbers, summary_updated_at')
                 .order('owner_group', { ascending: false })
-                .order('display_name', { ascending: true }),
-            supabase
+                .order('display_name', { ascending: true }).order('entity_id', { ascending: true })),
+            readAllPages(supabase
                 .from('vw_person_certificate_rollup')
-                .select('*')
-                .order('owner_group', { ascending: false }),
+                .select('owner_group, owner_count, owner_with_certificate_count, provisional_certificate_count, effective_certificate_count, conflict_certificate_count, manual_locked_count, pending_review_count')
+                .order('owner_group', { ascending: false })),
         ]);
 
         if (isMissingRelationError(summariesRes.error) || isMissingRelationError(rollupsRes.error)) {
@@ -113,12 +114,12 @@ export async function fetchPersonCertificateRollupsSnapshot(
     supabase: SupabaseClient,
 ): Promise<PersonCertificateRollupRow[]> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await readAllPages(supabase
             .from('vw_person_certificate_rollup')
             .select(
                 'owner_group, owner_count, owner_with_certificate_count, provisional_certificate_count, effective_certificate_count, conflict_certificate_count, manual_locked_count, pending_review_count',
             )
-            .order('owner_group', { ascending: false });
+            .order('owner_group', { ascending: false }));
 
         if (isMissingRelationError(error)) {
             return DEFAULT_ROLLUP_ROWS;

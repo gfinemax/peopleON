@@ -1,5 +1,8 @@
 'use client';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
+import { useStableIds } from '@/lib/hooks/useStableIds';
+
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
@@ -42,11 +45,12 @@ type PaymentTabData = {
 };
 
 export function PaymentStatusTab({
-    memberIds,
+    memberIds: inputMemberIds,
     memberName,
     memberTiers = [],
     isRegistered = false,
 }: PaymentStatusTabProps) {
+    const memberIds = useStableIds(inputMemberIds);
     const normalizedMemberTiers = memberTiers || [];
     const [loading, setLoading] = useState(true);
     const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -63,9 +67,9 @@ export function PaymentStatusTab({
         const supabase = createClient();
 
         const [paymentsRes, unitTypesRes, accountsRes] = await Promise.all([
-            supabase.from('member_payments').select('*').in('entity_id', memberIds).order('sort_order', { ascending: true }),
-            supabase.from('unit_types').select('*').eq('is_active', true).order('area_sqm', { ascending: true }),
-            supabase.from('deposit_accounts').select('*').eq('is_active', true).order('account_type', { ascending: true }),
+            readAllPages(supabase.from('member_payments').select('id, entity_id, unit_type_id, payment_type, amount_due, amount_paid, deposit_account_id, paid_date, receipt_note, is_contribution, status, sort_order').in('entity_id', memberIds).order('sort_order', { ascending: true }).order('id', { ascending: true })),
+            readAllPages(supabase.from('unit_types').select('id, name, area_sqm, total_contribution, first_sale_price, second_sale_price, general_sale_price, certificate_amount, contract_amount, installment_1_amount, installment_2_amount, balance_amount, is_active').eq('is_active', true).order('area_sqm', { ascending: true }).order('id', { ascending: true })),
+            readAllPages(supabase.from('deposit_accounts').select('id, account_name, bank_name, account_number, account_type, is_official, is_active').eq('is_active', true).order('account_type', { ascending: true }).order('id', { ascending: true })),
         ]);
 
         let paymentRows = paymentsRes.data || [];
@@ -74,11 +78,11 @@ export function PaymentStatusTab({
         if (missingUnionFeeLines.length > 0) {
             const { error: insertError } = await supabase.from('member_payments').insert(missingUnionFeeLines);
             if (!insertError) {
-                const refreshedPaymentsRes = await supabase
+                const refreshedPaymentsRes = await readAllPages(supabase
                     .from('member_payments')
-                    .select('*')
+                    .select('id, entity_id, unit_type_id, payment_type, amount_due, amount_paid, deposit_account_id, paid_date, receipt_note, is_contribution, status, sort_order')
                     .in('entity_id', memberIds)
-                    .order('sort_order', { ascending: true });
+                    .order('sort_order', { ascending: true }).order('id', { ascending: true }));
                 paymentRows = refreshedPaymentsRes.data || paymentRows;
             }
         }
@@ -186,17 +190,23 @@ export function PaymentStatusTab({
         const payment = payments.find((item) => item.id === editingId);
         const status = derivePaymentStatus(amountPaid, payment?.amount_due || 0);
 
-        await supabase.from('member_payments').update({
+        const patch = {
             amount_paid: amountPaid,
             deposit_account_id: editForm.deposit_account_id || null,
             paid_date: editForm.paid_date || null,
             receipt_note: editForm.receipt_note || null,
             status,
-        }).eq('id', editingId);
+        };
+        const { data: saved, error } = await supabase.from('member_payments').update(patch).eq('id', editingId).select('id').maybeSingle();
+        if (error || !saved) {
+            setSaving(false);
+            alert('납부 항목을 저장하지 못했습니다. 다시 시도해 주세요.');
+            return;
+        }
+        setPayments((rows) => rows.map((row) => row.id === editingId ? { ...row, ...patch } : row));
 
         setEditingId(null);
         setEditForm({});
-        await fetchAll();
         setSaving(false);
     };
 
@@ -208,8 +218,12 @@ export function PaymentStatusTab({
     const handleDelete = async (id: string) => {
         if (!confirm('이 납부 항목을 삭제하시겠습니까?')) return;
         const supabase = createClient();
-        await supabase.from('member_payments').delete().eq('id', id);
-        await fetchAll();
+        const { data: deleted, error } = await supabase.from('member_payments').delete().eq('id', id).select('id').maybeSingle();
+        if (error || !deleted) {
+            alert('납부 항목을 삭제하지 못했습니다. 다시 시도해 주세요.');
+            return;
+        }
+        setPayments((rows) => rows.filter((row) => row.id !== id));
     };
 
     const displayPayments = getDisplayPayments(payments);

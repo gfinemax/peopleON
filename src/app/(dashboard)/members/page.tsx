@@ -89,7 +89,7 @@ export default async function MembersPage({
             .from('interaction_logs')
             .select('entity_id')
             .ilike('summary', `%${query}%`)
-            .limit(LOG_SEARCH_RESULT_LIMIT)
+            .limit(LOG_SEARCH_RESULT_LIMIT).order('id', { ascending: true })
         : Promise.resolve({ data: [], error: null });
 
     const [unifiedPeople, personCertificateRollups, matchedLogsRes, ledgerRefundTargets] = await Promise.all([

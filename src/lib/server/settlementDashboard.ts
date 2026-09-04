@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import {
     buildSettlementPartyOwnershipMap,
@@ -41,13 +42,13 @@ async function fetchSettlementCases(
     let queryBuilder = supabase
         .from('settlement_cases')
         .select('id, party_id, case_status, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).order('id', { ascending: true });
 
     if (statusFilter !== 'all') {
         queryBuilder = queryBuilder.eq('case_status', statusFilter);
     }
 
-    const { data, error } = await queryBuilder;
+    const { data, error } = await readAllPages(queryBuilder);
     return {
         rows: (data as SettlementCaseRow[] | null) || [],
         errorMessage: error?.message || null,
@@ -66,10 +67,10 @@ async function fetchOwnershipMaps(
     }
 
     const [partiesRes, roles, certificates] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('party_profiles')
             .select('id, display_name, member_id')
-            .in('id', partyIds),
+            .in('id', partyIds).order('id', { ascending: true })),
         fetchPartyRolesCompat(supabase, { partyIds }),
         fetchCertificateCompatRows(supabase, { holderPartyIds: partyIds }),
     ]);
@@ -92,10 +93,10 @@ async function fetchOwnershipMaps(
     );
 
     const { data: membersData } = memberIds.length > 0
-        ? await supabase
+        ? await readAllPages(supabase
             .from('account_entities')
             .select('id, display_name')
-            .in('id', memberIds)
+            .in('id', memberIds).order('id', { ascending: true }))
         : { data: [] as Array<{ id: string; display_name: string }> };
 
     const ownershipMap = buildSettlementPartyOwnershipMap({
@@ -129,10 +130,10 @@ async function fetchSettlementAmounts(
         return { finalLineByCase, paidByCase };
     }
 
-    const { data: summaryData, error: summaryError } = await supabase
+    const { data: summaryData, error: summaryError } = await readAllPages(supabase
         .from('vw_settlement_case_amount_summary')
         .select('case_id, expected, paid')
-        .in('case_id', caseIds);
+        .in('case_id', caseIds).order('case_id', { ascending: true }));
 
     if (!summaryError) {
         for (const row of (summaryData as SettlementCaseAmountSummaryRow[] | null) || []) {
@@ -144,15 +145,15 @@ async function fetchSettlementAmounts(
     }
 
     const [linesRes, paymentsRes] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('settlement_lines')
             .select('case_id, line_type, amount')
             .in('case_id', caseIds)
-            .eq('line_type', 'final_refund'),
-        supabase
+            .eq('line_type', 'final_refund').order('id', { ascending: true })),
+        readAllPages(supabase
             .from('refund_payments')
             .select('case_id, paid_amount, payment_status')
-            .in('case_id', caseIds),
+            .in('case_id', caseIds).order('id', { ascending: true })),
     ]);
 
     const lines = (linesRes.data as SettlementLineRow[] | null) || [];
@@ -201,10 +202,10 @@ export async function fetchSettlementDashboardData(
     if (query) {
         const normalizedQuery = query.toLowerCase();
         // 1. Search for matching parties first
-        const { data: matchedParties } = await supabase
+        const { data: matchedParties } = await readAllPages(supabase
             .from('party_profiles')
             .select('id')
-            .ilike('display_name', `%${query}%`);
+            .ilike('display_name', `%${query}%`).order('id', { ascending: true }));
         
         const partyIds = new Set((matchedParties || []).map(p => p.id));
         

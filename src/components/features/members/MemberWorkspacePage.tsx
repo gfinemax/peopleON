@@ -1,5 +1,8 @@
 'use client';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
+import { useStableIds } from '@/lib/hooks/useStableIds';
+
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
@@ -129,7 +132,8 @@ function AssignedUnitValue({ unitType, compact = false }: { unitType: string; co
     return <span className={`inline-flex min-w-0 items-center ${compact ? 'justify-center gap-1' : 'gap-2'}`}><span className="truncate whitespace-nowrap tabular-nums">{displayValue}</span>{unitType !== '-' ? <span className="inline-flex shrink-0 items-center rounded border border-sky-400/20 bg-sky-500/5 p-0.5" aria-label="평형 표시 단위 선택"><button type="button" onClick={() => setDisplayUnit('sqm')} aria-pressed={displayUnit === 'sqm'} className={`rounded px-1.5 py-0.5 text-[10px] font-black ${displayUnit === 'sqm' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-sky-300'}`}>㎡</button><button type="button" onClick={() => setDisplayUnit('pyeong')} aria-pressed={displayUnit === 'pyeong'} className={`rounded px-1.5 py-0.5 text-[10px] font-black ${displayUnit === 'pyeong' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-sky-300'}`}>평</button></span> : null}</span>;
 }
 
-function useWorkspaceData(memberIds: string[]): WorkspaceData & { loading: boolean } {
+function useWorkspaceData(inputMemberIds: string[]): WorkspaceData & { loading: boolean } {
+    const memberIds = useStableIds(inputMemberIds);
     const [data, setData] = useState<WorkspaceData>({ payments: [], logs: [] });
     const [loading, setLoading] = useState(true);
 
@@ -139,8 +143,8 @@ function useWorkspaceData(memberIds: string[]): WorkspaceData & { loading: boole
             setLoading(true);
             const supabase = createClient();
             const [payments, logs] = await Promise.all([
-                supabase.from('member_payments').select('*').in('entity_id', memberIds).order('sort_order'),
-                supabase.from('interaction_logs').select('id,type,summary,staff_name,attachment,created_at').in('entity_id', memberIds).order('created_at', { ascending: false }).limit(30),
+                readAllPages(supabase.from('member_payments').select('id, entity_id, unit_type_id, payment_type, amount_due, amount_paid, deposit_account_id, paid_date, receipt_note, is_contribution, status, sort_order').in('entity_id', memberIds).order('sort_order').order('id', { ascending: true })),
+                supabase.from('interaction_logs').select('id,type,summary,staff_name,attachment,created_at').in('entity_id', memberIds).order('created_at', { ascending: false }).limit(30).order('id', { ascending: true }),
             ]);
             if (!cancelled) {
                 setData({ payments: (payments.data || []) as PaymentRecord[], logs: (logs.data || []) as LogRow[] });

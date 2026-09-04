@@ -1,5 +1,7 @@
 'use client';
 
+import { useStableIds } from '@/lib/hooks/useStableIds';
+
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
@@ -43,13 +45,15 @@ type Member = MemberDetailDialogMember;
 
 export function MemberDetailDialog({
     memberId,
-    memberIds,
+    memberIds: inputMemberIds,
     open,
     onOpenChange,
     onSaved,
     initialTab,
     onActiveTabChange,
 }: MemberDetailDialogProps) {
+    const stableMemberIds = useStableIds(inputMemberIds);
+    const memberIds = inputMemberIds == null ? inputMemberIds : stableMemberIds;
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
     const [loadAttempted, setLoadAttempted] = useState(false);

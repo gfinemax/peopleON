@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { NextResponse } from 'next/server';
 
 import { hasValidApiKey } from '@/lib/server/apiKeyAuth';
@@ -32,19 +33,19 @@ export async function GET(request: Request) {
         }>();
 
         if (allEntityIds.length > 0) {
-            const { data, error } = await createAdminClient()
+            const { data, error } = await readAllPages(createAdminClient()
                 .from('member_bank_accounts')
                 .select('entity_id, bank_name, account_number, account_holder, purpose, updated_at')
-                .in('entity_id', allEntityIds);
+                .in('entity_id', allEntityIds).order('entity_id', { ascending: true }));
             if (error) throw error;
             for (const row of data || []) bankAccountByEntityId.set(row.entity_id, row);
         }
 
         if (missingBirthEntityIds.length > 0) {
-            const { data, error } = await createAdminClient()
+            const { data, error } = await readAllPages(createAdminClient()
                 .from('entity_private_info')
                 .select('entity_id, resident_registration_number')
-                .in('entity_id', missingBirthEntityIds);
+                .in('entity_id', missingBirthEntityIds).order('entity_id', { ascending: true }));
 
             if (error) throw error;
             for (const row of data || []) {

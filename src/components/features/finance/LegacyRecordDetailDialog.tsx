@@ -66,7 +66,7 @@ export function LegacyRecordDetailDialog({
 
         const { data, error } = await supabase
             .from('asset_rights')
-            .select('*')
+            .select('id, meta, principal_amount, issued_at, entity_id, status, created_at, right_number')
             .eq('id', id)
             .single();
 

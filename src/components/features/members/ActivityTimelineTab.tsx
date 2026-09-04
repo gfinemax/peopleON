@@ -1,5 +1,7 @@
 'use client';
 
+import { useStableIds } from '@/lib/hooks/useStableIds';
+
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MaterialIcon } from '@/components/ui/icon';
@@ -36,7 +38,8 @@ const ACTIVITY_TYPES: Array<{ type: InteractionLog['type']; label: string; icon:
     { type: 'REPAIR', label: '수리 내역', icon: 'engineering', textClass: 'text-purple-400', bgClass: 'bg-purple-500/10' },
 ];
 
-export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
+export function ActivityTimelineTab({ memberIds: inputMemberIds }: ActivityTimelineTabProps) {
+    const memberIds = useStableIds(inputMemberIds);
     const [logs, setLogs] = useState<InteractionLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -69,7 +72,7 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
             if (page === 1) {
                 const { count } = await supabase
                     .from('interaction_logs')
-                    .select('*', { count: 'exact', head: true })
+                    .select('id', { count: 'exact', head: true })
                     .in('entity_id', memberIds);
 
                 if (!isCancelled()) {
@@ -83,10 +86,10 @@ export function ActivityTimelineTab({ memberIds }: ActivityTimelineTabProps) {
 
             const { data, error } = await supabase
                 .from('interaction_logs')
-                .select('*')
+                .select('id, type, summary, staff_name, attachment, created_at')
                 .in('entity_id', memberIds)
                 .order('created_at', { ascending: false })
-                .range(from, to);
+                .range(from, to).order('id', { ascending: true });
 
             if (isCancelled()) return;
 

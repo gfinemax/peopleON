@@ -1,11 +1,13 @@
 'use server';
 
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/app/actions/audit';
 import { normalizeCertificateNumber } from '@/lib/certificates/rightNumbers';
 import { revalidateActivityFeedTag } from '@/lib/server/cacheTags';
+import { requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
 export type InteractionType = 'CALL' | 'MEET' | 'SMS' | 'DOC';
 export type Direction = 'Inbound' | 'Outbound';
@@ -60,6 +62,7 @@ export async function logInteraction(
 }
 
 export async function logSystemInteraction(memberId: string, summary: string) {
+    await requireRole(ROLE_GROUPS.staff);
     if (!memberId || !summary) return { error: '필수 항목 누락' };
 
     try {
@@ -96,6 +99,7 @@ export async function checkAndLogAssetRightConflicts(
     currentIds: string[],
     newlyChangedRightNumbers: string[]
 ) {
+    await requireRole(ROLE_GROUPS.staff);
     if (!currentIds || currentIds.length === 0 || !newlyChangedRightNumbers || newlyChangedRightNumbers.length === 0) {
         return { success: false, error: '잘못된 인자값입니다.' };
     }
@@ -118,11 +122,11 @@ export async function checkAndLogAssetRightConflicts(
             return { success: false, error: '유효한 필증번호가 없습니다.' };
         }
 
-        const { data: allSameRights, error } = await supabase
+        const { data: allSameRights, error } = await readAllPages(supabase
             .from('certificate_registry')
             .select('entity_id, certificate_number_raw, certificate_number_normalized')
             .eq('is_active', true)
-            .in('certificate_number_normalized', normalizedChangedNumbers);
+            .in('certificate_number_normalized', normalizedChangedNumbers).order('id', { ascending: true }));
 
         if (error || !allSameRights) {
             console.error('System Log Check Error:', error);
@@ -130,10 +134,10 @@ export async function checkAndLogAssetRightConflicts(
         }
 
         const entityIds = Array.from(new Set(allSameRights.map((row) => row.entity_id).filter(Boolean)));
-        const { data: entities, error: entityError } = await supabase
+        const { data: entities, error: entityError } = await readAllPages(supabase
             .from('account_entities')
             .select('id, display_name')
-            .in('id', entityIds);
+            .in('id', entityIds).order('id', { ascending: true }));
 
         if (entityError) {
             console.error('Entity lookup error:', entityError);
@@ -170,6 +174,7 @@ export async function checkAndLogAssetRightConflicts(
 
                 const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', currentId).single();
                 const currentMemo = ent?.memo || '';
+                if (currentMemo.includes(summaryMsg)) continue;
                 const newMemo = currentMemo ? currentMemo + appendText : summaryMsg;
 
                 const { error: upd1 } = await supabase.from('account_entities').update({ memo: newMemo }).eq('id', currentId);
@@ -188,6 +193,7 @@ export async function checkAndLogAssetRightConflicts(
 
                 const { data: ent } = await supabase.from('account_entities').select('memo').eq('id', otherId).single();
                 const currentMemo = ent?.memo || '';
+                if (currentMemo.includes(summaryMsg)) continue;
                 const newMemo = currentMemo ? currentMemo + appendText : summaryMsg;
 
                 const { error: upd2 } = await supabase.from('account_entities').update({ memo: newMemo }).eq('id', otherId);

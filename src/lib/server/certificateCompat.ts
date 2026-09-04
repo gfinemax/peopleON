@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type CompatViewRow = {
@@ -39,10 +40,10 @@ export async function fetchCertificateCompatRows(
     try {
         let holderEntityIds: string[] | null = null;
         if (holderPartyIds.length > 0) {
-            const { data: entityRowsByParty, error: entityRowsByPartyError } = await supabase
+            const { data: entityRowsByParty, error: entityRowsByPartyError } = await readAllPages(supabase
                 .from('account_entities')
                 .select('id, source_party_id')
-                .in('source_party_id', holderPartyIds);
+                .in('source_party_id', holderPartyIds).order('id', { ascending: true }));
 
             if (!entityRowsByPartyError) {
                 holderEntityIds = ((entityRowsByParty as EntityRow[] | null) || []).map((row) => row.id);
@@ -52,7 +53,7 @@ export async function fetchCertificateCompatRows(
 
         let viewQuery = supabase
             .from('v_right_certificates_compat')
-            .select('certificate_number, status, entity_id');
+            .select('certificate_number, status, entity_id').order('entity_id', { ascending: true });
 
         if (certificateNumbers.length > 0) {
             viewQuery = viewQuery.in('certificate_number', certificateNumbers);
@@ -61,17 +62,17 @@ export async function fetchCertificateCompatRows(
             viewQuery = viewQuery.in('entity_id', holderEntityIds);
         }
 
-        const { data: compatRowsRaw, error: compatError } = await viewQuery;
+        const { data: compatRowsRaw, error: compatError } = await readAllPages(viewQuery);
         if (!compatError) {
             const compatRows = (compatRowsRaw as CompatViewRow[] | null) || [];
             if (compatRows.length === 0) return [];
 
             const entityIds = uniqueStrings(compatRows.map((row) => row.entity_id));
             const { data: entityRowsRaw } = entityIds.length > 0
-                ? await supabase
+                ? await readAllPages(supabase
                     .from('account_entities')
                     .select('id, source_party_id')
-                    .in('id', entityIds)
+                    .in('id', entityIds).order('id', { ascending: true }))
                 : { data: [] as EntityRow[] };
 
             const entityMap = new Map<string, string>(
@@ -101,13 +102,13 @@ export async function fetchCertificateCompatRows(
     try {
         let assetQuery = supabase
             .from('asset_rights')
-            .select('right_number, status, entity_id');
+            .select('right_number, status, entity_id').order('id', { ascending: true });
 
         if (certificateNumbers.length > 0) {
             assetQuery = assetQuery.in('right_number', certificateNumbers);
         }
 
-        const { data: assetRowsRaw, error: assetError } = await assetQuery;
+        const { data: assetRowsRaw, error: assetError } = await readAllPages(assetQuery);
         if (assetError) {
             console.error('[certificateCompat] failed to load asset_rights:', assetError);
             return [];
@@ -119,10 +120,10 @@ export async function fetchCertificateCompatRows(
         // Map entity_id → source_party_id (if available)
         const entityIds = uniqueStrings(assetRows.map((row) => row.entity_id));
         const { data: entityRowsRaw } = entityIds.length > 0
-            ? await supabase
+            ? await readAllPages(supabase
                 .from('account_entities')
                 .select('id, source_party_id')
-                .in('id', entityIds)
+                .in('id', entityIds).order('id', { ascending: true }))
             : { data: [] as EntityRow[] };
 
         const entityMap = new Map<string, string>(

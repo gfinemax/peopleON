@@ -1,5 +1,7 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAuditLog } from '@/app/actions/audit';
+import { checkAndLogAssetRightConflicts } from '@/app/actions/interaction';
 import { parseRightMeta } from './memberUpdateBasicUtils';
 import type { MemberUpdatePayload } from './memberUpdateRouteTypes';
 
@@ -42,10 +44,10 @@ export async function syncCertificateRights({
     userId: string;
 }) {
     if (body?.deleted_rights_ids && Array.isArray(body.deleted_rights_ids) && body.deleted_rights_ids.length > 0) {
-        const { data: deletingRights, error: deletingRightsError } = await supabase
+        const { data: deletingRights, error: deletingRightsError } = await readAllPages(supabase
             .from('certificate_registry')
             .select('id, note')
-            .in('id', body.deleted_rights_ids);
+            .in('id', body.deleted_rights_ids).order('id', { ascending: true }));
 
         if (deletingRightsError) {
             console.error('Certificate delete prefetch error:', deletingRightsError);
@@ -56,11 +58,11 @@ export async function syncCertificateRights({
             .map((right) => right.id);
 
         if (derivativeIdsToDelete.length > 0) {
-            const { data: siblingRights, error: siblingRightsError } = await supabase
+            const { data: siblingRights, error: siblingRightsError } = await readAllPages(supabase
                 .from('certificate_registry')
                 .select('id, note')
                 .in('entity_id', targetIds)
-                .eq('is_active', true);
+                .eq('is_active', true).order('id', { ascending: true }));
 
             if (siblingRightsError) {
                 console.error('Certificate unlink prefetch error:', siblingRightsError);
@@ -221,6 +223,16 @@ export async function syncCertificateRights({
         });
     }
 
+    const changedNumbers = (body?.updated_rights || [])
+        .filter((right) => right.old_number !== right.new_number)
+        .map((right) => right.certificate_number_normalized || '')
+        .filter(Boolean);
+    if (body?.merged_rights_payload?.target_number) {
+        changedNumbers.push(body.merged_rights_payload.target_number);
+    }
+    if (changedNumbers.length > 0) {
+        await checkAndLogAssetRightConflicts(targetIds, changedNumbers);
+    }
     return { success: true };
 }
 
@@ -250,10 +262,10 @@ export async function syncPersonCertificateSummary({
     if (body.certificate_summary_owner_group === 'registered' || body.certificate_summary_owner_group === 'others') {
         summaryPatch.owner_group = body.certificate_summary_owner_group;
     } else {
-        const { data: ownerRoleRows } = await supabase
+        const { data: ownerRoleRows } = await readAllPages(supabase
             .from('membership_roles')
             .select('is_registered, role_status')
-            .eq('entity_id', targetIds[0]);
+            .eq('entity_id', targetIds[0]).order('id', { ascending: true }));
 
         const isRegistered = (
             ((ownerRoleRows as Array<{ is_registered?: boolean | null; role_status?: string | null }> | null) || [])

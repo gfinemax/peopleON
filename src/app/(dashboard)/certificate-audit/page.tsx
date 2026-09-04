@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/supabase/readAllPages';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Header } from '@/components/layout/Header';
@@ -53,7 +54,7 @@ export default async function FinancePage({
     const supabase = await createClient();
 
     const [rightsRes, rolesRes, registeredEntitiesRes, personCertificateSnapshot] = await Promise.all([
-        supabase
+        readAllPages(supabase
             .from('certificate_registry')
             .select(`
                 id,
@@ -70,14 +71,14 @@ export default async function FinancePage({
                     phone
                 )
             `)
-            .eq('is_active', true),
-        supabase
+            .eq('is_active', true).order('id', { ascending: true })),
+        readAllPages(supabase
             .from('membership_roles')
-            .select('entity_id, role_code, role_status, is_registered'),
-        supabase
+            .select('entity_id, role_code, role_status, is_registered').order('id', { ascending: true })),
+        readAllPages(supabase
             .from('account_entities')
             .select('id, display_name, member_number, phone')
-            .eq('entity_type', 'person'),
+            .eq('entity_type', 'person').order('id', { ascending: true })),
         fetchPersonCertificateSummarySnapshot(supabase),
     ]);
 

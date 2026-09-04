@@ -37,7 +37,7 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
             .from('account_entities')
             .select('id, display_name, address_legal, phone, phone_secondary')
             .or(`display_name.ilike.%${cleanQuery}%,address_legal.ilike.%${cleanQuery}%,phone.ilike.%${cleanQuery}%,phone_secondary.ilike.%${cleanQuery}%`)
-            .limit(10),
+            .limit(10).order('id', { ascending: true }),
         supabase
             .from('asset_rights')
             .select(`
@@ -56,7 +56,7 @@ export async function searchMembers(query: string): Promise<SearchResult[]> {
             `)
             .eq('right_type', 'certificate')
             .or(`right_number.ilike.%${cleanQuery}%,right_number_raw.ilike.%${cleanQuery}%`)
-            .limit(10),
+            .limit(10).order('id', { ascending: true }),
     ]);
 
     if (entitiesRes.error) {
