@@ -25,6 +25,7 @@ export type UnifiedPerson = {
     certificate_numbers?: string[];
     certificate_search_tokens?: string[];
     phone: string | null;
+    secondary_phone?: string | null;
     address_legal?: string | null;
     tier: string | null;
     status: string | null;

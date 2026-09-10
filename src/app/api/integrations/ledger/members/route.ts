@@ -6,6 +6,7 @@ import { getDisplayMemberStatus } from '@/lib/members/unifiedPersonUtils';
 import { birthDateFromResidentRegistrationNumber } from '@/lib/residentRegistrationBirthDate';
 import { getUnifiedMembersSnapshot } from '@/lib/server/unifiedMembersSnapshot';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getUnreportedMembershipMeta } from '@/lib/members/unreportedMembership';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,11 +60,13 @@ export async function GET(request: Request) {
                 const refundAccount = person.entity_ids
                     .map((entityId) => bankAccountByEntityId.get(entityId))
                     .find(Boolean) || null;
+                const unreportedMembership = getUnreportedMembershipMeta(person.meta);
                 return ({
                 peopleon_id: person.id,
                 member_id: person.member_id,
                 name: person.name,
                 phone: person.phone,
+                secondary_phone: person.secondary_phone || null,
                 address: person.address_legal || null,
                 status: person.status,
                 display_status: getDisplayMemberStatus(person),
@@ -76,6 +79,7 @@ export async function GET(request: Request) {
                 certificate_display: person.certificate_display || null,
                 is_registered: person.is_registered,
                 tier: person.tier,
+                unreported_membership: unreportedMembership,
                 related_names: (person.relationships || []).map((relationship) => ({
                     name: relationship.name,
                     relation: relationship.relation,

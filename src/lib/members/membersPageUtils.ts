@@ -30,13 +30,13 @@ export const tierOrder = [
     '지주조합원',
     '대리인',
     '예비조합원',
+    '미신고조합원',
     '탈퇴예정',
     '권리증보유자',
     '관계인',
     '권리증환불',
     '권리증번호있음',
     '권리증번호없음',
-    '2020년5월추가모집환불대상',
 ];
 
 export function normalizeTierFilter(raw?: string) {
@@ -104,6 +104,8 @@ export function isTierMatch(person: UnifiedPerson, targetTier: string) {
             return tierLabels.includes('대리인') || tierLabels.includes('대리');
         case '예비조합원':
             return statusText === '예비조합원' || statusText === '예비' || tierLabels.includes('예비조합원');
+        case '미신고조합원':
+            return tierLabels.includes('미신고조합원');
         case '탈퇴예정':
             return tierLabels.includes('탈퇴예정');
         case '권리증보유자':

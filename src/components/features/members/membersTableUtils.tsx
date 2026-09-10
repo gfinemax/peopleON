@@ -228,6 +228,7 @@ export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) 
         if (primaryTier === '2차') return '조합원(2차)';
         if (primaryTier === '일반분양') return '조합원(일반분양)';
         if (primaryTier === '예비조합원') return '조합원(예비)';
+        if (primaryTier === '미신고조합원') return '미신고조합원';
         if (primaryTier === '탈퇴예정') return '조합원(탈퇴예정)';
         if (primaryTier === '권리증환불') return '조합원(환불)';
         if (primaryTier === '지주') return '원지주';
@@ -254,6 +255,7 @@ export const getRolePriority = (member: MembersTableMember, role: RoleType) => {
         '2차': 3,
         '일반분양': 4,
         '예비조합원': 5,
+        '미신고조합원': 6,
         '탈퇴예정': 6,
         '권리증환불': 6,
         '권리증보유자': 6,

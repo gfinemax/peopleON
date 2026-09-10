@@ -9,7 +9,7 @@ import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz
 const MEMBER_CATEGORY_CODES = [
     '1차', '등기조합원', '2차', '지주조합원', '지주', '원지주',
     '예비조합원', '예비', '임시원장', '일반조합원', '일반분양', '일반', '3차',
-    '권리증환불', '탈퇴예정',
+    '권리증환불', '탈퇴예정', '미신고조합원',
 ];
 
 const MEMBER_CATEGORY_VALUES: Record<string, { roleCode: string; isRegistered: boolean }> = {
@@ -20,6 +20,7 @@ const MEMBER_CATEGORY_VALUES: Record<string, { roleCode: string; isRegistered: b
     예비조합원: { roleCode: '예비조합원', isRegistered: false },
     탈퇴예정: { roleCode: '탈퇴예정', isRegistered: false },
     권리증환불: { roleCode: '권리증환불', isRegistered: false },
+    미신고조합원: { roleCode: '미신고조합원', isRegistered: false },
 };
 
 export async function POST(request: Request) {
@@ -134,6 +135,9 @@ export async function POST(request: Request) {
             } else if (role_code === '2차') {
                 dbCodes = ['2차'];
                 insertCode = '2차';
+            } else if (role_code === '미신고조합원') {
+                dbCodes = ['미신고조합원'];
+                insertCode = '미신고조합원';
             } else if (role_code === '관계인') {
                 dbCodes = ['관계인'];
                 insertCode = '관계인';

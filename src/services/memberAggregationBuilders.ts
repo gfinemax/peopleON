@@ -190,6 +190,7 @@ export function buildRawUnifiedPeople(
             birth_date: derivedBirthDate,
             joined_at: joinedAt,
             phone: entity.phone,
+            secondary_phone: entity.phone_secondary || null,
             address_legal: entity.address_legal,
             tier,
             tiers,

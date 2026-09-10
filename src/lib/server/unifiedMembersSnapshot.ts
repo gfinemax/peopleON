@@ -28,7 +28,7 @@ const loadUnifiedMembersSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-snapshot');
         }
     },
-    ['unified-members-snapshot-v6-compressed'],
+    ['unified-members-snapshot-v7-unreported-members'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
@@ -55,7 +55,7 @@ const loadUnifiedMembersLiteSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-lite-snapshot');
         }
     },
-    ['unified-members-lite-snapshot-v6-compressed'],
+    ['unified-members-lite-snapshot-v7-unreported-members'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,

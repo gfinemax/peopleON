@@ -7,6 +7,7 @@ export type AccountEntityRecord = {
     entity_type?: string | null;
     display_name: string;
     phone: string | null;
+    phone_secondary?: string | null;
     address_legal: string | null;
     unit_group: string | null;
     memo: string | null;
@@ -158,7 +159,7 @@ export async function fetchAggregationBaseData(supabase: SupabaseClient) {
     const [entitiesRes, rolesRes, rightsRes, casesRes, relsRes] = await Promise.all([
         readAllPages(supabase
             .from('account_entities')
-            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date').order('id', { ascending: true })),
+            .select('id, entity_type, display_name, phone, phone_secondary, address_legal, unit_group, memo, is_favorite, tags, meta, status, birth_date').order('id', { ascending: true })),
         readAllPages(supabase
             .from('membership_roles')
             .select('id, entity_id, role_code, role_status, is_registered').order('id', { ascending: true })),
@@ -203,7 +204,7 @@ export async function fetchAggregationIdentityData(supabase: SupabaseClient) {
     const [entitiesRes, rolesRes] = await Promise.all([
         readAllPages(supabase
             .from('account_entities')
-            .select('id, entity_type, display_name, phone, address_legal, unit_group, memo, is_favorite, tags, status, birth_date').order('id', { ascending: true })),
+            .select('id, entity_type, display_name, phone, phone_secondary, address_legal, unit_group, memo, is_favorite, tags, meta, status, birth_date').order('id', { ascending: true })),
         readAllPages(supabase
             .from('membership_roles')
             .select('id, entity_id, role_code, role_status, is_registered').order('id', { ascending: true })),

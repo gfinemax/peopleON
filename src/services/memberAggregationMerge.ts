@@ -89,6 +89,8 @@ export function mergeUnifiedPeople(rawUnifiedPeople: UnifiedPerson[]) {
             target.has_merged_certificates = target.has_merged_certificates || person.has_merged_certificates;
             if (person.is_registered) target.is_registered = true;
             if (!target.address_legal && person.address_legal) target.address_legal = person.address_legal;
+            if (!target.secondary_phone && person.secondary_phone) target.secondary_phone = person.secondary_phone;
+            if (!target.meta && person.meta) target.meta = person.meta;
             if (!target.birth_date && person.birth_date) target.birth_date = person.birth_date;
             if (person.joined_at && (!target.joined_at || person.joined_at < target.joined_at)) {
                 target.joined_at = person.joined_at;

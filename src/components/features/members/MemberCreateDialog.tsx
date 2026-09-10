@@ -196,6 +196,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                                     <SelectItem value="2차">2차</SelectItem>
                                     <SelectItem value="일반분양">조합원(일반분양)</SelectItem>
                                     <SelectItem value="예비조합원">조합원(예비)</SelectItem>
+                                    <SelectItem value="미신고조합원">미신고조합원</SelectItem>
                                     <SelectItem value="탈퇴예정">조합원(탈퇴예정)</SelectItem>
                                     <SelectItem value="권리증보유자">가입신청필증 보유</SelectItem>
                                     <SelectItem value="지주">원지주</SelectItem>

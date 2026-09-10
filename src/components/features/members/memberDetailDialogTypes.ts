@@ -24,6 +24,7 @@ export interface MemberDetailDialogMember {
     profile_image_updated_at?: string | null;
     memo: string | null;
     tags?: string[] | null;
+    meta?: Record<string, unknown> | null;
     tiers?: string[] | null;
     role_code?: string | null;
     representative?: {
