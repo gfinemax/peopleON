@@ -49,7 +49,7 @@ export async function fetchMemberDetail(ids: string[]) {
     const supabase = createClient();
     const { data: entities, error: entitiesError } = await readAllPages(supabase
         .from('account_entities')
-        .select('id, display_name, phone, phone_secondary, email, address_legal, tier, status, unit_group, memo, tags, birth_date, member_number, meta')
+        .select('id, display_name, phone, phone_secondary, email, address_legal, status, unit_group, memo, tags, birth_date, meta')
         .in('id', ids).order('id', { ascending: true }));
 
     if (entitiesError || !entities || entities.length === 0) {
@@ -164,6 +164,7 @@ export async function fetchMemberDetail(ids: string[]) {
 
     const combinedData: Member = {
         ...entity,
+        tier: tiers[0] || null,
         is_registered: rolesData.some((role) => role.is_registered),
         preferred_unit_type:
             typeof entity.meta === 'object' && entity.meta !== null && typeof entity.meta.preferred_unit_type === 'string'
@@ -180,7 +181,7 @@ export async function fetchMemberDetail(ids: string[]) {
         name: entity.display_name,
         phone: uniqueDisplayPhones.join(', '),
         secondary_phone: uniqueSecondaryPhones.join(', ') || null,
-        member_number: latestCertificateNumber || entity.member_number || '-',
+        member_number: latestCertificateNumber || '-',
         certificate_display: certificateDisplay,
         certificate_numbers: certNumbers,
         tiers,
