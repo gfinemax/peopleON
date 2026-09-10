@@ -8,6 +8,7 @@ const helper = fs.readFileSync(path.join(root, 'src/lib/members/unreportedMember
 const aggregation = fs.readFileSync(path.join(root, 'src/services/memberAggregationUtils.ts'), 'utf8');
 const integration = fs.readFileSync(path.join(root, 'src/app/api/integrations/ledger/unreported-members/route.ts'), 'utf8');
 const refundTargets = fs.readFileSync(path.join(root, 'src/lib/server/ledgerRefundTargets.ts'), 'utf8');
+const proxy = fs.readFileSync(path.join(root, 'src/proxy.ts'), 'utf8');
 
 test('미신고조합원은 신고 완료가 아닌 조합원 역할로 집계한다', () => {
     assert.match(aggregation, /미신고조합원/);
@@ -20,6 +21,7 @@ test('회계 연동은 고유 record_id와 PeopleON UUID 및 신고액을 제공
     assert.match(integration, /record_id/);
     assert.match(integration, /declared_total/);
     assert.match(integration, /hasValidApiKey/);
+    assert.match(proxy, /\/api\/integrations\/ledger\/unreported-members/);
 });
 
 test('회계 API 장애 시 다른 이름의 임시 명단으로 대체하지 않는다', () => {
