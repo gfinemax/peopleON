@@ -50,3 +50,24 @@ test('통합 목록 캐시와 상세 화면이 우편번호를 반환하고 표�
     assert.match(editorSource, /onFieldChange\('postal_code', event\.target\.value\)/);
     assert.match(cacheSource, /unified-members-snapshot-v8-postal-code/);
 });
+
+test('주소 검색 API는 사용자가 선택한 주소와 우편번호를 신규·수정 폼에 함께 반영한다', () => {
+    const searchButton = read('src/components/features/members/KakaoPostcodeSearchButton.tsx');
+    const createDialog = read('src/components/features/members/MemberCreateDialog.tsx');
+    const editor = read('src/components/features/members/MemberWorkspaceProfileEditor.tsx');
+
+    assert.match(searchButton, /https:\/\/t1\.kakaocdn\.net\/mapjsapi\/bundle\/postcode\/prod\/postcode\.v2\.js/);
+    assert.match(searchButton, /data\.zonecode\.trim\(\)/);
+    assert.match(searchButton, /data\.userSelectedType === 'R'/);
+    assert.match(searchButton, /data\.roadAddress/);
+    assert.match(searchButton, /data\.jibunAddress/);
+    assert.match(searchButton, /postcode\.open\(\{/);
+    assert.match(searchButton, /\.\.\.\(query \? \{ q: query \} : \{\}\)/);
+
+    assert.match(createDialog, /<KakaoPostcodeSearchButton/);
+    assert.match(createDialog, /postal_code: postalCode/);
+    assert.match(createDialog, /address_legal: address/);
+    assert.match(editor, /<KakaoPostcodeSearchButton/);
+    assert.match(editor, /onFieldChange\('postal_code', postalCode\)/);
+    assert.match(editor, /onFieldChange\('address_legal', address\)/);
+});

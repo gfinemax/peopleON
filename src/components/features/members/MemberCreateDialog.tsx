@@ -21,6 +21,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { KakaoPostcodeSearchButton } from "./KakaoPostcodeSearchButton"
 
 interface MemberCreateDialogProps {
     open: boolean
@@ -220,15 +221,26 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="postal_code" className="text-right text-slate-400">우편번호</Label>
-                        <Input
-                            id="postal_code"
-                            value={formData.postal_code}
-                            onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                            className="col-span-3 bg-slate-800 border-slate-700"
-                            inputMode="numeric"
-                            autoComplete="postal-code"
-                            placeholder="예: 06909"
-                        />
+                        <div className="col-span-3 flex items-center gap-2">
+                            <Input
+                                id="postal_code"
+                                value={formData.postal_code}
+                                onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                                className="min-w-0 flex-1 bg-slate-800 border-slate-700"
+                                inputMode="numeric"
+                                autoComplete="postal-code"
+                                placeholder="예: 06909"
+                            />
+                            <KakaoPostcodeSearchButton
+                                initialQuery={formData.address_legal}
+                                disabled={loading}
+                                onSelect={({ postalCode, address }) => setFormData((current) => ({
+                                    ...current,
+                                    postal_code: postalCode,
+                                    address_legal: address,
+                                }))}
+                            />
+                        </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="address_legal" className="text-right text-slate-400">주소</Label>
