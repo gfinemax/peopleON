@@ -127,6 +127,9 @@ export function exportToExcel(data: MemberExportRow[], columns: ExportColumn[]) 
                 case 'relationships':
                     row[col.label] = formatExportRelationships(p);
                     break;
+                case 'postal_code':
+                    row[col.label] = p.postal_code || '';
+                    break;
                 case 'address':
                     row[col.label] = p.address_legal || '';
                     break;

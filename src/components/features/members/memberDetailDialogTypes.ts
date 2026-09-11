@@ -14,6 +14,7 @@ export interface MemberDetailDialogMember {
     phone: string | null;
     secondary_phone?: string | null;
     email: string | null;
+    postal_code: string | null;
     address_legal: string | null;
     tier: string | null;
     status: string | null;

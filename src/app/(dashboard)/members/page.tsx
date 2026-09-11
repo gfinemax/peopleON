@@ -45,6 +45,7 @@ function toMemberExportRow(person: UnifiedPerson): MemberExportRow {
         tier: person.tier,
         tiers: person.tiers,
         unit_group: person.unit_group,
+        postal_code: person.postal_code,
         address_legal: person.address_legal,
         status: person.status,
         display_status: getDisplayMemberStatus(person),

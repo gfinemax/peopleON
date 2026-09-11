@@ -100,6 +100,7 @@
 | `is_registered` | `boolean` | 등기부 등재 여부 | `true`: 등기조합원, `false`: 미등재 |
 | `unit_group` | `text` | 평형 타입 | '59A', '59B', '84' 등 |
 | `address_legal` | `text` | 등본상 주소 | 우편물/내용증명 발송용 |
+| `postal_code` | `text` | 우편번호 | 주소와 분리해 우편물 발송에 사용 |
 | `tags` | `text[]` | **성향 태그 (AI)** | 예: `['소송위험', '강성민원', '납부약정']` |
 | `memo` | `text` | 비고 통합 | 엑셀의 비고/기타 내용 병합 |
 | `created_at` | `timestamptz` | 등록일시 | 자동 생성 (`now()`) |

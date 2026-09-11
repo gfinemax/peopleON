@@ -33,6 +33,7 @@ export async function POST(request: Request) {
                     phone: m.phone || null,
                     member_number: m.member_number || null,
                     unit_group: m.unit_group || null,
+                    postal_code: typeof m.postal_code === 'string' ? m.postal_code.trim() || null : null,
                     address_legal: m.address_legal || null,
                     memo: m.memo || null,
                     entity_type: 'person',

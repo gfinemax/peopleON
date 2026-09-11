@@ -6,6 +6,7 @@ export type MemberExportRow = {
     tier: string | null;
     tiers?: string[];
     unit_group: string | null;
+    postal_code?: string | null;
     address_legal?: string | null;
     status: string | null;
     display_status?: string | null;

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         return formatted.join(', ');
     };
 
-    const { name, phone, secondary_phone, member_number, right_number, tier, unit_group, address_legal, memo, birth_date } = body;
+    const { name, phone, secondary_phone, member_number, right_number, tier, unit_group, postal_code, address_legal, memo, birth_date } = body;
 
     try {
         // 1. Create account_entity
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
                 phone_secondary: formatPhone(secondary_phone),
                 member_number: member_number || null,
                 unit_group: unit_group || null,
+                postal_code: typeof postal_code === 'string' ? postal_code.trim() || null : null,
                 address_legal: address_legal || null,
                 memo: memo || null,
                 birth_date: birth_date || null,

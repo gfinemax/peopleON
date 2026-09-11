@@ -50,6 +50,7 @@ export function buildMemberPatch(body: MemberUpdatePayload | null) {
     if (typeof body?.phone === 'string') patch.phone = formatMemberPhone(body.phone);
     if (typeof body?.secondary_phone === 'string') patch.phone_secondary = formatMemberPhone(body.secondary_phone);
     if (typeof body?.email === 'string') patch.email = body.email.trim() || null;
+    if (typeof body?.postal_code === 'string') patch.postal_code = body.postal_code.trim() || null;
     if (typeof body?.address_legal === 'string') patch.address_legal = body.address_legal.trim() || null;
     if (typeof body?.unit_group === 'string') patch.unit_group = body.unit_group.trim() || null;
     if (typeof body?.birth_date === 'string') patch.birth_date = body.birth_date.trim() || null;

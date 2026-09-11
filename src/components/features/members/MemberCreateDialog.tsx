@@ -38,6 +38,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
         right_number: "",
         tier: "예비조합원",
         unit_group: "",
+        postal_code: "",
         address_legal: "",
         memo: "",
         birth_date: "",
@@ -84,6 +85,7 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                     right_number: "",
                     tier: "예비조합원",
                     unit_group: "",
+                    postal_code: "",
                     address_legal: "",
                     memo: "",
                     birth_date: "",
@@ -214,6 +216,29 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                             onChange={(e) => setFormData({ ...formData, unit_group: e.target.value })}
                             className="col-span-3 bg-slate-800 border-slate-700"
                             placeholder="예: 101동 101호"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="postal_code" className="text-right text-slate-400">우편번호</Label>
+                        <Input
+                            id="postal_code"
+                            value={formData.postal_code}
+                            onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                            className="col-span-3 bg-slate-800 border-slate-700"
+                            inputMode="numeric"
+                            autoComplete="postal-code"
+                            placeholder="예: 06909"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="address_legal" className="text-right text-slate-400">주소</Label>
+                        <Input
+                            id="address_legal"
+                            value={formData.address_legal}
+                            onChange={(e) => setFormData({ ...formData, address_legal: e.target.value })}
+                            className="col-span-3 bg-slate-800 border-slate-700"
+                            autoComplete="street-address"
+                            placeholder="주소 입력"
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">

@@ -191,6 +191,7 @@ export function buildRawUnifiedPeople(
             joined_at: joinedAt,
             phone: entity.phone,
             secondary_phone: entity.phone_secondary || null,
+            postal_code: entity.postal_code || null,
             address_legal: entity.address_legal,
             tier,
             tiers,

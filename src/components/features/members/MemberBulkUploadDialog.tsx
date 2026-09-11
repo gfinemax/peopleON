@@ -27,6 +27,7 @@ type BulkUploadMember = {
     right_number: string;
     tier: string;
     unit_group: string;
+    postal_code: string;
     address_legal: string;
     memo: string;
 };
@@ -62,6 +63,7 @@ export function MemberBulkUploadDialog({ open, onOpenChange }: MemberBulkUploadD
                 right_number: cellToString(row["가입신청필증"] || row["필증번호"] || row["권리증"] || row["권리증번호"] || row["권칙"] || row["No"] || row["증서"] || row["Right"]),
                 tier: cellToString(row["구분"] || row["등급"] || row["Tier"] || "예비조합원"),
                 unit_group: cellToString(row["그룹"] || row["동호수"] || row["Group"]),
+                postal_code: cellToString(row["우편번호"] || row["Postal Code"] || row["Zipcode"]),
                 address_legal: cellToString(row["주소"] || row["Address"]),
                 memo: cellToString(row["메모"] || row["특이사항"] || row["Memo"])
             })).filter(m => m.name) // name is required

@@ -19,6 +19,7 @@ const AVAILABLE_COLUMNS = [
     { id: 'tier', label: '구분', defaultChecked: true },
     { id: 'unit_group', label: '동호수', defaultChecked: true },
     { id: 'relationships', label: '관계', defaultChecked: true },
+    { id: 'postal_code', label: '우편번호', defaultChecked: false },
     { id: 'address', label: '주소', defaultChecked: false },
     { id: 'status', label: '상태', defaultChecked: true },
     { id: 'roles', label: '역할', defaultChecked: false },

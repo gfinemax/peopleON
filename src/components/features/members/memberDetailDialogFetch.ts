@@ -49,7 +49,7 @@ export async function fetchMemberDetail(ids: string[]) {
     const supabase = createClient();
     const { data: entities, error: entitiesError } = await readAllPages(supabase
         .from('account_entities')
-        .select('id, display_name, phone, phone_secondary, email, address_legal, status, unit_group, memo, tags, birth_date, meta')
+        .select('id, display_name, phone, phone_secondary, email, postal_code, address_legal, status, unit_group, memo, tags, birth_date, meta')
         .in('id', ids).order('id', { ascending: true }));
 
     if (entitiesError || !entities || entities.length === 0) {

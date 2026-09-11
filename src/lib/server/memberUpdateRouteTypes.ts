@@ -5,6 +5,7 @@ export type MemberUpdatePayload = {
     phone?: string | null;
     secondary_phone?: string | null;
     email?: string | null;
+    postal_code?: string | null;
     address_legal?: string | null;
     unit_group?: string | null;
     preferred_unit_type?: string | null;

@@ -142,6 +142,7 @@ export async function saveMemberDetail(args: {
             phone: formData.phone,
             secondary_phone: formData.secondary_phone,
             email: formData.email,
+            postal_code: formData.postal_code,
             address_legal: formData.address_legal,
             unit_group: formData.unit_group,
             preferred_unit_type: formData.preferred_unit_type,
