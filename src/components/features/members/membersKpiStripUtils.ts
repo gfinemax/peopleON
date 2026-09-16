@@ -1,6 +1,7 @@
 'use client';
 
 import * as XLSX from 'xlsx';
+import { formatNameForPrint, formatNameListForPrint } from '@/lib/printName';
 
 export type SummaryBlock = {
     total: number;
@@ -158,7 +159,13 @@ export function openAnalysisPrintWindow(args: {
                             .join(' ');
                         const cellClass = classes ? ` class="${classes}"` : '';
                         const value = column === '번호' ? index + 1 : row[column];
-                        return `<td${cellClass}>${escapeHtml(String(value ?? ''))}</td>`;
+                        const text = String(value ?? '');
+                        const printText = column === '이름' || column === '성명'
+                            ? formatNameForPrint(text)
+                            : column === '보유자명단'
+                                ? formatNameListForPrint(text)
+                                : text;
+                        return `<td${cellClass}>${escapeHtml(printText)}</td>`;
                     })
                     .join('')}</tr>`,
         )

@@ -6,6 +6,7 @@ import { PrintConfig } from '@/components/features/members/memberReportPrintType
 import { getMemberReportPrintDate, getSortedPrintData } from '@/components/features/members/memberReportPrintUtils';
 import type { MemberExportRow } from '@/components/features/members/memberExportTypes';
 import { cn } from '@/lib/utils';
+import { formatNameForPrint } from '@/lib/printName';
 
 interface MemberReportPrintContentProps {
     data: MemberExportRow[];
@@ -96,7 +97,7 @@ export function MemberReportPrintContent({ data, config }: MemberReportPrintCont
                                         className="px-2 py-[5px] text-[10.5px] border-x border-slate-50 text-slate-700 leading-tight font-medium"
                                     >
                                         {column.id === 'no' && index + 1}
-                                        {column.id === 'name' && <span className="font-bold text-slate-900">{person.name}</span>}
+                                        {column.id === 'name' && <span className="font-bold text-slate-900">{formatNameForPrint(person.name)}</span>}
                                         {column.id === 'phone' && <span className="font-mono">{person.phone || '-'}</span>}
                                         {column.id === 'tier' && <span>{tier}</span>}
                                         {column.id === 'unit' && <span className="font-bold">{person.unit_group || '-'}</span>}
