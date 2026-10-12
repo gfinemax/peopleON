@@ -71,3 +71,10 @@ test('주소 검색 API는 사용자가 선택한 주소와 우편번호를 신�
     assert.match(editor, /onFieldChange\('postal_code', postalCode\)/);
     assert.match(editor, /onFieldChange\('address_legal', address\)/);
 });
+
+test('회계원장 연동 API는 우편번호와 주소를 함께 반환한다', () => {
+    const integrationRoute = read('src/app/api/integrations/ledger/members/route.ts');
+
+    assert.match(integrationRoute, /postal_code:\s*person\.postal_code\s*\|\|\s*null/);
+    assert.match(integrationRoute, /address:\s*person\.address_legal\s*\|\|\s*null/);
+});
