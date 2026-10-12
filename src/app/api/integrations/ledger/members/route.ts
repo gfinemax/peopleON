@@ -67,6 +67,7 @@ export async function GET(request: Request) {
                 name: person.name,
                 phone: person.phone,
                 secondary_phone: person.secondary_phone || null,
+                postal_code: person.postal_code || null,
                 address: person.address_legal || null,
                 status: person.status,
                 display_status: getDisplayMemberStatus(person),
