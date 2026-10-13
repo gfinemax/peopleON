@@ -64,6 +64,7 @@ export async function GET(request: Request) {
                 return ({
                 peopleon_id: person.id,
                 member_id: person.member_id,
+                entity_ids: person.entity_ids,
                 name: person.name,
                 phone: person.phone,
                 secondary_phone: person.secondary_phone || null,
