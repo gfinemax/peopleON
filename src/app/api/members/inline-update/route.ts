@@ -9,7 +9,7 @@ import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz
 const MEMBER_CATEGORY_CODES = [
     '1차', '등기조합원', '2차', '지주조합원', '지주', '원지주',
     '예비조합원', '예비', '임시원장', '일반조합원', '일반분양', '일반', '3차',
-    '권리증환불', '탈퇴예정', '미신고조합원',
+    '권리증환불', '탈퇴예정', '미신고조합원', '소송',
 ];
 
 const MEMBER_CATEGORY_VALUES: Record<string, { roleCode: string; isRegistered: boolean }> = {
@@ -18,6 +18,7 @@ const MEMBER_CATEGORY_VALUES: Record<string, { roleCode: string; isRegistered: b
     '2차': { roleCode: '2차', isRegistered: false },
     일반분양: { roleCode: '일반분양', isRegistered: false },
     예비조합원: { roleCode: '예비조합원', isRegistered: false },
+    소송: { roleCode: '소송', isRegistered: false },
     탈퇴예정: { roleCode: '탈퇴예정', isRegistered: false },
     권리증환불: { roleCode: '권리증환불', isRegistered: false },
     미신고조합원: { roleCode: '미신고조합원', isRegistered: false },
@@ -138,6 +139,9 @@ export async function POST(request: Request) {
             } else if (role_code === '미신고조합원') {
                 dbCodes = ['미신고조합원'];
                 insertCode = '미신고조합원';
+            } else if (role_code === '소송') {
+                dbCodes = ['소송'];
+                insertCode = '소송';
             } else if (role_code === '관계인') {
                 dbCodes = ['관계인'];
                 insertCode = '관계인';

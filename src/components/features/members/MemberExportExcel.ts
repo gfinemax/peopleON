@@ -49,6 +49,7 @@ export function formatExportCategory(person: MemberExportRow) {
                 if (primaryTier === '2차') return '조합원(2차)';
                 if (primaryTier === '일반분양') return '조합원(일반분양)';
                 if (primaryTier === '예비조합원') return '조합원(예비)';
+                if (primaryTier === '소송') return '조합원(소송)';
                 if (primaryTier === '미신고조합원') return '미신고조합원';
                 if (primaryTier === '탈퇴예정') return '조합원(탈퇴예정)';
                 if (primaryTier === '지주') return '원지주';

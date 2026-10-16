@@ -30,6 +30,7 @@ export const tierOrder = [
     '지주조합원',
     '대리인',
     '예비조합원',
+    '소송',
     '미신고조합원',
     '탈퇴예정',
     '권리증보유자',
@@ -104,6 +105,8 @@ export function isTierMatch(person: UnifiedPerson, targetTier: string) {
             return tierLabels.includes('대리인') || tierLabels.includes('대리');
         case '예비조합원':
             return statusText === '예비조합원' || statusText === '예비' || tierLabels.includes('예비조합원');
+        case '소송':
+            return tierLabels.includes('소송');
         case '미신고조합원':
             return tierLabels.includes('미신고조합원');
         case '탈퇴예정':
