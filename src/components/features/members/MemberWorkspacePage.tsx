@@ -72,6 +72,7 @@ const getMemberCategory = (member: MemberDetailDialogMember) => {
     const tiers = [...(member.tiers || []), member.tier || '', member.role_code || '', member.status || ''];
     const hasTier = (keyword: string) => tiers.some((tier) => tier.includes(keyword));
 
+    if (hasTier('행불')) return '조합원(행불)';
     if (hasTier('소송')) return '조합원(소송)';
     if (hasTier('탈퇴예정')) return '조합원(탈퇴예정)';
     if (hasTier('환불')) return '환불조합원';
@@ -94,6 +95,7 @@ const memberCategoryOptions = [
     { label: '조합원(일반분양)', value: '일반분양' },
     { label: '조합원(예비)', value: '예비조합원' },
     { label: '조합원(소송)', value: '소송' },
+    { label: '조합원(행불)', value: '행불' },
     { label: '미신고조합원', value: '미신고조합원' },
     { label: '조합원(탈퇴예정)', value: '탈퇴예정' },
     { label: '조합원(환불)', value: '권리증환불' },
@@ -101,6 +103,7 @@ const memberCategoryOptions = [
 
 const getMemberCategoryValue = (member: MemberDetailDialogMember) => {
     const category = getMemberCategory(member);
+    if (category === '조합원(행불)') return '행불';
     if (category === '조합원(소송)') return '소송';
     if (category === '환불조합원') return '권리증환불';
     if (category === '조합원(탈퇴예정)') return '탈퇴예정';

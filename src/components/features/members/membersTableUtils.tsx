@@ -216,7 +216,7 @@ export const getMemberPhoneSummary = (phone: string | null) => {
 
 export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) => {
     const primaryTier = (member.tiers || []).find((tier) =>
-        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양' || tier === '권리증환불' || tier === '탈퇴예정' || tier === '소송')) ||
+        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양' || tier === '권리증환불' || tier === '탈퇴예정' || tier === '소송' || tier === '행불')) ||
         (role === 'certificate_holder' && tier.includes('권리증')) ||
         (role === 'related_party' && tier === '관계인') ||
         (role === 'agent' && tier === '대리인')
@@ -229,6 +229,7 @@ export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) 
         if (primaryTier === '일반분양') return '조합원(일반분양)';
         if (primaryTier === '예비조합원') return '조합원(예비)';
         if (primaryTier === '소송') return '조합원(소송)';
+        if (primaryTier === '행불') return '조합원(행불)';
         if (primaryTier === '미신고조합원') return '미신고조합원';
         if (primaryTier === '탈퇴예정') return '조합원(탈퇴예정)';
         if (primaryTier === '권리증환불') return '조합원(환불)';
@@ -244,7 +245,7 @@ export const getRoleDisplayLabel = (member: MembersTableMember, role: RoleType) 
 
 export const getRolePriority = (member: MembersTableMember, role: RoleType) => {
     const primaryTier = (member.tiers || []).find((tier) =>
-        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양' || tier === '권리증환불' || tier === '탈퇴예정' || tier === '소송')) ||
+        (role === 'member' && (tier.includes('차') || tier.includes('조합원') || tier === '지주' || tier === '일반분양' || tier === '권리증환불' || tier === '탈퇴예정' || tier === '소송' || tier === '행불')) ||
         (role === 'certificate_holder' && tier.includes('권리증')) ||
         (role === 'related_party' && tier === '관계인') ||
         (role === 'agent' && tier === '대리인')
@@ -257,6 +258,7 @@ export const getRolePriority = (member: MembersTableMember, role: RoleType) => {
         '일반분양': 4,
         '예비조합원': 5,
         '소송': 6,
+        '행불': 6,
         '미신고조합원': 6,
         '탈퇴예정': 6,
         '권리증환불': 6,

@@ -30,6 +30,7 @@ export const roleOptions = [
     { label: '조합원(일반분양)', value: '일반분양' },
     { label: '조합원(예비)', value: '예비조합원' },
     { label: '조합원(소송)', value: '소송' },
+    { label: '조합원(행불)', value: '행불' },
     { label: '미신고조합원', value: '미신고조합원' },
     { label: '조합원(탈퇴예정)', value: '탈퇴예정' },
     { label: '조합원(환불)', value: '권리증환불' },

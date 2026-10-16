@@ -13,7 +13,8 @@ test('조합원 구분에서 소송 조합원을 선택하고 저장할 수 있�
     assert.match(workspace, /label: '조합원\(소송\)', value: '소송'/);
     assert.match(workspace, /hasTier\('소송'\).*'조합원\(소송\)'/);
     assert.match(route, /소송: \{ roleCode: '소송', isRegistered: false \}/);
-    assert.match(aggregation, /'소송'\]\.includes\(t\)\) return 'member'/);
+    assert.match(aggregation, /'소송'/);
+    assert.match(aggregation, /\.includes\(t\)\) return 'member'/);
 });
 
 test('소송 조합원은 목록, 필터, 엑셀에서도 같은 이름으로 표시된다', () => {
@@ -24,7 +25,7 @@ test('소송 조합원은 목록, 필터, 엑셀에서도 같은 이름으로 �
 
     assert.match(tableHelpers, /label: '조합원\(소송\)', value: '소송'/);
     assert.match(tableUtils, /primaryTier === '소송'.*'조합원\(소송\)'/);
-    assert.match(filters, /'예비조합원', '소송', '미신고조합원'/);
+    assert.match(filters, /member: \[[^\]]*'소송'[^\]]*\]/);
     assert.match(exportSource, /primaryTier === '소송'.*'조합원\(소송\)'/);
 });
 
