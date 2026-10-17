@@ -52,7 +52,8 @@ export async function proxy(request: NextRequest) {
         (request.nextUrl.pathname === '/api/members/table' ||
             request.nextUrl.pathname === '/api/integrations/ledger/members' ||
             request.nextUrl.pathname === '/api/integrations/ledger/unreported-members' ||
-            /^\/api\/integrations\/ledger\/members\/[^/]+\/supply-type$/.test(request.nextUrl.pathname)) &&
+            /^\/api\/integrations\/ledger\/members\/[^/]+\/supply-type$/.test(request.nextUrl.pathname) ||
+            /^\/api\/integrations\/ledger\/members\/[^/]+\/refund-account$/.test(request.nextUrl.pathname)) &&
         hasValidApiKey(request.headers)
     ) {
         return NextResponse.next();
