@@ -35,7 +35,6 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
         name: "",
         phone: "",
         secondary_phone: "",
-        member_number: "",
         right_number: "",
         tier: "예비조합원",
         unit_group: "",
@@ -82,7 +81,6 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                     name: "",
                     phone: "",
                     secondary_phone: "",
-                    member_number: "",
                     right_number: "",
                     tier: "예비조합원",
                     unit_group: "",
@@ -151,16 +149,6 @@ export function MemberCreateDialog({ open, onOpenChange }: MemberCreateDialogPro
                             onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
                             className="col-span-3 bg-slate-800 border-slate-700"
                             placeholder="YYYY-MM-DD"
-                        />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="member_number" className="text-right text-slate-400">번호</Label>
-                        <Input
-                            id="member_number"
-                            value={formData.member_number}
-                            onChange={(e) => setFormData({ ...formData, member_number: e.target.value })}
-                            className="col-span-3 bg-slate-800 border-slate-700 font-mono"
-                            placeholder="고유 번호"
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">

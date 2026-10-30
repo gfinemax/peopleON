@@ -4,6 +4,24 @@ import { classifyCertificateInput } from '@/lib/certificates/rightNumbers';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
 
+type ErrorWithMessage = {
+    message?: unknown;
+    code?: unknown;
+    details?: unknown;
+    hint?: unknown;
+};
+
+const getErrorMessage = (error: unknown) => {
+    if (error instanceof Error) return error.message;
+    if (error && typeof error === 'object') {
+        const { message, details, hint } = error as ErrorWithMessage;
+        const parts = [message, details, hint]
+            .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+        if (parts.length > 0) return parts.join(' / ');
+    }
+    return '회원 등록 중 알 수 없는 오류가 발생했습니다.';
+};
+
 export async function POST(request: Request) {
     const supabase = await createClient();
     try {
@@ -30,6 +48,13 @@ export async function POST(request: Request) {
     };
 
     const { name, phone, secondary_phone, member_number, right_number, tier, unit_group, postal_code, address_legal, memo, birth_date } = body;
+    // member_number was removed from account_entities. Keep it only as a legacy
+    // request alias so older clients still save the value in certificate_registry.
+    const certificateInput =
+        (typeof right_number === 'string' && right_number.trim()) ||
+        (typeof member_number === 'string' && member_number.trim()) ||
+        '';
+    let createdEntityId: string | null = null;
 
     try {
         // 1. Create account_entity
@@ -39,7 +64,6 @@ export async function POST(request: Request) {
                 display_name: name,
                 phone: formatPhone(phone),
                 phone_secondary: formatPhone(secondary_phone),
-                member_number: member_number || null,
                 unit_group: unit_group || null,
                 postal_code: typeof postal_code === 'string' ? postal_code.trim() || null : null,
                 address_legal: address_legal || null,
@@ -52,24 +76,28 @@ export async function POST(request: Request) {
             .single();
 
         if (entityError) throw entityError;
+        createdEntityId = entity.id;
 
-        // 2. Create asset_right if right_number is provided
-        if (right_number) {
-            const classifiedRight = classifyCertificateInput(right_number);
+        // 2. Save the certificate in the current canonical registry.
+        if (certificateInput) {
+            const classifiedRight = classifyCertificateInput(certificateInput);
             const { error: rightError } = await supabase
-                .from('asset_rights')
+                .from('certificate_registry')
                 .insert({
                     entity_id: entity.id,
-                    right_number: classifiedRight.confirmedNumber,
-                    right_number_raw: classifiedRight.rawValue,
-                    right_number_status: classifiedRight.status,
-                    right_number_note: classifiedRight.note,
-                    classification_source: 'auto',
-                    classified_at: new Date().toISOString(),
-                    right_type: 'certificate'
+                    certificate_number_normalized: classifiedRight.normalizedKey,
+                    certificate_number_raw: classifiedRight.rawValue,
+                    certificate_status: classifiedRight.status,
+                    source_type: 'manual',
+                    is_confirmed_for_count: classifiedRight.status === 'confirmed',
+                    is_active: true,
+                    note: JSON.stringify({
+                        manual_add: true,
+                        classification_note: classifiedRight.note,
+                    }),
                 });
 
-            if (rightError) console.error('Error creating asset right:', rightError);
+            if (rightError) throw rightError;
         }
 
         // 3. Create membership_role if tier is provided
@@ -99,14 +127,23 @@ export async function POST(request: Request) {
                     resident_registration_number: body.resident_registration_number.trim()
                 });
 
-            if (privateError) console.error('Error creating private info:', privateError);
+            if (privateError) throw privateError;
         }
 
         revalidateUnifiedMembersTag();
         return NextResponse.json({ success: true, id: entity.id });
     } catch (error: unknown) {
         console.error('Error creating member:', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        if (createdEntityId) {
+            const { error: rollbackError } = await supabase
+                .from('account_entities')
+                .delete()
+                .eq('id', createdEntityId);
+            if (rollbackError) {
+                console.error('Error rolling back member creation:', rollbackError);
+            }
+        }
+        const message = getErrorMessage(error);
         return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }
