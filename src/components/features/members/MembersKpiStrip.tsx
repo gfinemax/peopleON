@@ -36,7 +36,7 @@ export function MembersKpiStrip({
     relations,
 }: MembersKpiStripProps) {
     const householdSegments = [
-        { label: '조합원', value: households.members, colorClass: 'bg-sky-400', stroke: '#38bdf8' },
+        { label: '등기조합원', value: households.members, colorClass: 'bg-sky-400', stroke: '#38bdf8' },
         { label: '추가모집 예정', value: households.recruitmentTarget, colorClass: 'bg-amber-400', stroke: '#fbbf24' },
     ];
 
@@ -54,7 +54,7 @@ export function MembersKpiStrip({
                     subtitle={`전체 ${households.total.toLocaleString()}세대 기준`}
                     total={households.total}
                     unit="세대"
-                    pillText={`조합원 ${ratio(households.members, households.total)}%`}
+                    pillText={`등기조합원 ${ratio(households.members, households.total)}%`}
                     pillClassName="border-sky-400/20 bg-sky-500/10 text-sky-200"
                     accentClassName="bg-gradient-to-r from-success to-primary"
                     iconTileClassName="border-success/25 bg-success/15 text-success"
