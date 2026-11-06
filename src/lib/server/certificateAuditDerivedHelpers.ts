@@ -10,7 +10,7 @@ import type {
     MembershipRoleLiteRow,
     RegisteredEntityLiteRow,
 } from '@/lib/server/certificateAuditTypes';
-import { hasActiveRegistrationRole, isActiveRegistrationRole } from '@/services/membershipRoleState';
+import { hasRegistrationHistory, isRegisteredMembershipRole } from '@/services/membershipRoleState';
 
 export function getCertificateAuditSortValue(record: EnrichedLegacyRecord, sortField: string): string | number {
     switch (sortField) {
@@ -53,7 +53,7 @@ export function buildCertificateAuditRegisteredMembers(
     allRoles: MembershipRoleLiteRow[],
 ) {
     const registeredEntityIds = new Set(
-        allRoles.filter(isActiveRegistrationRole).map((role) => role.entity_id),
+        allRoles.filter(isRegisteredMembershipRole).map((role) => role.entity_id),
     );
 
     return registeredEntities
@@ -88,7 +88,7 @@ export function buildCertificateAuditBaseLegacyRecords(
             .filter(Boolean) as string[];
 
         const entityRoles = entity ? (rolesMap.get(entity.id) || []) : [];
-        const isRegistered = hasActiveRegistrationRole(entityRoles);
+        const isRegistered = hasRegistrationHistory(entityRoles);
         const activeRoleCode = entityRoles.find((role) => role.role_status === 'active')?.role_code || '';
 
         let segment: LegacyMemberSegment = 'reserve_member';

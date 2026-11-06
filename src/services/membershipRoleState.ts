@@ -7,8 +7,10 @@ export type RegistrationRoleState = {
 export const isRegisteredRoleCode = (roleCode?: string | null) =>
     ['1차', '등기조합원', '탈퇴예정'].includes((roleCode || '').trim());
 
-export const isActiveRegistrationRole = (role: RegistrationRoleState) =>
-    role.role_status === 'active' && (role.is_registered === true || isRegisteredRoleCode(role.role_code));
+// A canonical registered-member role remains registration history even when
+// that row becomes inactive after a category/status transition.
+export const isRegisteredMembershipRole = (role: RegistrationRoleState) =>
+    role.is_registered === true && ['1차', '등기조합원'].includes((role.role_code || '').trim());
 
-export const hasActiveRegistrationRole = (roles: RegistrationRoleState[]) =>
-    roles.some(isActiveRegistrationRole);
+export const hasRegistrationHistory = (roles: RegistrationRoleState[]) =>
+    roles.some(isRegisteredMembershipRole);

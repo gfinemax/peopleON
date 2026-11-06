@@ -12,7 +12,7 @@ import {
     normalizeTierLabel,
 } from './memberAggregationUtils';
 import type { RoleType, UnifiedPerson } from './memberAggregationTypes';
-import { hasActiveRegistrationRole } from './membershipRoleState';
+import { hasRegistrationHistory } from './membershipRoleState';
 
 type AggregationMaps = {
     rolesByEntity: Map<string, MembershipRoleRecord[]>;
@@ -54,7 +54,7 @@ export function buildRawUnifiedPeople(
                     .filter(Boolean),
             ),
         ) as string[];
-        const isRegistered = hasActiveRegistrationRole(entityRoles);
+        const isRegistered = hasRegistrationHistory(entityRoles);
         const hasMemberRoleCode = entityRoles.some(
             (role) =>
                 role.role_status === 'active' &&
