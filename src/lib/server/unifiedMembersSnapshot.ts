@@ -28,7 +28,7 @@ const loadUnifiedMembersSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-snapshot');
         }
     },
-    ['unified-members-snapshot-v8-postal-code'],
+    ['unified-members-snapshot-v9-registration-history'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
@@ -55,7 +55,7 @@ const loadUnifiedMembersLiteSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-lite-snapshot');
         }
     },
-    ['unified-members-lite-snapshot-v8-postal-code'],
+    ['unified-members-lite-snapshot-v9-registration-history'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
