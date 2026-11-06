@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAuditLog } from '@/app/actions/audit';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
+import { isRegisteredRoleCode } from '@/services/membershipRoleState';
 
 const MEMBER_CATEGORY_CODES = [
     '1차', '등기조합원', '2차', '지주조합원', '지주', '원지주',
@@ -20,7 +21,7 @@ const MEMBER_CATEGORY_VALUES: Record<string, { roleCode: string; isRegistered: b
     예비조합원: { roleCode: '예비조합원', isRegistered: false },
     소송: { roleCode: '소송', isRegistered: false },
     행불: { roleCode: '행불', isRegistered: false },
-    탈퇴예정: { roleCode: '탈퇴예정', isRegistered: false },
+    탈퇴예정: { roleCode: '탈퇴예정', isRegistered: true },
     권리증환불: { roleCode: '권리증환불', isRegistered: false },
     미신고조합원: { roleCode: '미신고조합원', isRegistered: false },
 };
@@ -167,7 +168,7 @@ export async function POST(request: Request) {
                             entity_id: eid,
                             role_code: insertCode,
                             role_status: 'inactive',
-                            is_registered: insertCode === '1차' || insertCode === '등기조합원'
+                            is_registered: isRegisteredRoleCode(insertCode)
                         })));
                 }
 
@@ -187,7 +188,7 @@ export async function POST(request: Request) {
                             entity_id: eid,
                             role_code: insertCode,
                             role_status: 'active',
-                            is_registered: insertCode === '1차' || insertCode === '등기조합원'
+                            is_registered: isRegisteredRoleCode(insertCode)
                         })));
                 }
 

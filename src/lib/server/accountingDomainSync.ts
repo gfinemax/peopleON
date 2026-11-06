@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isRegisteredRoleCode } from '@/services/membershipRoleState';
 
 type MemberSyncInput = {
     id: string;
@@ -26,6 +27,7 @@ type MembershipRoleCode =
     | '지주조합원'
     | '대리인'
     | '예비조합원'
+    | '탈퇴예정'
     | '권리증환불'
     | '관계인';
 
@@ -52,6 +54,7 @@ function normalizeTierToRoleCode(rawTier: string | null | undefined, isRegistere
     if (normalized === '지주조합원') return '지주조합원';
     if (normalized === '대리' || normalized === '대리인') return '대리인';
     if (normalized === '예비' || normalized === '예비조합원') return '예비조합원';
+    if (normalized === '탈퇴예정') return '탈퇴예정';
     if (normalized === '비조합원권리증' || normalized === '권리증환불') return '권리증환불';
     if (normalized === '관계인') return '관계인';
     if (isRegistered) return '등기조합원';
@@ -60,7 +63,7 @@ function normalizeTierToRoleCode(rawTier: string | null | undefined, isRegistere
 
 function normalizeRoleStatus(memberStatus: string | null | undefined): MembershipRoleStatus {
     const status = cleanText(memberStatus);
-    if (status === '탈퇴' || status === '탈퇴예정') return 'inactive';
+    if (status === '탈퇴') return 'inactive';
     return 'active';
 }
 
@@ -176,7 +179,7 @@ export async function syncMemberToAccountingDomain(
     try {
         const roleCode = normalizeTierToRoleCode(member.tier, Boolean(member.is_registered));
         const roleStatus = normalizeRoleStatus(member.status);
-        const normalizedRegistered = roleCode === '등기조합원' ? true : Boolean(member.is_registered);
+        const normalizedRegistered = isRegisteredRoleCode(roleCode) || Boolean(member.is_registered);
 
         const { entityId, warning } = await resolveEntityIdByMember(supabase, member);
         if (!entityId) {

@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
     hasActiveRegistrationRole,
     isActiveRegistrationRole,
+    isRegisteredRoleCode,
 } from './membershipRoleState.ts';
 
 test('inactive 등기 역할은 현재 등기조합원으로 계산하지 않는다', () => {
@@ -17,4 +18,16 @@ test('inactive 등기 역할은 현재 등기조합원으로 계산하지 않는
 test('active이면서 is_registered인 역할만 현재 등기로 계산한다', () => {
     assert.equal(isActiveRegistrationRole({ role_status: 'active', is_registered: true }), true);
     assert.equal(isActiveRegistrationRole({ role_status: 'inactive', is_registered: true }), false);
+});
+
+test('탈퇴예정 역할은 등기조합원으로 계산한다', () => {
+    assert.equal(isRegisteredRoleCode('탈퇴예정'), true);
+    assert.equal(isActiveRegistrationRole({ role_code: '탈퇴예정', role_status: 'active', is_registered: false }), true);
+    assert.equal(hasActiveRegistrationRole([
+        { role_code: '탈퇴예정', role_status: 'active', is_registered: false },
+    ]), true);
+});
+
+test('실제 탈퇴로 비활성화된 역할은 등기조합원으로 계산하지 않는다', () => {
+    assert.equal(isActiveRegistrationRole({ role_code: '탈퇴예정', role_status: 'inactive', is_registered: true }), false);
 });

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { classifyCertificateInput } from '@/lib/certificates/rightNumbers';
 import { revalidateUnifiedMembersTag } from '@/lib/server/cacheTags';
 import { authzErrorResponse, requireRole, ROLE_GROUPS } from '@/lib/server/authz';
+import { isRegisteredRoleCode } from '@/services/membershipRoleState';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
                         entity_id: entity.id,
                         role_code: roleCode,
                         role_status: 'active',
-                        is_registered: roleCode === '등기조합원'
+                        is_registered: isRegisteredRoleCode(roleCode)
                     });
 
                 if (roleError) console.error(`Error inserting role for ${m.name}:`, roleError);
