@@ -22,12 +22,11 @@ test('is_registered 이력이 있는 역할만 등기로 계산한다', () => {
     assert.equal(isRegisteredMembershipRole({ role_code: '등기조합원', role_status: 'inactive', is_registered: false }), false);
 });
 
-test('탈퇴예정자는 기존 등기 이력이 있을 때 등기조합원으로 계산한다', () => {
+test('탈퇴예정자의 등기 이력도 등기조합원으로 계산한다', () => {
     assert.equal(isRegisteredRoleCode('탈퇴예정'), true);
-    assert.equal(isRegisteredMembershipRole({ role_code: '탈퇴예정', role_status: 'active', is_registered: true }), false);
+    assert.equal(isRegisteredMembershipRole({ role_code: '탈퇴예정', role_status: 'active', is_registered: true }), true);
     assert.equal(hasRegistrationHistory([
         { role_code: '탈퇴예정', role_status: 'active', is_registered: true },
-        { role_code: '등기조합원', role_status: 'inactive', is_registered: true },
     ]), true);
 });
 
