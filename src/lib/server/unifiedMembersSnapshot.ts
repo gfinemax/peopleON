@@ -28,7 +28,9 @@ const loadUnifiedMembersSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-snapshot');
         }
     },
-    ['unified-members-snapshot-v9-registration-history'],
+    // Vercel Data Cache can survive deployments, so aggregation rule changes
+    // must use a new key to prevent serving a snapshot built with old rules.
+    ['unified-members-snapshot-v10-pending-withdrawal-registration-history'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,
@@ -55,7 +57,7 @@ const loadUnifiedMembersLiteSnapshot = unstable_cache(
             console.timeEnd('build-unified-members-lite-snapshot');
         }
     },
-    ['unified-members-lite-snapshot-v9-registration-history'],
+    ['unified-members-lite-snapshot-v10-pending-withdrawal-registration-history'],
     {
         tags: [CACHE_TAGS.unifiedMembers],
         revalidate: 600,

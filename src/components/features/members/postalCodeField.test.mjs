@@ -48,7 +48,8 @@ test('통합 목록 캐시와 상세 화면이 우편번호를 반환하고 표�
     assert.match(builderSource, /postal_code:\s*entity\.postal_code\s*\|\|\s*null/);
     assert.match(workspaceSource, /<Row label="우편번호">\{value\(member\.postal_code\)\}<\/Row>/);
     assert.match(editorSource, /onFieldChange\('postal_code', event\.target\.value\)/);
-    assert.match(cacheSource, /unified-members-snapshot-v9-registration-history/);
+    assert.match(cacheSource, /unified-members-snapshot-v10-pending-withdrawal-registration-history/);
+    assert.match(cacheSource, /unified-members-lite-snapshot-v10-pending-withdrawal-registration-history/);
 });
 
 test('주소 검색 API는 사용자가 선택한 주소와 우편번호를 신규·수정 폼에 함께 반영한다', () => {
